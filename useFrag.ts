@@ -3,6 +3,15 @@ import { Range, Scrapbox } from "./deps/scrapbox.ts";
 declare const scrapbox: Scrapbox;
 
 type Frag = "enable" | "outrange" | "disable";
+/** 補完状態を切り替えるhook
+ *
+ * - `enable`：補完有効
+ * - `outrange`：選択範囲の条件が補完対象外になっている
+ * - `disable`：補完無効
+ *
+ * 一度選択範囲をなくすまで有効にならない
+ */
+
 export const useFrag = (
   query: string,
   range: Range,
