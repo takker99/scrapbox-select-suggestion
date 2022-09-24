@@ -51,7 +51,7 @@ export const checkUpdate = async (
         // 誰かが更新しているデータ、更新されたばかりのデータは飛ばす
         if (status?.updating) return;
         if (
-          status?.checked ?? 0 + updateInterval > new Date().getTime() / 1000
+          (status?.checked ?? 0) + updateInterval > new Date().getTime() / 1000
         ) {
           return;
         }
