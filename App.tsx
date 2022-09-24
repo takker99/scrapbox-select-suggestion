@@ -19,8 +19,7 @@ import { usePosition } from "./usePosition.ts";
 import { Candidate as CandidateComponent } from "./Candidate.tsx";
 import { SelectInit, useSelect } from "./useSelect.ts";
 import { filter, sort } from "./search.ts";
-import { Candidate, insertText, Scrapbox } from "./deps/scrapbox.ts";
-declare const scrapbox: Scrapbox;
+import { Candidate, insertText } from "./deps/scrapbox.ts";
 
 export interface Options {
   /** 表示する最大候補数
