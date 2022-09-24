@@ -38,8 +38,11 @@ export const setup = (init?: SetupInit): Promise<Operators> => {
   const shadowRoot = app.attachShadow({ mode: "open" });
   document.body.append(app);
 
-  const { limit = 5, projects = [scrapbox.Project.name], debug } = init ??
+  const { limit = 5, debug } = init ??
     {};
+  const projects = init?.projects
+    ? [...new Set(init.projects)]
+    : [scrapbox.Project.name];
   return new Promise<Operators>(
     (resolve) =>
       render(
