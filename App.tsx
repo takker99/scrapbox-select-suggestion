@@ -71,6 +71,7 @@ export const App = (props: AppProps) => {
   useEffect(() => {
     if (frag !== "enable") return;
     if (text.trim() === "") return;
+    setCandidates([]); // 以前のを消して、描画がちらつかないようにする
 
     return incrementalSearch(text, source, (candidates) =>
       setCandidates(
