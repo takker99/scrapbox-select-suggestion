@@ -14,12 +14,12 @@ import {
 } from "./deps/preact.tsx";
 import { useSelection } from "./useSelection.ts";
 import { useFrag } from "./useFrag.ts";
+import { useSource } from "./useSource.ts";
 import { usePosition } from "./usePosition.ts";
 import { Candidate as CandidateComponent } from "./Candidate.tsx";
 import { SelectInit, useSelect } from "./useSelect.ts";
 import { filter, sort } from "./search.ts";
-import { Candidate, insertText, Scrapbox } from "./deps/scrapbox.ts";
-declare const scrapbox: Scrapbox;
+import { Candidate, insertText } from "./deps/scrapbox.ts";
 
 export interface Options {
   /** 表示する最大候補数
@@ -61,6 +61,7 @@ export const App = (props: AppProps) => {
     title: string;
     confirm: () => void;
   }[]>([]);
+  const makeSource = useSource();
   useEffect(() => {
     if (frag !== "enable") return;
     if (text.trim() === "") return;
@@ -81,7 +82,7 @@ export const App = (props: AppProps) => {
       };
 
       // 検索する
-      const source = scrapbox.Project.pages; // ここで生成したソースを使う
+      const source = makeSource(); // ここで生成したソースを使う
       for (const results of filter(text, source)) {
         // 検索中断命令を受け付けるためのinterval
         await new Promise((resolve) => requestAnimationFrame(resolve));
@@ -94,7 +95,7 @@ export const App = (props: AppProps) => {
       }
     })();
 
-    // 検索を中断させえる
+    // 検索を中断させる
     return () => {
       terminate = true;
       clearTimeout(timer);
