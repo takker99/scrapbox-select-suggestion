@@ -18,8 +18,8 @@ import { useSource } from "./useSource.ts";
 import { usePosition } from "./usePosition.ts";
 import { Candidate as CandidateComponent } from "./Candidate.tsx";
 import { SelectInit, useSelect } from "./useSelect.ts";
-import { filter, sort } from "./search.ts";
-import { Candidate, insertText } from "./deps/scrapbox.ts";
+import { incrementalSearch } from "./incrementalSearch.ts";
+import { insertText } from "./deps/scrapbox.ts";
 
 export interface Options {
   /** 表示する最大候補数
@@ -66,40 +66,14 @@ export const App = (props: AppProps) => {
     if (frag !== "enable") return;
     if (text.trim() === "") return;
 
-    let terminate = false;
-    let timer: number | undefined;
-    (async () => {
-      const candidates: (Candidate & { point: number })[] = [];
-      const update = () => {
-        setCandidates(
-          sort(candidates)
-            .map((page) => ({
-              title: page.title,
-              confirm: () => insertText(`[${page.title}]`),
-            })),
-        );
-        timer = undefined;
-      };
-
-      // 検索する
-      const source = makeSource(); // ここで生成したソースを使う
-      for (const results of filter(text, source)) {
-        // 検索中断命令を受け付けるためのinterval
-        await new Promise((resolve) => requestAnimationFrame(resolve));
-        if (terminate) return;
-
-        candidates.push(...results);
-        if (timer !== undefined) continue;
-        update();
-        timer = setTimeout(update, 500);
-      }
-    })();
-
-    // 検索を中断させる
-    return () => {
-      terminate = true;
-      clearTimeout(timer);
-    };
+    return incrementalSearch(text, makeSource, (candidates) =>
+      setCandidates(
+        candidates
+          .map((page) => ({
+            title: page.title,
+            confirm: () => insertText(`[${page.title}]`),
+          })),
+      ));
   }, [text, frag]);
 
   const { ref, top, left } = usePosition(range);
