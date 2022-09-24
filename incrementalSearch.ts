@@ -1,5 +1,4 @@
-import { filter, sort } from "./search.ts";
-import { Candidate } from "./deps/scrapbox.ts";
+import { Candidate, CandidateWithPoint, filter } from "./search.ts";
 
 export interface IncrementalSearchOptions {
   /** 一度に検索する候補の最大数
@@ -17,21 +16,20 @@ export interface IncrementalSearchOptions {
 /** 中断可能な検索メソッド */
 export const incrementalSearch = (
   query: string,
-  makeSource: () => Candidate[],
-  listener: (candidates: Candidate[]) => void,
+  source: Candidate[],
+  listener: (candidates: CandidateWithPoint[]) => void,
   options?: IncrementalSearchOptions,
 ): () => void => {
   let terminate = false;
   let timer: number | undefined;
-  const candidates: (Candidate & { point: number })[] = [];
+  const candidates: CandidateWithPoint[] = [];
   const update = () => {
-    listener(sort(candidates));
+    listener(candidates);
     timer = undefined;
   };
 
   (async () => {
     // 検索する
-    const source = makeSource();
     for (const results of filter(query, source, options?.chunk ?? 1000)) {
       // 検索中断命令を受け付けるためのinterval
       await new Promise((resolve) => requestAnimationFrame(resolve));

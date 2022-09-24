@@ -18,16 +18,12 @@ import { useSource } from "./useSource.ts";
 import { usePosition } from "./usePosition.ts";
 import { Candidate as CandidateComponent } from "./Candidate.tsx";
 import { SelectInit, useSelect } from "./useSelect.ts";
+import { detectURL } from "./util.ts";
 import { incrementalSearch } from "./incrementalSearch.ts";
-import { insertText } from "./deps/scrapbox.ts";
+import { sort } from "./search.ts";
+import { insertText, Scrapbox } from "./deps/scrapbox.ts";
+declare const scrapbox: Scrapbox;
 
-export interface Options {
-  /** 表示する最大候補数
-   *
-   * @default 5
-   */
-  limit?: number;
-}
 export interface Operators {
   selectNext: (init?: SelectInit) => boolean;
   selectPrev: (init?: SelectInit) => boolean;
@@ -47,42 +43,63 @@ const opInit: Operators = {
   cancel: () => false,
 } as const;
 
-export interface AppProps extends Options {
+export interface AppProps {
+  /** 表示する最大候補数 */
+  limit: number;
   callback: (operators: Operators) => void;
+  projects: string[];
+  mark: Record<string, string | URL>;
+  hideSelfMark: boolean;
+  debug?: boolean;
 }
 
 export const App = (props: AppProps) => {
-  const { limit = 5, callback } = props;
+  const { limit, callback, projects, debug, mark, hideSelfMark } = props;
 
   const { text, range } = useSelection();
   const [frag, setFrag] = useFrag(text, range);
+  const source = useSource(projects, { debug });
 
+  // 検索
   const [candidates, setCandidates] = useState<{
     title: string;
+    projects: {
+      name: string;
+      mark: string | URL;
+      confirm: () => void;
+    }[];
     confirm: () => void;
   }[]>([]);
-  const makeSource = useSource();
   useEffect(() => {
+    setCandidates([]); // 以前のを消して、描画がちらつかないようにする
     if (frag !== "enable") return;
     if (text.trim() === "") return;
 
-    return incrementalSearch(text, makeSource, (candidates) =>
+    return incrementalSearch(text, source, (candidates) =>
       setCandidates(
-        candidates
+        sort(candidates, projects)
           .map((page) => ({
             title: page.title,
+            projects: page.metadata.map(({ project }) => ({
+              name: project,
+              mark: hideSelfMark && project === scrapbox.Project.name
+                ? ""
+                : detectURL(mark[project] ?? "", location.href) || project[0],
+              confirm: () => insertText(`[/${project}/${page.title}]`),
+            })),
             confirm: () => insertText(`[${page.title}]`),
           })),
       ));
-  }, [text, frag]);
+  }, [text, source, frag, projects, hideSelfMark]);
 
-  const { ref, top, left } = usePosition(range);
-
+  // 候補選択
   const visibleCandidateCount = Math.min(candidates.length, limit);
   const { selectedIndex, next, prev, selectFirst, selectLast } = useSelect(
     visibleCandidateCount,
   );
 
+  // スタイル設定
+  const { ref, top, left } = usePosition(range);
   /** windowの開閉およびwindows操作の有効状態を決めるフラグ */
   const isOpen = useMemo(
     () => {
@@ -91,7 +108,12 @@ export const App = (props: AppProps) => {
     },
     [frag, candidates.length, top, left],
   );
+  const divStyle = useMemo<h.JSX.CSSProperties>(
+    () => !isOpen ? { display: "none" } : { top, left },
+    [isOpen, top, left],
+  );
 
+  // API提供
   // ...でopInitが破壊されないようにする
   const exportRef = useRef<Operators>({ ...opInit });
   useEffect(() => {
@@ -117,50 +139,56 @@ export const App = (props: AppProps) => {
     [callback],
   );
 
-  const divStyle = useMemo<h.JSX.CSSProperties>(
-    () => !isOpen ? { display: "none" } : { top, left },
-    [isOpen, top, left],
-  );
-
   return (
     <>
       <style>
-        {`
-      .container {
-        position: absolute;
-        max-width: 80vw;
-        max-height: 80vh;
-        margin-top: 14px;
-        z-index: 301;
-        
-        background-color: var(--select-suggest-bg, #111);
-        font-family: var(--select-suggest-font-family, "Open Sans", Helvetica, Arial, "Hiragino Sans", sans-serif);
-        color: var(--select-suggest-text-color, #eee);
-        border-radius: 4px;
-      }
-      .container > :not(:first-child) {
-        border-top: 1px solid var(--select-suggest-border-color, #eee);
-      }
-      .container > *{
-        font-size: 11px;
-        line-height: 1.2em;
-        padding: 0.5em 10px;
-      }
-      a.candidate {
-        display: block;
-        text-decoration: none;
-        color: inherit;
-      }
-      a.candidate.selected {
-        background-color: var(--select-suggest-selected-bg, #222);
-        text-decoration: underline
-      }
-      .counter {
-        color: var(--select-suggest-information-text-color, #aaa);
-        font-size: 80%;
-        font-style: italic;
-      }
-    `}
+        {`.container {
+  position: absolute;
+  max-width: 80vw;
+  max-height: 80vh;
+  margin-top: 14px;
+  z-index: 301;
+  
+  background-color: var(--select-suggest-bg, #111);
+  font-family: var(--select-suggest-font-family, "Open Sans", Helvetica, Arial, "Hiragino Sans", sans-serif);
+  color: var(--select-suggest-text-color, #eee);
+  border-radius: 4px;
+}
+.container > :not(:first-child) {
+  border-top: 1px solid var(--select-suggest-border-color, #eee);
+}
+.container > *{
+  font-size: 11px;
+  line-height: 1.2em;
+  padding: 0.5em 10px;
+}
+.candidate {
+  display: flex;
+}
+a {
+  display: block;
+  text-decoration: none;
+  color: inherit;
+}
+a:not(.mark) {
+  width: 100%;
+}
+.selected a {
+  background-color: var(--select-suggest-selected-bg, #222);
+  text-decoration: underline
+}
+.candidate img {
+  height: 1.3em;
+  width: 1.3em;
+  position: relative;
+  object-fit: cover;
+  object-position: 0% 0%;
+}
+.counter {
+  color: var(--select-suggest-information-text-color, #aaa);
+  font-size: 80%;
+  font-style: italic;
+}`}
       </style>
       <div className="container" ref={ref} style={divStyle}>
         {candidates.slice(0, visibleCandidateCount).map((props, i) => (
