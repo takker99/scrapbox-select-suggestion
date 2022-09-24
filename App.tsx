@@ -163,6 +163,8 @@ a {
   display: block;
   text-decoration: none;
   color: inherit;
+}
+a:not(.mark) {
   width: 100%;
 }
 .selected a {
@@ -176,7 +178,6 @@ a {
   top: -0.3em;
   object-fit: cover;
   object-position: 0% 0%;
-
 }
 .counter {
   color: var(--select-suggest-information-text-color, #aaa);
