@@ -44,7 +44,9 @@ export const setup = (init?: SetupInit): Promise<Operators> => {
   const { limit = 5, debug, mark = {} } = init ??
     {};
   const projects = init?.projects
-    ? [...new Set(init.projects)]
+    ? init.projects.filter((project, i) =>
+      !init.projects?.some?.((p, j) => j < i && p === project)
+    )
     : [scrapbox.Project.name];
   return new Promise<Operators>(
     (resolve) =>
