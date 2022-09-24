@@ -69,9 +69,9 @@ export const App = (props: AppProps) => {
     confirm: () => void;
   }[]>([]);
   useEffect(() => {
+    setCandidates([]); // 以前のを消して、描画がちらつかないようにする
     if (frag !== "enable") return;
     if (text.trim() === "") return;
-    setCandidates([]); // 以前のを消して、描画がちらつかないようにする
 
     return incrementalSearch(text, source, (candidates) =>
       setCandidates(
