@@ -96,7 +96,7 @@ export const App = (props: AppProps) => {
       }
     })();
 
-    // 検索を中断させえる
+    // 検索を中断させる
     return () => {
       terminate = true;
       clearTimeout(timer);
