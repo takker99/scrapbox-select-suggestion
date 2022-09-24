@@ -26,8 +26,17 @@ export interface SetupInit {
    */
   projects?: string[];
 
-  /** 候補のソース元の識別子に使う文字列もしくはアイコンのURL */
+  /** 候補のソース元の識別子に使う文字列もしくはアイコンのURL
+   *
+   * defaultだと、project nameの頭文字が表示される
+   */
   mark?: Record<string, string | URL>;
+
+  /** 現在ページと同じprojectのアイコンを表示するかどうか
+   *
+   * @default true (表示しない)
+   */
+  hideSelfMark?: boolean;
 }
 
 /** scrapbox-select-suggestionを起動する
@@ -41,7 +50,7 @@ export const setup = (init?: SetupInit): Promise<Operators> => {
   const shadowRoot = app.attachShadow({ mode: "open" });
   document.body.append(app);
 
-  const { limit = 5, debug, mark = {} } = init ??
+  const { limit = 5, debug, mark = {}, hideSelfMark = true } = init ??
     {};
   const projects = init?.projects
     ? init.projects.filter((project, i) =>
@@ -55,6 +64,7 @@ export const setup = (init?: SetupInit): Promise<Operators> => {
           limit={limit}
           projects={projects}
           mark={mark}
+          hideSelfMark={hideSelfMark}
           debug={debug}
           callback={resolve}
         />,

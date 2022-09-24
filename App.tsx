@@ -21,7 +21,8 @@ import { SelectInit, useSelect } from "./useSelect.ts";
 import { detectURL } from "./util.ts";
 import { incrementalSearch } from "./incrementalSearch.ts";
 import { sort } from "./search.ts";
-import { insertText } from "./deps/scrapbox.ts";
+import { insertText, Scrapbox } from "./deps/scrapbox.ts";
+declare const scrapbox: Scrapbox;
 
 export interface Operators {
   selectNext: (init?: SelectInit) => boolean;
@@ -48,11 +49,12 @@ export interface AppProps {
   callback: (operators: Operators) => void;
   projects: string[];
   mark: Record<string, string | URL>;
+  hideSelfMark: boolean;
   debug?: boolean;
 }
 
 export const App = (props: AppProps) => {
-  const { limit, callback, projects, debug, mark } = props;
+  const { limit, callback, projects, debug, mark, hideSelfMark } = props;
 
   const { text, range } = useSelection();
   const [frag, setFrag] = useFrag(text, range);
@@ -80,13 +82,15 @@ export const App = (props: AppProps) => {
             title: page.title,
             projects: page.metadata.map(({ project }) => ({
               name: project,
-              mark: detectURL(mark[project] ?? "", location.href) || project[0],
+              mark: hideSelfMark && project === scrapbox.Project.name
+                ? ""
+                : detectURL(mark[project] ?? "", location.href) || project[0],
               confirm: () => insertText(`[/${project}/${page.title}]`),
             })),
             confirm: () => insertText(`[${page.title}]`),
           })),
       ));
-  }, [text, source, frag, projects]);
+  }, [text, source, frag, projects, hideSelfMark]);
 
   // 候補選択
   const visibleCandidateCount = Math.min(candidates.length, limit);

@@ -2,8 +2,9 @@
 /// <reference lib="esnext" />
 /// <reference lib="dom" />
 /** @jsx h */
+/** @jsxFrag Fragment */
 
-import { h, useCallback } from "./deps/preact.tsx";
+import { Fragment, h, useCallback } from "./deps/preact.tsx";
 import { encodeTitleURI } from "./deps/scrapbox.ts";
 
 export interface CandidateProps {
@@ -58,6 +59,7 @@ export const Candidate = (
 interface MarkProps {
   project: string;
   title: string;
+  /** 空文字の場合は、何も表示しない */
   mark: string | URL;
   confirm: () => void;
 }
@@ -76,14 +78,19 @@ const Mark = (
     [confirm],
   );
 
-  return (
-    <a
-      className="mark"
-      tabIndex={0}
-      href={`../${project}/${encodeTitleURI(title)}`}
-      onClick={handleClick}
-    >
-      {mark instanceof URL ? <img src={mark.href} /> : `[${mark}]`}
-    </a>
-  );
+  return (mark === ""
+    ? (
+      <>
+      </>
+    )
+    : (
+      <a
+        className="mark"
+        tabIndex={0}
+        href={`../${project}/${encodeTitleURI(title)}`}
+        onClick={handleClick}
+      >
+        {mark instanceof URL ? <img src={mark.href} /> : `[${mark}]`}
+      </a>
+    ));
 };
