@@ -15,4 +15,4 @@ jobs:
       - name: Run lint
         run: deno lint
       - name: Run type check
-        run: deno check --remote mod.tsx
+        run: deno check --remote mod.tsx examples/*.ts
