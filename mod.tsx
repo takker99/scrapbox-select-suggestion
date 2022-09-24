@@ -34,7 +34,7 @@ export interface SetupInit {
  */
 export const setup = (init?: SetupInit): Promise<Operators> => {
   const app = document.createElement("div");
-  app.dataset.userscriptName = "選択範囲に似ているリンクを入力補完するUserScript";
+  app.dataset.userscriptName = "scrapbox-select-suggestion";
   const shadowRoot = app.attachShadow({ mode: "open" });
   document.body.append(app);
 
