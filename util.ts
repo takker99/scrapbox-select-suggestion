@@ -4,6 +4,8 @@ export const detectURL = (
   base?: URL | string,
 ): URL | string => {
   if (text instanceof URL) return text;
+  // ./や../や/で始まらない文字列は、相対パス扱いしない
+  if (base && !text.startsWith(".") && !text.startsWith("/")) return text;
   try {
     const url = new URL(text, base);
     return url;
