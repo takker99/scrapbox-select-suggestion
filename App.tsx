@@ -147,12 +147,16 @@ export const App = (props: AppProps) => {
         line-height: 1.2em;
         padding: 0.5em 10px;
       }
-      a.candidate {
+      .candidate {
+        display: flex;
+      }
+      a {
         display: block;
         text-decoration: none;
         color: inherit;
+        width: 100%;
       }
-      a.candidate.selected {
+      .selected a {
         background-color: var(--select-suggest-selected-bg, #222);
         text-decoration: underline
       }

@@ -39,11 +39,9 @@ export const Candidate = (
       >
         {title}
       </a>
-      <div className="marks">
-        {projects.map((project) => (
-          <span className="mark">{`[${project[0]}]`}</span>
-        ))}
-      </div>
+      {projects.map((project) => (
+        <span className="mark">{`[${project[0]}]`}</span>
+      ))}
     </div>
   );
 };
