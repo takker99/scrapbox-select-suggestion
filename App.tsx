@@ -176,7 +176,6 @@ a:not(.mark) {
   height: 1.3em;
   width: 1.3em;
   position: relative;
-  top: -0.3em;
   object-fit: cover;
   object-position: 0% 0%;
 }
