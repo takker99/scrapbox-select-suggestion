@@ -78,7 +78,7 @@ export const App = (props: AppProps) => {
             title: page.title,
             projects: page.metadata.map(({ project }) => ({
               name: project,
-              mark: detectURL(mark[project] ?? "") || project[0],
+              mark: detectURL(mark[project] ?? "", location.href) || project[0],
               confirm: () => insertText(`[/${project}/${page.title}]`),
             })),
             confirm: () => insertText(`[${page.title}]`),
