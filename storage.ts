@@ -126,8 +126,11 @@ export const load = async (
     const tx = (await open(options)).transaction("source", "readonly");
     await Promise.all(projects.map(async (project) => {
       const source = await tx.store.get(project);
-      if (!source) return;
-      list.push(source);
+      if (!source) {
+        list.push({ project, links: [] });
+      } else {
+        list.push(source);
+      }
     }));
     await tx.done;
   }
