@@ -21,13 +21,6 @@ import { SelectInit, useSelect } from "./useSelect.ts";
 import { incrementalSearch } from "./incrementalSearch.ts";
 import { insertText } from "./deps/scrapbox.ts";
 
-export interface Options {
-  /** 表示する最大候補数
-   *
-   * @default 5
-   */
-  limit?: number;
-}
 export interface Operators {
   selectNext: (init?: SelectInit) => boolean;
   selectPrev: (init?: SelectInit) => boolean;
@@ -47,42 +40,50 @@ const opInit: Operators = {
   cancel: () => false,
 } as const;
 
-export interface AppProps extends Options {
+export interface AppProps {
+  /** 表示する最大候補数 */
+  limit: number;
   callback: (operators: Operators) => void;
+  projects: string[];
+  debug?: boolean;
 }
 
 export const App = (props: AppProps) => {
-  const { limit = 5, callback } = props;
+  const { limit, callback, projects, debug } = props;
 
   const { text, range } = useSelection();
   const [frag, setFrag] = useFrag(text, range);
+  const source = useSource(projects, { debug });
 
+  // 検索
   const [candidates, setCandidates] = useState<{
     title: string;
+    projects: string[];
     confirm: () => void;
   }[]>([]);
-  const makeSource = useSource();
   useEffect(() => {
     if (frag !== "enable") return;
     if (text.trim() === "") return;
 
-    return incrementalSearch(text, makeSource, (candidates) =>
+    return incrementalSearch(text, source, (candidates) =>
       setCandidates(
         candidates
           .map((page) => ({
             title: page.title,
+            projects: page.metadata.map(({ project }) => project),
             confirm: () => insertText(`[${page.title}]`),
           })),
       ));
-  }, [text, frag]);
+  }, [text, source, frag]);
 
-  const { ref, top, left } = usePosition(range);
-
+  // 候補選択
   const visibleCandidateCount = Math.min(candidates.length, limit);
   const { selectedIndex, next, prev, selectFirst, selectLast } = useSelect(
     visibleCandidateCount,
   );
 
+  // スタイル設定
+  const { ref, top, left } = usePosition(range);
   /** windowの開閉およびwindows操作の有効状態を決めるフラグ */
   const isOpen = useMemo(
     () => {
@@ -91,7 +92,12 @@ export const App = (props: AppProps) => {
     },
     [frag, candidates.length, top, left],
   );
+  const divStyle = useMemo<h.JSX.CSSProperties>(
+    () => !isOpen ? { display: "none" } : { top, left },
+    [isOpen, top, left],
+  );
 
+  // API提供
   // ...でopInitが破壊されないようにする
   const exportRef = useRef<Operators>({ ...opInit });
   useEffect(() => {
@@ -115,11 +121,6 @@ export const App = (props: AppProps) => {
   useEffect(
     () => callback(exportRef.current),
     [callback],
-  );
-
-  const divStyle = useMemo<h.JSX.CSSProperties>(
-    () => !isOpen ? { display: "none" } : { top, left },
-    [isOpen, top, left],
   );
 
   return (

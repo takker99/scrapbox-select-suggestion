@@ -1,5 +1,15 @@
-import { Candidate, revertTitleLc, toTitleLc } from "./deps/scrapbox.ts";
+import { revertTitleLc, toTitleLc } from "./deps/scrapbox.ts";
 import { Asearch } from "./deps/deno-asearch.ts";
+
+export interface Candidate {
+  title: string;
+  titleLc: string;
+  updated: number;
+  metadata: {
+    project: string;
+    hasIcon: boolean;
+  }[];
+}
 
 const getMaxDistance = [
   0, // 空文字のとき
@@ -168,8 +178,6 @@ export const sort = (
     // 2. 文字列が短い順
     const ldiff = a.title.length - b.title.length;
     if (ldiff !== 0) return ldiff;
-    // 3. つながっているリンクが先
-    if (a.exists !== b.exists) a.exists ? -1 : 1;
-    // 4. 更新日時が新しい順
+    // 3. 更新日時が新しい順
     return b.updated - a.updated;
   });

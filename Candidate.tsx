@@ -8,11 +8,14 @@ import { encodeTitleURI } from "./deps/scrapbox.ts";
 
 export interface CandidateProps {
   title: string;
+  projects: string[];
   confirm: () => void;
   selected: boolean;
 }
 
-export const Candidate = ({ title, selected, confirm }: CandidateProps) => {
+export const Candidate = (
+  { title, projects, selected, confirm }: CandidateProps,
+) => {
   const handleClick = useCallback(
     (e: h.JSX.TargetedMouseEvent<HTMLAnchorElement>) => {
       // 修飾キーが押されていないときのみ確定する
@@ -25,14 +28,22 @@ export const Candidate = ({ title, selected, confirm }: CandidateProps) => {
   );
 
   return (
-    <a
+    <div
       className={`candidate${selected ? " selected" : ""}`}
-      tabIndex={0}
-      role="menuitem"
-      href={`./${encodeTitleURI(title)}`}
-      onClick={handleClick}
     >
-      {title}
-    </a>
+      <a
+        tabIndex={0}
+        role="menuitem"
+        href={`./${encodeTitleURI(title)}`}
+        onClick={handleClick}
+      >
+        {title}
+      </a>
+      <div className="marks">
+        {projects.map((project) => (
+          <span className="mark">{`[${project[0]}]`}</span>
+        ))}
+      </div>
+    </div>
   );
 };
