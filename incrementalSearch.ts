@@ -1,4 +1,4 @@
-import { Candidate, filter, sort } from "./search.ts";
+import { Candidate, CandidateWithPoint, filter } from "./search.ts";
 
 export interface IncrementalSearchOptions {
   /** 一度に検索する候補の最大数
@@ -17,14 +17,14 @@ export interface IncrementalSearchOptions {
 export const incrementalSearch = (
   query: string,
   source: Candidate[],
-  listener: (candidates: Candidate[]) => void,
+  listener: (candidates: CandidateWithPoint[]) => void,
   options?: IncrementalSearchOptions,
 ): () => void => {
   let terminate = false;
   let timer: number | undefined;
-  const candidates: (Candidate & { point: number })[] = [];
+  const candidates: CandidateWithPoint[] = [];
   const update = () => {
-    listener(sort(candidates));
+    listener(candidates);
     timer = undefined;
   };
 

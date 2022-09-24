@@ -10,6 +10,9 @@ export interface Candidate {
     hasIcon: boolean;
   }[];
 }
+export interface CandidateWithPoint extends Candidate {
+  point: number;
+}
 
 const getMaxDistance = [
   0, // 空文字のとき
@@ -85,7 +88,7 @@ export function* filter(
   query: string,
   source: readonly Candidate[],
   chunk = 1000,
-): Generator<(Candidate & { point: number })[], void, unknown> {
+): Generator<CandidateWithPoint[], void, unknown> {
   if (query.trim() === "" || source.length === 0) return;
 
   // 空白を`_`に置換して、空白一致できるようにする
@@ -169,15 +172,28 @@ export function* filter(
 
 /** 候補を並び替える */
 export const sort = (
-  candidates: readonly (Candidate & { point: number })[],
-): (Candidate & { point: number })[] =>
-  [...candidates].sort((a, b) => {
+  candidates: readonly CandidateWithPoint[],
+  projects: string[],
+): CandidateWithPoint[] => {
+  const projectMap = Object.fromEntries(
+    projects.map((project, i) => [project, i]),
+  );
+
+  return [...candidates].sort((a, b) => {
     // 1. 優先順位順
     const diff = a.point - b.point;
     if (diff !== 0) return diff;
     // 2. 文字列が短い順
     const ldiff = a.title.length - b.title.length;
     if (ldiff !== 0) return ldiff;
+    // 3. projectsで若い順
+    const pdiff = Math.min(
+      ...a.metadata.map((meta) => projectMap[meta.project] ?? projects.length),
+    ) - Math.min(
+      ...b.metadata.map((meta) => projectMap[meta.project] ?? projects.length),
+    );
+    if (pdiff !== 0) return pdiff;
     // 3. 更新日時が新しい順
     return b.updated - a.updated;
   });
+};

@@ -20,6 +20,7 @@ import { Candidate as CandidateComponent } from "./Candidate.tsx";
 import { SelectInit, useSelect } from "./useSelect.ts";
 import { detectURL } from "./util.ts";
 import { incrementalSearch } from "./incrementalSearch.ts";
+import { sort } from "./search.ts";
 import { insertText } from "./deps/scrapbox.ts";
 
 export interface Operators {
@@ -73,7 +74,7 @@ export const App = (props: AppProps) => {
 
     return incrementalSearch(text, source, (candidates) =>
       setCandidates(
-        candidates
+        sort(candidates, projects)
           .map((page) => ({
             title: page.title,
             projects: page.metadata.map(({ project }) => ({
@@ -84,7 +85,7 @@ export const App = (props: AppProps) => {
             confirm: () => insertText(`[${page.title}]`),
           })),
       ));
-  }, [text, source, frag]);
+  }, [text, source, frag, projects]);
 
   // 候補選択
   const visibleCandidateCount = Math.min(candidates.length, limit);
