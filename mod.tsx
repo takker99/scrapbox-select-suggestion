@@ -25,6 +25,9 @@ export interface SetupInit {
    * @default `[scrapbox.Project.name]`
    */
   projects?: string[];
+
+  /** 候補のソース元の識別子に使う文字列もしくはアイコンのURL */
+  mark?: Record<string, string | URL>;
 }
 
 /** scrapbox-select-suggestionを起動する
@@ -38,7 +41,7 @@ export const setup = (init?: SetupInit): Promise<Operators> => {
   const shadowRoot = app.attachShadow({ mode: "open" });
   document.body.append(app);
 
-  const { limit = 5, debug } = init ??
+  const { limit = 5, debug, mark = {} } = init ??
     {};
   const projects = init?.projects
     ? [...new Set(init.projects)]
@@ -49,6 +52,7 @@ export const setup = (init?: SetupInit): Promise<Operators> => {
         <App
           limit={limit}
           projects={projects}
+          mark={mark}
           debug={debug}
           callback={resolve}
         />,

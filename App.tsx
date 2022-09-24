@@ -18,6 +18,7 @@ import { useSource } from "./useSource.ts";
 import { usePosition } from "./usePosition.ts";
 import { Candidate as CandidateComponent } from "./Candidate.tsx";
 import { SelectInit, useSelect } from "./useSelect.ts";
+import { detectURL } from "./util.ts";
 import { incrementalSearch } from "./incrementalSearch.ts";
 import { insertText } from "./deps/scrapbox.ts";
 
@@ -45,11 +46,12 @@ export interface AppProps {
   limit: number;
   callback: (operators: Operators) => void;
   projects: string[];
+  mark: Record<string, string | URL>;
   debug?: boolean;
 }
 
 export const App = (props: AppProps) => {
-  const { limit, callback, projects, debug } = props;
+  const { limit, callback, projects, debug, mark } = props;
 
   const { text, range } = useSelection();
   const [frag, setFrag] = useFrag(text, range);
@@ -58,7 +60,11 @@ export const App = (props: AppProps) => {
   // 検索
   const [candidates, setCandidates] = useState<{
     title: string;
-    projects: string[];
+    projects: {
+      name: string;
+      mark: string | URL;
+      confirm: () => void;
+    }[];
     confirm: () => void;
   }[]>([]);
   useEffect(() => {
@@ -70,7 +76,11 @@ export const App = (props: AppProps) => {
         candidates
           .map((page) => ({
             title: page.title,
-            projects: page.metadata.map(({ project }) => project),
+            projects: page.metadata.map(({ project }) => ({
+              name: project,
+              mark: detectURL(mark[project] ?? "") || project[0],
+              confirm: () => insertText(`[/${project}/${page.title}]`),
+            })),
             confirm: () => insertText(`[${page.title}]`),
           })),
       ));
@@ -126,46 +136,53 @@ export const App = (props: AppProps) => {
   return (
     <>
       <style>
-        {`
-      .container {
-        position: absolute;
-        max-width: 80vw;
-        max-height: 80vh;
-        margin-top: 14px;
-        z-index: 301;
-        
-        background-color: var(--select-suggest-bg, #111);
-        font-family: var(--select-suggest-font-family, "Open Sans", Helvetica, Arial, "Hiragino Sans", sans-serif);
-        color: var(--select-suggest-text-color, #eee);
-        border-radius: 4px;
-      }
-      .container > :not(:first-child) {
-        border-top: 1px solid var(--select-suggest-border-color, #eee);
-      }
-      .container > *{
-        font-size: 11px;
-        line-height: 1.2em;
-        padding: 0.5em 10px;
-      }
-      .candidate {
-        display: flex;
-      }
-      a {
-        display: block;
-        text-decoration: none;
-        color: inherit;
-        width: 100%;
-      }
-      .selected a {
-        background-color: var(--select-suggest-selected-bg, #222);
-        text-decoration: underline
-      }
-      .counter {
-        color: var(--select-suggest-information-text-color, #aaa);
-        font-size: 80%;
-        font-style: italic;
-      }
-    `}
+        {`.container {
+  position: absolute;
+  max-width: 80vw;
+  max-height: 80vh;
+  margin-top: 14px;
+  z-index: 301;
+  
+  background-color: var(--select-suggest-bg, #111);
+  font-family: var(--select-suggest-font-family, "Open Sans", Helvetica, Arial, "Hiragino Sans", sans-serif);
+  color: var(--select-suggest-text-color, #eee);
+  border-radius: 4px;
+}
+.container > :not(:first-child) {
+  border-top: 1px solid var(--select-suggest-border-color, #eee);
+}
+.container > *{
+  font-size: 11px;
+  line-height: 1.2em;
+  padding: 0.5em 10px;
+}
+.candidate {
+  display: flex;
+}
+a {
+  display: block;
+  text-decoration: none;
+  color: inherit;
+  width: 100%;
+}
+.selected a {
+  background-color: var(--select-suggest-selected-bg, #222);
+  text-decoration: underline
+}
+.candidate img {
+  height: 1.3em;
+  width: 1.3em;
+  position: relative;
+  top: -0.3em;
+  object-fit: cover;
+  object-position: 0% 0%;
+
+}
+.counter {
+  color: var(--select-suggest-information-text-color, #aaa);
+  font-size: 80%;
+  font-style: italic;
+}`}
       </style>
       <div className="container" ref={ref} style={divStyle}>
         {candidates.slice(0, visibleCandidateCount).map((props, i) => (
