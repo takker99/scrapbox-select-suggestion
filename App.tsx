@@ -126,9 +126,13 @@ export const App = (props: AppProps) => {
         selectFirst: () => (selectFirst(), true),
         selectLast: () => (selectLast(), true),
         confirm: () => {
-          const a = ref.current?.getElementsByClassName?.("candidate selected")
+          const candidateEl = ref.current?.getElementsByClassName?.(
+            "candidate selected",
+          )
             ?.[0];
-          return a instanceof HTMLAnchorElement ? (a.click(), true) : false;
+          return candidateEl instanceof HTMLElement
+            ? (candidateEl.click(), true)
+            : false;
         },
         cancel: () => (setFrag("disable"), true),
       },
