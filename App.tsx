@@ -126,11 +126,10 @@ export const App = (props: AppProps) => {
         selectFirst: () => (selectFirst(), true),
         selectLast: () => (selectLast(), true),
         confirm: () => {
-          const candidateEl = ref.current?.getElementsByClassName?.(
-            "candidate selected",
-          )
-            ?.[0];
-          return candidateEl instanceof HTMLElement
+          const candidateEl = ref.current?.querySelector?.(
+            ".candidate.selected a.button",
+          );
+          return candidateEl instanceof HTMLAnchorElement
             ? (candidateEl.click(), true)
             : false;
         },
