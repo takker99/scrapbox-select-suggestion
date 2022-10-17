@@ -126,10 +126,12 @@ export const App = (props: AppProps) => {
         selectFirst: () => (selectFirst(), true),
         selectLast: () => (selectLast(), true),
         confirm: () => {
-          const candidateEl = Array.from(
-            ref.current?.getElementsByTagName?.("a") ?? [],
-          ).find((a) => a.classList.contains("button"));
-          return candidateEl ? (candidateEl.click(), true) : false;
+          const candidateEl = ref.current?.querySelector?.(
+            ".candidate.selected a.button",
+          );
+          return candidateEl instanceof HTMLAnchorElement
+            ? (candidateEl.click(), true)
+            : false;
         },
         cancel: () => (setFrag("disable"), true),
       },
