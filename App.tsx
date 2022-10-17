@@ -129,10 +129,8 @@ export const App = (props: AppProps) => {
           const candidateEl = ref.current?.getElementsByClassName?.(
             "candidate selected",
           )
-            ?.[0];
-          return candidateEl instanceof HTMLElement
-            ? (candidateEl.click(), true)
-            : false;
+            ?.[0]?.getElementsByTagName?.("a")?.[0];
+          return candidateEl ? (candidateEl.click(), true) : false;
         },
         cancel: () => (setFrag("disable"), true),
       },
