@@ -126,10 +126,9 @@ export const App = (props: AppProps) => {
         selectFirst: () => (selectFirst(), true),
         selectLast: () => (selectLast(), true),
         confirm: () => {
-          const candidateEl = ref.current?.getElementsByClassName?.(
-            "candidate selected",
-          )
-            ?.[0]?.getElementsByTagName?.("a")?.[0];
+          const candidateEl = Array.from(
+            ref.current?.getElementsByTagName?.("a") ?? [],
+          ).find((a) => a.classList.contains("button"));
           return candidateEl ? (candidateEl.click(), true) : false;
         },
         cancel: () => (setFrag("disable"), true),
