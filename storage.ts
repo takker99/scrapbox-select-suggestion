@@ -5,6 +5,10 @@
 import { DBSchema, IDBPDatabase, openDB } from "./deps/idb.ts";
 import { readLinksBulk, toTitleLc } from "./deps/scrapbox-rest.ts";
 
+/** リンクデータ
+ *
+ * property nameを省略することでデータ量を減らしている
+ */
 export type CompressedSource = [
   string, // ページタイトル
   string, // titleLc形式のページタイトル
