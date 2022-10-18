@@ -22,6 +22,7 @@ import { detectURL } from "./util.ts";
 import { incrementalSearch } from "./incrementalSearch.ts";
 import { sort } from "./search.ts";
 import { insertText, Scrapbox } from "./deps/scrapbox.ts";
+export { setDebugMode } from "./debug.ts";
 declare const scrapbox: Scrapbox;
 
 export interface Operators {

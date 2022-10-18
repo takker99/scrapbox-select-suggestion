@@ -4,6 +4,7 @@
 
 import { DBSchema, IDBPDatabase, openDB } from "./deps/idb.ts";
 import { getProject, readLinksBulk, toTitleLc } from "./deps/scrapbox-rest.ts";
+import { logger } from "./debug.ts";
 
 /** リンクデータ
  *
@@ -26,10 +27,6 @@ export interface Source {
   links: CompressedSource[];
 }
 
-export interface Options {
-  debug?: boolean;
-}
-
 /** 更新を確認し、更新があればDBに反映する
  *
  * @param projects 更新を確認したい補完ソースのproject names
@@ -38,13 +35,12 @@ export interface Options {
 export const checkUpdate = async (
   projects: readonly string[],
   updateInterval: number,
-  options?: Options,
 ): Promise<Source[]> => {
-  const db = await open(options);
+  const db = await open();
   const tag = "[scrapbox-select-suggestion]";
 
   // 更新する必要のあるデータを探し、フラグを立てる
-  if (options?.debug) console.debug(`${tag} check updates of links...`);
+  logger.debug("check updates of links...");
 
   /** 1番目：project name 2番目：checked */
   const projectsMaybeNeededUpgrade: ProjectStatus[] = [];
@@ -78,12 +74,10 @@ export const checkUpdate = async (
       }));
       await tx.done;
     }
-    if (options?.debug) {
-      console.debug(
-        `${tag} checked. ${projectsMaybeNeededUpgrade.length} projects maybe need upgrade.`,
-        projectsMaybeNeededUpgrade,
-      );
-    }
+    logger.debug(
+      `checked. ${projectsMaybeNeededUpgrade.length} projects maybe need upgrade.`,
+      projectsMaybeNeededUpgrade,
+    );
 
     const bc = new BroadcastChannel(notifyChannelName);
     const result: Source[] = [];
@@ -111,22 +105,20 @@ export const checkUpdate = async (
 
       // projectの最終更新日時から、updateの要不要を調べる
       if (res.value.updated < checked) {
-        if (options?.debug) console.debug(`${tag} no updates in "${project}"`);
+        logger.debug(`no updates in "${project}"`);
       } else {
         // リンクデータを更新する
         const data: Source = {
           project,
-          links: await downloadLinks(project, options),
+          links: await downloadLinks(project),
         };
         result.push(data);
 
-        if (options?.debug) console.time(`${tag} write data of "${project}"`);
+        logger.time(`write data of "${project}"`);
         await write(data);
         // 更新通知を出す
         bc.postMessage({ type: "update", project } as Notify);
-        if (options?.debug) {
-          console.timeEnd(`${tag} write data of "${project}"`);
-        }
+        logger.timeEnd(`write data of "${project}"`);
       }
 
       projectStatus.push({
@@ -159,14 +151,13 @@ export const checkUpdate = async (
  */
 export const load = async (
   projects: readonly string[],
-  options?: Options,
 ): Promise<Source[]> => {
   const list: Source[] = [];
 
   const tag = `read links of ${projects.length} projects`;
-  if (options?.debug) console.time(tag);
+  logger.time(tag);
   {
-    const tx = (await open(options)).transaction("source", "readonly");
+    const tx = (await open()).transaction("source", "readonly");
     await Promise.all(projects.map(async (project) => {
       const source = await tx.store.get(project);
       if (!source) {
@@ -177,7 +168,7 @@ export const load = async (
     }));
     await tx.done;
   }
-  if (options?.debug) console.timeEnd(tag);
+  logger.timeEnd(tag);
 
   return list;
 };
@@ -206,12 +197,12 @@ export const listenUpdate = (
 
 let db: IDBPDatabase<LinkDB>;
 /** 外部には公開せず、module内部で一度だけ呼び出す */
-const open = async (options?: Options): Promise<IDBPDatabase<LinkDB>> => {
+const open = async (): Promise<IDBPDatabase<LinkDB>> => {
   if (db) return db;
 
   db = await openDB<LinkDB>("userscript-links", 4, {
     upgrade(db) {
-      if (options?.debug) console.time("update DB");
+      logger.time("update DB");
 
       for (const name of db.objectStoreNames) {
         db.deleteObjectStore(name);
@@ -220,7 +211,7 @@ const open = async (options?: Options): Promise<IDBPDatabase<LinkDB>> => {
       db.createObjectStore("source", { keyPath: "project" });
       db.createObjectStore("status", { keyPath: "project" });
 
-      if (options?.debug) console.timeEnd("update DB");
+      logger.timeEnd("update DB");
     },
   });
 
@@ -296,7 +287,6 @@ type Notify = {
 
 const downloadLinks = async (
   project: string,
-  options?: Options,
 ): Promise<CompressedSource[]> => {
   const reader = await readLinksBulk(project);
   if ("name" in reader) {
@@ -305,7 +295,7 @@ const downloadLinks = async (
   }
 
   const tag = `download and create Links of "${project}"`;
-  if (options?.debug) console.time(tag);
+  logger.time(tag);
   const linkMap = new Map<
     string,
     {
@@ -322,7 +312,7 @@ const downloadLinks = async (
     const tag = `[${project}][${counter}-${
       counter + pages.length
     }]create links `;
-    if (options?.debug) console.time(tag);
+    logger.time(tag);
     for (const page of pages) {
       const titleLc = toTitleLc(page.title);
       const link = linkMap.get(titleLc);
@@ -347,10 +337,10 @@ const downloadLinks = async (
         });
       }
     }
-    if (options?.debug) console.timeEnd(tag);
+    logger.timeEnd(tag);
     counter += pages.length;
   }
-  if (options?.debug) console.timeEnd(tag);
+  logger.timeEnd(tag);
 
   return [...linkMap.entries()].map((
     [titleLc, data],
