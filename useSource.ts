@@ -1,17 +1,10 @@
 import { useCallback, useEffect, useState } from "./deps/preact.tsx";
 import { Candidate } from "./search.ts";
-import {
-  checkUpdate,
-  listenUpdate,
-  load,
-  Options as useSourceOptions,
-  Source,
-} from "./storage.ts";
+import { checkUpdate, listenUpdate, load, Source } from "./storage.ts";
 
 /** 補完ソースを提供するhook */
 export const useSource = (
   projects: string[],
-  options?: useSourceOptions,
 ): Candidate[] => {
   const [candidates, setCandidates] = useState<Candidate[]>([]);
 
@@ -41,7 +34,7 @@ export const useSource = (
     let terminate = false;
 
     const update_ = async () => {
-      const sources = await load(projects, options);
+      const sources = await load(projects);
       if (terminate) return;
 
       update(sources);
@@ -59,7 +52,7 @@ export const useSource = (
 
     // 定期的に更新する
     const callback = async () => {
-      const result = await checkUpdate(projects, 600, options);
+      const result = await checkUpdate(projects, 600);
       if (result.length === 0 || terminate) return;
       update_();
     };
@@ -72,7 +65,7 @@ export const useSource = (
       clearInterval(intervalTimer);
       cleanup();
     };
-  }, [projects, options?.debug]);
+  }, [projects]);
 
   return candidates;
 };

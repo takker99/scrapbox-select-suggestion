@@ -3,8 +3,13 @@
 /// <reference lib="dom" />
 
 import { DBSchema, IDBPDatabase, openDB } from "./deps/idb.ts";
-import { readLinksBulk, toTitleLc } from "./deps/scrapbox-rest.ts";
+import { getProject, readLinksBulk, toTitleLc } from "./deps/scrapbox-rest.ts";
+import { logger } from "./debug.ts";
 
+/** リンクデータ
+ *
+ * property nameを省略することでデータ量を減らしている
+ */
 export type CompressedSource = [
   string, // ページタイトル
   string, // titleLc形式のページタイトル
@@ -22,10 +27,6 @@ export interface Source {
   links: CompressedSource[];
 }
 
-export interface Options {
-  debug?: boolean;
-}
-
 /** 更新を確認し、更新があればDBに反映する
  *
  * @param projects 更新を確認したい補完ソースのproject names
@@ -34,60 +35,100 @@ export interface Options {
 export const checkUpdate = async (
   projects: readonly string[],
   updateInterval: number,
-  options?: Options,
 ): Promise<Source[]> => {
-  const db = await open(options);
+  const db = await open();
+  const tag = "[scrapbox-select-suggestion]";
 
   // 更新する必要のあるデータを探し、フラグを立てる
-  if (options?.debug) console.debug("check updates of links...");
+  logger.debug("check updates of links...");
 
-  const projectsNeededUpgrade: string[] = [];
+  /** 1番目：project name 2番目：checked */
+  const projectsMaybeNeededUpgrade: ProjectStatus[] = [];
+  const projectStatus: SourceStatus[] = [];
   try {
     {
       const tx = db.transaction("status", "readwrite");
       await Promise.all(projects.map(async (project) => {
         const status = await tx.store.get(project);
 
-        // 誰かが更新しているデータ、更新されたばかりのデータは飛ばす
-        if (status?.updating) return;
-        if (
-          (status?.checked ?? 0) + updateInterval > new Date().getTime() / 1000
-        ) {
-          return;
-        }
+        if (status?.isValid === false) return;
 
-        projectsNeededUpgrade.push(project);
-        tx.store.put({
+        const checked = status?.checked ?? 0;
+        const now = new Date().getTime() / 1000;
+        // 更新されたばかりのデータは飛ばす
+        if (checked + updateInterval > now) return;
+        // 更新中にタブが強制終了した可能性を考慮して、更新中フラグが経った時刻より10分経過していたらデータ更新対称に含める
+        if (status?.updating && checked + 600 > now) return;
+
+        const tempStatus: ProjectStatus = {
           project,
-          checked: status?.checked ?? 0,
+          id: status?.id,
+          isValid: true,
+          checked,
+          updated: status?.updated ?? 0,
           updating: true,
-        });
+        };
+
+        projectsMaybeNeededUpgrade.push(tempStatus);
+        tx.store.put(tempStatus);
       }));
       await tx.done;
     }
-    if (options?.debug) {
-      console.debug(
-        `checked. ${projectsNeededUpgrade.length} projects need upgrade.`,
-        projectsNeededUpgrade,
-      );
-    }
+    logger.debug(
+      `checked. ${projectsMaybeNeededUpgrade.length} projects maybe need upgrade.`,
+      projectsMaybeNeededUpgrade,
+    );
 
     const bc = new BroadcastChannel(notifyChannelName);
     const result: Source[] = [];
     // 一つづつ更新する
-    for (const project of projectsNeededUpgrade) {
-      const data: Source = {
+    for (const status of projectsMaybeNeededUpgrade) {
+      const { project, checked } = status;
+      const res = await getProject(project);
+      // project dataを取得できないときは、無効なprojectに分類しておく
+      if (!res.ok) {
+        projectStatus.push({ project, isValid: false });
+        switch (res.value.name) {
+          case "NotFoundError":
+            console.warn(`${tag} "${project}" is not found.`);
+            continue;
+          case "NotMemberError":
+            console.warn(`${tag} You are not a member of "${project}".`);
+            continue;
+          case "NotLoggedInError":
+            console.warn(
+              `${tag} You are not a member of "${project}" or You are not logged in yet.`,
+            );
+            continue;
+        }
+      }
+
+      // projectの最終更新日時から、updateの要不要を調べる
+      if (res.value.updated < checked) {
+        logger.debug(`no updates in "${project}"`);
+      } else {
+        // リンクデータを更新する
+        const data: Source = {
+          project,
+          links: await downloadLinks(project),
+        };
+        result.push(data);
+
+        logger.time(`write data of "${project}"`);
+        await write(data);
+        // 更新通知を出す
+        bc.postMessage({ type: "update", project } as Notify);
+        logger.timeEnd(`write data of "${project}"`);
+      }
+
+      projectStatus.push({
         project,
-        links: await downloadLinks(project, options),
-      };
-      result.push(data);
-
-      if (options?.debug) console.time(`write data of "${project}"`);
-      await write(data);
-      // 更新通知を出す
-      bc.postMessage({ type: "update", project } as Notify);
-
-      if (options?.debug) console.timeEnd(`write data of "${project}"`);
+        isValid: true,
+        id: res.value.id,
+        checked: new Date().getTime() / 1000,
+        updated: res.value.updated,
+        updating: false,
+      });
     }
     bc.close();
     return result;
@@ -97,13 +138,7 @@ export const checkUpdate = async (
     const tx = db.transaction("status", "readwrite");
     const store = tx.store;
     await Promise.all(
-      projectsNeededUpgrade.map((project) =>
-        store.put({
-          project,
-          checked: new Date().getTime() / 1000,
-          updating: false,
-        })
-      ),
+      projectStatus.map((status) => store.put(status)),
     );
     await tx.done;
   }
@@ -116,14 +151,13 @@ export const checkUpdate = async (
  */
 export const load = async (
   projects: readonly string[],
-  options?: Options,
 ): Promise<Source[]> => {
   const list: Source[] = [];
 
   const tag = `read links of ${projects.length} projects`;
-  if (options?.debug) console.time(tag);
+  logger.time(tag);
   {
-    const tx = (await open(options)).transaction("source", "readonly");
+    const tx = (await open()).transaction("source", "readonly");
     await Promise.all(projects.map(async (project) => {
       const source = await tx.store.get(project);
       if (!source) {
@@ -134,7 +168,7 @@ export const load = async (
     }));
     await tx.done;
   }
-  if (options?.debug) console.timeEnd(tag);
+  logger.timeEnd(tag);
 
   return list;
 };
@@ -163,21 +197,23 @@ export const listenUpdate = (
 
 let db: IDBPDatabase<LinkDB>;
 /** 外部には公開せず、module内部で一度だけ呼び出す */
-const open = async (options?: Options): Promise<IDBPDatabase<LinkDB>> => {
+const open = async (): Promise<IDBPDatabase<LinkDB>> => {
   if (db) return db;
 
-  if (options?.debug) console.time("create DB");
-  db = await openDB<LinkDB>("userscript-links", 4, {
+  db = await openDB<LinkDB>("userscript-links", 5, {
     upgrade(db) {
+      logger.time("update DB");
+
       for (const name of db.objectStoreNames) {
         db.deleteObjectStore(name);
       }
 
       db.createObjectStore("source", { keyPath: "project" });
       db.createObjectStore("status", { keyPath: "project" });
+
+      logger.timeEnd("update DB");
     },
   });
-  if (options?.debug) console.timeEnd("create DB");
 
   return db;
 };
@@ -196,15 +232,46 @@ interface LinkDB extends DBSchema {
   };
 }
 
-interface SourceStatus {
+type SourceStatus = ProjectStatus | InvalidProjectStatus;
+
+interface ProjectStatus {
   /** project name (key) */
   project: string;
+
+  /** project id
+   *
+   * projectsの更新日時を一括取得するときに使う
+   */
+  id?: string;
+
+  /** 有効なprojectかどうか
+   *
+   * アクセス権のないprojectと存在しないprojectの場合はfalseになる
+   */
+  isValid: true;
+
+  /** projectの最終更新日時
+   *
+   * リンクデータの更新を確認するときに使う
+   */
+  updated: number;
 
   /** データの最終確認日時 */
   checked: number;
 
   /** 更新中フラグ */
   updating: boolean;
+}
+
+interface InvalidProjectStatus {
+  /** project name (key) */
+  project: string;
+
+  /** 有効なprojectかどうか
+   *
+   * アクセス権のないprojectと存在しないprojectの場合はfalseになる
+   */
+  isValid: false;
 }
 
 /** DBの補完ソースを更新する */
@@ -220,7 +287,6 @@ type Notify = {
 
 const downloadLinks = async (
   project: string,
-  options?: Options,
 ): Promise<CompressedSource[]> => {
   const reader = await readLinksBulk(project);
   if ("name" in reader) {
@@ -229,7 +295,7 @@ const downloadLinks = async (
   }
 
   const tag = `download and create Links of "${project}"`;
-  if (options?.debug) console.time(tag);
+  logger.time(tag);
   const linkMap = new Map<
     string,
     {
@@ -241,12 +307,7 @@ const downloadLinks = async (
     }
   >();
 
-  let counter = 0;
   for await (const pages of reader) {
-    const tag = `[${project}][${counter}-${
-      counter + pages.length
-    }]create links `;
-    if (options?.debug) console.time(tag);
     for (const page of pages) {
       const titleLc = toTitleLc(page.title);
       const link = linkMap.get(titleLc);
@@ -271,10 +332,8 @@ const downloadLinks = async (
         });
       }
     }
-    if (options?.debug) console.timeEnd(tag);
-    counter += pages.length;
   }
-  if (options?.debug) console.timeEnd(tag);
+  logger.timeEnd(tag);
 
   return [...linkMap.entries()].map((
     [titleLc, data],

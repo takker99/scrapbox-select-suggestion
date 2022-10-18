@@ -50,15 +50,14 @@ export interface AppProps {
   projects: string[];
   mark: Record<string, string | URL>;
   hideSelfMark: boolean;
-  debug?: boolean;
 }
 
 export const App = (props: AppProps) => {
-  const { limit, callback, projects, debug, mark, hideSelfMark } = props;
+  const { limit, callback, projects, mark, hideSelfMark } = props;
 
   const { text, range } = useSelection();
   const [frag, setFrag] = useFrag(text, range);
-  const source = useSource(projects, { debug });
+  const source = useSource(projects);
 
   // 検索
   const [candidates, setCandidates] = useState<{
