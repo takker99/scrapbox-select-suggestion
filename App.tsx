@@ -59,7 +59,7 @@ export const App = (props: AppProps) => {
 
   const { text, range } = useSelection();
   const [frag, setFrag] = useFrag(text, range);
-  const source = useSource(projects, { debug });
+  const source = useSource(projects);
 
   // 検索
   const [candidates, setCandidates] = useState<{
