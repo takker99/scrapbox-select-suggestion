@@ -307,12 +307,7 @@ const downloadLinks = async (
     }
   >();
 
-  let counter = 0;
   for await (const pages of reader) {
-    const tag = `[${project}][${counter}-${
-      counter + pages.length
-    }]create links `;
-    logger.time(tag);
     for (const page of pages) {
       const titleLc = toTitleLc(page.title);
       const link = linkMap.get(titleLc);
@@ -337,8 +332,6 @@ const downloadLinks = async (
         });
       }
     }
-    logger.timeEnd(tag);
-    counter += pages.length;
   }
   logger.timeEnd(tag);
 
