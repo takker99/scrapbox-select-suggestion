@@ -200,7 +200,7 @@ let db: IDBPDatabase<LinkDB>;
 const open = async (): Promise<IDBPDatabase<LinkDB>> => {
   if (db) return db;
 
-  db = await openDB<LinkDB>("userscript-links", 4, {
+  db = await openDB<LinkDB>("userscript-links", 5, {
     upgrade(db) {
       logger.time("update DB");
 
