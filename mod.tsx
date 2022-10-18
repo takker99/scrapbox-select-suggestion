@@ -5,6 +5,7 @@ import { SelectInit } from "./useSelect.ts";
 import { App, Operators } from "./App.tsx";
 import { Scrapbox } from "./deps/scrapbox.ts";
 export type { Operators, SelectInit };
+import { setDebugMode } from "./debug.ts";
 declare const scrapbox: Scrapbox;
 
 export interface SetupInit {
@@ -50,13 +51,14 @@ export const setup = (init?: SetupInit): Promise<Operators> => {
   const shadowRoot = app.attachShadow({ mode: "open" });
   document.body.append(app);
 
-  const { limit = 5, debug, mark = {}, hideSelfMark = true } = init ??
+  const { limit = 5, debug = false, mark = {}, hideSelfMark = true } = init ??
     {};
   const projects = init?.projects
     ? init.projects.filter((project, i) =>
       !init.projects?.some?.((p, j) => j < i && p === project)
     )
     : [scrapbox.Project.name];
+  setDebugMode(debug);
   return new Promise<Operators>(
     (resolve) =>
       render(
@@ -65,7 +67,6 @@ export const setup = (init?: SetupInit): Promise<Operators> => {
           projects={projects}
           mark={mark}
           hideSelfMark={hideSelfMark}
-          debug={debug}
           callback={resolve}
         />,
         shadowRoot,

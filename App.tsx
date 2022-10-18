@@ -22,7 +22,6 @@ import { detectURL } from "./util.ts";
 import { incrementalSearch } from "./incrementalSearch.ts";
 import { sort } from "./search.ts";
 import { insertText, Scrapbox } from "./deps/scrapbox.ts";
-export { setDebugMode } from "./debug.ts";
 declare const scrapbox: Scrapbox;
 
 export interface Operators {
@@ -51,11 +50,10 @@ export interface AppProps {
   projects: string[];
   mark: Record<string, string | URL>;
   hideSelfMark: boolean;
-  debug?: boolean;
 }
 
 export const App = (props: AppProps) => {
-  const { limit, callback, projects, debug, mark, hideSelfMark } = props;
+  const { limit, callback, projects, mark, hideSelfMark } = props;
 
   const { text, range } = useSelection();
   const [frag, setFrag] = useFrag(text, range);
