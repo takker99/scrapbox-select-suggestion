@@ -1,4 +1,4 @@
-import { Candidate, CandidateWithPoint, filter } from "./search.ts";
+import { Candidate, CandidateWithPoint, makeFilter } from "./search.ts";
 
 export interface IncrementalSearchOptions {
   /** 一度に検索する候補の最大数
@@ -20,6 +20,12 @@ export const incrementalSearch = (
   listener: (candidates: CandidateWithPoint[]) => void,
   options?: IncrementalSearchOptions,
 ): () => void => {
+  const filter = makeFilter(query);
+  if (!filter) {
+    listener([]);
+    return () => {};
+  }
+
   let terminate = false;
   let timer: number | undefined;
   const candidates: CandidateWithPoint[] = [];
@@ -27,15 +33,16 @@ export const incrementalSearch = (
     listener(candidates);
     timer = undefined;
   };
-
+  const total = Math.floor(source.length / (options?.chunk ?? 1000)) + 1;
+  const chunk = options?.chunk ?? 1000;
   (async () => {
     // 検索する
-    for (const results of filter(query, source, options?.chunk ?? 1000)) {
+    for (let i = 0; i < total; i++) {
       // 検索中断命令を受け付けるためのinterval
       await new Promise((resolve) => requestAnimationFrame(resolve));
       if (terminate) return;
 
-      candidates.push(...results);
+      candidates.push(...filter(source.slice(i * chunk, (i + 1) * chunk)));
       if (timer !== undefined) continue;
       update();
       timer = setTimeout(update, options?.interval ?? 500);

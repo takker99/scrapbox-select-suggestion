@@ -26,14 +26,19 @@ const getMaxDistance = [
   6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6,
 ];
 
+/** 一致する候補をしぼりこむ函数
+ *
+ * @param source 検索候補リスト
+ * @return 一致した候補
+ */
+export type Filter = (source: readonly Candidate[]) => CandidateWithPoint[];
+
 /** `query`に曖昧一致する候補を、編集距離つきで`chunk`個ずつ返す
  */
-export function* filter(
+export const makeFilter = (
   query: string,
-  source: readonly Candidate[],
-  chunk = 1000,
-): Generator<CandidateWithPoint[], void, unknown> {
-  if (query.trim() === "" || source.length === 0) return;
+): Filter | undefined => {
+  if (query.trim() === "") return;
 
   // 空白を`_`に置換して、空白一致できるようにする
   // さらに64文字に切り詰める
@@ -55,12 +60,8 @@ export function* filter(
     }
     : undefined;
 
-  //let complete = false;
-  //try {
-  const total = Math.floor(source.length / chunk) + 1;
-  for (let i = 0; i < total; i++) {
-    //console.time(`[${i}/${total - 1}] search for "${query}"`);
-    const result = source.slice(i * chunk, (i + 1) * chunk).flatMap((page) => {
+  return (source) =>
+    source.flatMap((page) => {
       // 空白一致検索
       {
         const result = forwardMatch(page.titleLc, maxDistance);
@@ -105,14 +106,7 @@ export function* filter(
       }
       return [];
     });
-    //console.timeEnd(`[${i}/${total - 1}] search for "${query}"`);
-    yield result;
-  }
-  //complete = true;
-  //} finally {
-  //  console.debug(`${complete ? "finish" : "cancel"} searching for "${query}"`);
-  //}
-}
+};
 
 /** 候補を並び替える */
 export const sort = (
