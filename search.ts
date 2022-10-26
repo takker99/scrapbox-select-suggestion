@@ -11,6 +11,7 @@ export interface Candidate {
   }[];
 }
 export interface CandidateWithPoint extends Candidate {
+  /** 編集距離やマッチ位置から計算した優先度 */
   point: number;
 }
 
@@ -26,14 +27,20 @@ const getMaxDistance = [
   6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6,
 ];
 
-/** 一致する候補をしぼりこむ函数
- *
- * @param source 検索候補リスト
- * @return 一致した候補
- */
-export type Filter = (source: readonly Candidate[]) => CandidateWithPoint[];
+/** 一致する候補をしぼりこむ函数*/
+export interface Filter {
+  /** 一致する候補をしぼりこむ函数
+   *
+   * @param source 検索候補リスト
+   * @return 一致した候補
+   */
+  (source: readonly Candidate[]): CandidateWithPoint[];
+}
 
 /** `query`に曖昧一致する候補を、編集距離つきで`chunk`個ずつ返す
+ *
+ * @param query 検索語句
+ * @return 検索函数。検索不要なときは`undefined`を返す
  */
 export const makeFilter = (
   query: string,
@@ -108,10 +115,15 @@ export const makeFilter = (
     });
 };
 
-/** 候補を並び替える */
+/** 候補を並び替える
+ *
+ * @param candidates 並び替えたい候補のリスト
+ * @param projects projectの優先順位付けに使う配列。優先度の高い順にprojectを並べる
+ * @return 並び替え結果
+ */
 export const sort = (
   candidates: readonly CandidateWithPoint[],
-  projects: string[],
+  projects: readonly string[],
 ): CandidateWithPoint[] => {
   const projectMap = Object.fromEntries(
     projects.map((project, i) => [project, i]),
