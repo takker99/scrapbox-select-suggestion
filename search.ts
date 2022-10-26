@@ -11,85 +11,41 @@ export interface Candidate {
   }[];
 }
 export interface CandidateWithPoint extends Candidate {
+  /** 編集距離やマッチ位置から計算した優先度 */
   point: number;
 }
 
+// deno-fmt-ignore
 const getMaxDistance = [
   0, // 空文字のとき
-  0,
-  0,
-  1,
-  1,
-  2,
-  2,
-  2,
-  2,
-  3,
-  3,
-  3,
-  3,
-  3,
-  3,
-  4,
-  4,
-  4,
-  4,
-  4,
-  4,
-  4,
-  4,
-  4,
-  4,
-  5,
-  5,
-  5,
-  5,
-  5,
-  5,
-  5,
-  5,
-  5,
-  5,
-  5,
-  5,
-  5,
-  5,
-  5,
-  5,
-  6,
-  6,
-  6,
-  6,
-  6,
-  6,
-  6,
-  6,
-  6,
-  6,
-  6,
-  6,
-  6,
-  6,
-  6,
-  6,
-  6,
-  6,
-  6,
-  6,
-  6,
-  6,
-  6,
-  6,
+  0, 0,
+  1, 1,
+  2, 2, 2, 2,
+  3, 3, 3, 3, 3, 3,
+  4, 4, 4, 4, 4, 4, 4, 4, 4, 4,
+  5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5,
+  6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6,
 ];
 
+/** 一致する候補をしぼりこむ函数*/
+export interface Filter {
+  /** 一致する候補をしぼりこむ函数
+   *
+   * @param source 検索候補リスト
+   * @return 一致した候補
+   */
+  (source: readonly Candidate[]): CandidateWithPoint[];
+}
+
 /** `query`に曖昧一致する候補を、編集距離つきで`chunk`個ずつ返す
+ *
+ * @param query 検索語句
+ * @return 検索函数。検索不要なときは`undefined`を返す
  */
-export function* filter(
+export const makeFilter = (
   query: string,
-  source: readonly Candidate[],
-  chunk = 1000,
-): Generator<CandidateWithPoint[], void, unknown> {
-  if (query.trim() === "" || source.length === 0) return;
+): Filter | undefined => {
+  if (query.trim() === "") return;
 
   // 空白を`_`に置換して、空白一致できるようにする
   // さらに64文字に切り詰める
@@ -111,12 +67,8 @@ export function* filter(
     }
     : undefined;
 
-  //let complete = false;
-  //try {
-  const total = Math.floor(source.length / chunk) + 1;
-  for (let i = 0; i < total; i++) {
-    //console.time(`[${i}/${total - 1}] search for "${query}"`);
-    const result = source.slice(i * chunk, (i + 1) * chunk).flatMap((page) => {
+  return (source) =>
+    source.flatMap((page) => {
       // 空白一致検索
       {
         const result = forwardMatch(page.titleLc, maxDistance);
@@ -161,19 +113,17 @@ export function* filter(
       }
       return [];
     });
-    //console.timeEnd(`[${i}/${total - 1}] search for "${query}"`);
-    yield result;
-  }
-  //complete = true;
-  //} finally {
-  //  console.debug(`${complete ? "finish" : "cancel"} searching for "${query}"`);
-  //}
-}
+};
 
-/** 候補を並び替える */
+/** 候補を並び替える
+ *
+ * @param candidates 並び替えたい候補のリスト
+ * @param projects projectの優先順位付けに使う配列。優先度の高い順にprojectを並べる
+ * @return 並び替え結果
+ */
 export const sort = (
   candidates: readonly CandidateWithPoint[],
-  projects: string[],
+  projects: readonly string[],
 ): CandidateWithPoint[] => {
   const projectMap = Object.fromEntries(
     projects.map((project, i) => [project, i]),
