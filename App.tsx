@@ -152,12 +152,16 @@ export const App = (props: AppProps) => {
   );
   /** project絞り込みパネルのスタイル
    *
+   * projectが一つしか指定されていなければ表示しない
+   *
    * 非表示の検索候補があれば表示し続ける
    */
   const projectFilterStyle = useMemo<h.JSX.CSSProperties>(
     () =>
-      !isOpen && candidates.length === 0 ? { display: "none" } : { top, right },
-    [isOpen, top, right, candidates.length],
+      (!isOpen && candidates.length === 0) || projects.length < 1
+        ? { display: "none" }
+        : { top, right },
+    [isOpen, top, right, candidates.length, projects.length],
   );
 
   // API提供
