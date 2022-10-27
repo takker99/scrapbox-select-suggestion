@@ -214,10 +214,10 @@ export const App = (props: AppProps) => {
   max-width: 10vw;
   margin-right: 4px;
 }
-.container > :not(:first-child) {
+.container.candidates > :not(:first-child) {
   border-top: 1px solid var(--select-suggest-border-color, #eee);
 }
-.container > *{
+.container.candidates > *{
   font-size: 11px;
   line-height: 1.2em;
   padding: 0.5em 10px;
