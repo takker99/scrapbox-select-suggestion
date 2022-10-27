@@ -245,7 +245,7 @@ img {
   object-position: 0% 0%;
 }
 .disabled {
-  filter: grayscale(100%);
+  filter: grayscale(1.0) opacity(0.5);
 }
 .counter {
   color: var(--select-suggest-information-text-color, #aaa);
