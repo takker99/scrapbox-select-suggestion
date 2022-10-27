@@ -240,11 +240,6 @@ img {
   object-fit: cover;
   object-position: 0% 0%;
 }
-button {
-  background: unset;
-  color: unset;
-  border: unset;
-}
 .disabled {
   filter: grayscale(100%);
 }
@@ -256,20 +251,16 @@ button {
       </style>
       <div className="container projects" style={projectFilterStyle}>
         {projectProps.map((props) => (
-          <button
-            className="mark"
-            tabIndex={0}
-            onClick={props.onClick}
-          >
+          <div className="mark" onClick={props.onClick}>
             {props.mark instanceof URL
               ? (
                 <img
-                  className={props.enable ? "" : "disabled"}
+                  className={props.enable ? "mark" : "mark disabled"}
                   src={props.mark.href}
                 />
               )
               : `[${mark}]`}
-          </button>
+          </div>
         ))}
       </div>
       <div className="container candidates" ref={ref} style={divStyle}>
