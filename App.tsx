@@ -112,7 +112,6 @@ export const App = (props: AppProps) => {
 
   // projectの絞り込み
   const projectProps = useMemo(() => {
-    logger.time("make project props");
     // 見つかったprojects
     const found = new Set<string>();
     for (const candidate of candidates) {
@@ -120,7 +119,7 @@ export const App = (props: AppProps) => {
         found.add(project);
       }
     }
-    const result = projects.flatMap((project) =>
+    return projects.flatMap((project) =>
       found.has(project)
         ? [{
           name: project,
@@ -130,8 +129,6 @@ export const App = (props: AppProps) => {
         }]
         : []
     );
-    logger.timeEnd("make project props");
-    return result;
   }, [candidates, projects, enables, mark]);
 
   // スタイル設定
