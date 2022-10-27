@@ -1,4 +1,6 @@
-import { useCallback, useState } from "./deps/preact.tsx";
+import { useCallback, useEffect, useState } from "./deps/preact.tsx";
+
+const key = "enableProjectsOnSuggestion";
 
 interface UseProjectFilterResult {
   /** 検索対象のprojectsのリスト */
@@ -22,6 +24,16 @@ export const useProjectFilter = (
     setEnableProjects(getEnables(projects));
   }, [projects]);
 
+  //更新通知を受け取る
+  useEffect(() => {
+    const listener = (e: StorageEvent) => {
+      if (e.key !== key) return;
+      setEnableProjects(getEnables(projects));
+    };
+    addEventListener("storage", listener);
+    return () => removeEventListener("storage", listener);
+  }, [projects]);
+
   return { projects: enableProjects, set };
 };
 
@@ -31,7 +43,7 @@ export const useProjectFilter = (
  */
 const getEnables = (init: string[]): string[] => {
   try {
-    const value = localStorage.getItem("enableProjectsOnSuggestion");
+    const value = localStorage.getItem(key);
     if (value === null) {
       setEnables(init);
       return init;
@@ -59,4 +71,4 @@ const setFrag = (project: string, flag: boolean, init: string[]): void => {
 };
 
 const setEnables = (projects: string[]): void =>
-  localStorage.setItem("enableProjectsOnSuggestion", JSON.stringify(projects));
+  localStorage.setItem(key, JSON.stringify(projects));
