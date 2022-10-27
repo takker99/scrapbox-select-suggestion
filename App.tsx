@@ -234,10 +234,13 @@ img {
   object-fit: cover;
   object-position: 0% 0%;
 }
-button{
+button {
   background: unset;
   color: unset;
   border: unset;
+}
+.disabled {
+  filter: grayscale(100%);
 }
 .counter {
   color: var(--select-suggest-information-text-color, #aaa);
@@ -253,7 +256,12 @@ button{
             onClick={props.onClick}
           >
             {props.mark instanceof URL
-              ? <img src={props.mark.href} />
+              ? (
+                <img
+                  className={props.enable ? "" : "disabled"}
+                  src={props.mark.href}
+                />
+              )
               : `[${mark}]`}
           </button>
         ))}
