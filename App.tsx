@@ -282,7 +282,7 @@ button {
         ))}
         {candidatesProps.length > limit && (
           <div className="counter">
-            {`${candidates.length - limit} more links`}
+            {`${candidatesProps.length - limit} more links`}
           </div>
         )}
       </div>
