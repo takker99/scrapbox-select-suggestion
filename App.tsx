@@ -90,13 +90,17 @@ export const App = (props: AppProps) => {
       )
       .map((candidate) => ({
         title: candidate.title,
-        projects: candidate.projects.map((project) => ({
-          name: project,
-          mark: hideSelfMark && project === scrapbox.Project.name
-            ? ""
-            : detectURL(mark[project] ?? "", location.href) || project[0],
-          confirm: () => insertText(`[/${project}/${candidate.title}]`),
-        })),
+        projects: candidate.projects.flatMap((project) =>
+          enables.includes(project)
+            ? [{
+              name: project,
+              mark: hideSelfMark && project === scrapbox.Project.name
+                ? ""
+                : detectURL(mark[project] ?? "", location.href) || project[0],
+              confirm: () => insertText(`[/${project}/${candidate.title}]`),
+            }]
+            : []
+        ),
         confirm: () => insertText(`[${candidate.title}]`),
       }));
     logger.timeEnd("filtering by projects");
