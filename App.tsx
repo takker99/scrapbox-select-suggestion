@@ -251,14 +251,12 @@ img {
       </style>
       <div className="container projects" style={projectFilterStyle}>
         {projectProps.map((props) => (
-          <div className="mark" onClick={props.onClick}>
+          <div
+            className={props.enable ? "mark" : "mark disabled"}
+            onClick={props.onClick}
+          >
             {props.mark instanceof URL
-              ? (
-                <img
-                  className={props.enable ? "mark" : "mark disabled"}
-                  src={props.mark.href}
-                />
-              )
+              ? <img src={props.mark.href} />
               : `[${mark}]`}
           </div>
         ))}
