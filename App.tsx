@@ -145,13 +145,19 @@ export const App = (props: AppProps) => {
       left !== undefined,
     [frag, candidatesProps.length, top, left],
   );
+  /** 補完windowのスタイル */
   const divStyle = useMemo<h.JSX.CSSProperties>(
     () => !isOpen ? { display: "none" } : { top, left },
     [isOpen, top, left],
   );
+  /** project絞り込みパネルのスタイル
+   *
+   * 非表示の検索候補があれば表示し続ける
+   */
   const projectFilterStyle = useMemo<h.JSX.CSSProperties>(
-    () => !isOpen ? { display: "none" } : { top, right },
-    [isOpen, top, right],
+    () =>
+      !isOpen && candidates.length === 0 ? { display: "none" } : { top, right },
+    [isOpen, top, right, candidates.length],
   );
 
   // API提供
