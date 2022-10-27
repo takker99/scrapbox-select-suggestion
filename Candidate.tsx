@@ -55,7 +55,7 @@ const Button = (
   </a>
 );
 
-interface MarkProps {
+export interface MarkProps {
   project: string;
   title: string;
   /** 空文字の場合は、何も表示しない */
@@ -63,7 +63,7 @@ interface MarkProps {
   confirm: () => void;
 }
 
-const Mark = (
+export const Mark = (
   { project, title, mark, confirm }: MarkProps,
 ) => (mark === "" ? <></> : (
   <a

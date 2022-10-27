@@ -16,9 +16,11 @@ import { useSelection } from "./useSelection.ts";
 import { useFrag } from "./useFrag.ts";
 import { useSource } from "./useSource.ts";
 import { usePosition } from "./usePosition.ts";
+import { useProjectFilter } from "./useProjectFilter.ts";
 import { Candidate as CandidateComponent } from "./Candidate.tsx";
 import { SelectInit, useSelect } from "./useSelect.ts";
 import { detectURL } from "./util.ts";
+import { logger } from "./debug.ts";
 import { incrementalSearch } from "./incrementalSearch.ts";
 import { sort } from "./search.ts";
 import { insertText, Scrapbox } from "./deps/scrapbox.ts";
@@ -58,17 +60,12 @@ export const App = (props: AppProps) => {
   const { text, range } = useSelection();
   const [frag, setFrag] = useFrag(text, range);
   const source = useSource(projects);
+  const { projects: enables, set } = useProjectFilter(projects);
 
   // 検索
-  const [candidates, setCandidates] = useState<{
-    title: string;
-    projects: {
-      name: string;
-      mark: string | URL;
-      confirm: () => void;
-    }[];
-    confirm: () => void;
-  }[]>([]);
+  const [candidates, setCandidates] = useState<
+    { title: string; projects: string[] }[]
+  >([]);
   useEffect(() => {
     setCandidates([]); // 以前のを消して、描画がちらつかないようにする
     if (frag !== "enable") return;
@@ -79,37 +76,92 @@ export const App = (props: AppProps) => {
         sort(candidates, projects)
           .map((page) => ({
             title: page.title,
-            projects: page.metadata.map(({ project }) => ({
+            projects: page.metadata.map(({ project }) => project),
+          })),
+      ));
+  }, [text, source, frag]);
+
+  // 表示する候補のみ、UI用データを作る
+  const candidatesProps = useMemo(() => {
+    logger.time("filtering by projects");
+    const result = candidates
+      .filter((candidate) =>
+        candidate.projects.some((project) => enables.includes(project))
+      )
+      .map((candidate) => ({
+        title: candidate.title,
+        projects: candidate.projects.flatMap((project) =>
+          enables.includes(project)
+            ? [{
               name: project,
               mark: hideSelfMark && project === scrapbox.Project.name
                 ? ""
                 : detectURL(mark[project] ?? "", location.href) || project[0],
-              confirm: () => insertText(`[/${project}/${page.title}]`),
-            })),
-            confirm: () => insertText(`[${page.title}]`),
-          })),
-      ));
-  }, [text, source, frag, projects, hideSelfMark]);
+              confirm: () => insertText(`[/${project}/${candidate.title}]`),
+            }]
+            : []
+        ),
+        confirm: () => insertText(`[${candidate.title}]`),
+      }));
+    logger.timeEnd("filtering by projects");
+
+    return result;
+  }, [enables, candidates, mark, hideSelfMark]);
 
   // 候補選択
-  const visibleCandidateCount = Math.min(candidates.length, limit);
+  const visibleCandidateCount = Math.min(candidatesProps.length, limit);
   const { selectedIndex, next, prev, selectFirst, selectLast } = useSelect(
     visibleCandidateCount,
   );
 
+  // projectの絞り込み
+  const projectProps = useMemo(() => {
+    // 見つかったprojects
+    const found = new Set<string>();
+    for (const candidate of candidates) {
+      for (const project of candidate.projects) {
+        found.add(project);
+      }
+    }
+    return projects.flatMap((project) =>
+      found.has(project)
+        ? [{
+          name: project,
+          enable: enables.includes(project),
+          mark: detectURL(mark[project] ?? "", location.href) || project[0],
+          onClick: () => set(project, !enables.includes(project)),
+        }]
+        : []
+    );
+  }, [candidates, projects, enables, mark]);
+
   // スタイル設定
-  const { ref, top, left } = usePosition(range);
+  const { ref, top, left, right } = usePosition(range);
   /** windowの開閉およびwindows操作の有効状態を決めるフラグ */
   const isOpen = useMemo(
-    () => {
-      return frag === "enable" && candidates.length > 0 && top !== undefined &&
-        left !== undefined;
-    },
-    [frag, candidates.length, top, left],
+    () =>
+      frag === "enable" && candidatesProps.length > 0 &&
+      top !== undefined &&
+      left !== undefined,
+    [frag, candidatesProps.length, top, left],
   );
+  /** 補完windowのスタイル */
   const divStyle = useMemo<h.JSX.CSSProperties>(
     () => !isOpen ? { display: "none" } : { top, left },
     [isOpen, top, left],
+  );
+  /** project絞り込みパネルのスタイル
+   *
+   * projectが一つしか指定されていなければ表示しない
+   *
+   * 非表示の検索候補があれば表示し続ける
+   */
+  const projectFilterStyle = useMemo<h.JSX.CSSProperties>(
+    () =>
+      (!isOpen && candidates.length === 0) || projects.length < 1
+        ? { display: "none" }
+        : { top, right },
+    [isOpen, top, right, candidates.length, projects.length],
   );
 
   // API提供
@@ -146,9 +198,8 @@ export const App = (props: AppProps) => {
       <style>
         {`.container {
   position: absolute;
-  max-width: 80vw;
-  max-height: 80vh;
   margin-top: 14px;
+  max-height: 80vh;
   z-index: 301;
   
   background-color: var(--select-suggest-bg, #111);
@@ -156,10 +207,17 @@ export const App = (props: AppProps) => {
   color: var(--select-suggest-text-color, #eee);
   border-radius: 4px;
 }
-.container > :not(:first-child) {
+.candidates {
+  max-width: 80vw;
+}
+.projects {
+  max-width: 10vw;
+  margin-right: 4px;
+}
+.container.candidates > :not(:first-child) {
   border-top: 1px solid var(--select-suggest-border-color, #eee);
 }
-.container > *{
+.container.candidates > *{
   font-size: 11px;
   line-height: 1.2em;
   padding: 0.5em 10px;
@@ -179,12 +237,15 @@ a:not(.mark) {
   background-color: var(--select-suggest-selected-bg, #222);
   text-decoration: underline
 }
-.candidate img {
+img {
   height: 1.3em;
   width: 1.3em;
   position: relative;
   object-fit: cover;
   object-position: 0% 0%;
+}
+.disabled {
+  filter: grayscale(1.0) opacity(0.5);
 }
 .counter {
   color: var(--select-suggest-information-text-color, #aaa);
@@ -192,17 +253,29 @@ a:not(.mark) {
   font-style: italic;
 }`}
       </style>
-      <div className="container" ref={ref} style={divStyle}>
-        {candidates.slice(0, visibleCandidateCount).map((props, i) => (
+      <div className="container projects" style={projectFilterStyle}>
+        {projectProps.map((props) => (
+          <div
+            className={props.enable ? "mark" : "mark disabled"}
+            onClick={props.onClick}
+          >
+            {props.mark instanceof URL
+              ? <img src={props.mark.href} />
+              : `[${mark}]`}
+          </div>
+        ))}
+      </div>
+      <div className="container candidates" ref={ref} style={divStyle}>
+        {candidatesProps.slice(0, visibleCandidateCount).map((props, i) => (
           <CandidateComponent
             key={props.title}
             {...props}
             selected={selectedIndex === i}
           />
         ))}
-        {candidates.length > limit && (
+        {candidatesProps.length > limit && (
           <div className="counter">
-            {`${candidates.length - limit} more links`}
+            {`${candidatesProps.length - limit} more links`}
           </div>
         )}
       </div>

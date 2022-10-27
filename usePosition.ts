@@ -7,7 +7,9 @@ import { h, Ref, useMemo, useRef } from "./deps/preact.tsx";
 /** 補完リストの表示位置を計算するhook */
 export const usePosition = (
   range: Range,
-): Pick<h.JSX.CSSProperties, "top" | "left"> & { ref: Ref<HTMLDivElement> } => {
+): Pick<h.JSX.CSSProperties, "top" | "left" | "right"> & {
+  ref: Ref<HTMLDivElement>;
+} => {
   const ref = useRef<HTMLDivElement>(null); // 座標計算用
 
   const style = useMemo<Pick<h.JSX.CSSProperties, "top" | "left">>(() => {
@@ -31,6 +33,8 @@ export const usePosition = (
     return {
       top: `${rect.bottom - parentRect.top}px`,
       left: `${(rect.left - parentRect.left)}px`,
+      // 右端から位置合わせしたいときに使う
+      right: `${(parentRect.right - rect.left)}px`,
     };
   }, [, range]);
 
