@@ -132,7 +132,7 @@ export const App = (props: AppProps) => {
   }, [candidates, projects, enables, mark]);
 
   // スタイル設定
-  const { ref, top, left } = usePosition(range);
+  const { ref, top, left, right } = usePosition(range);
   /** windowの開閉およびwindows操作の有効状態を決めるフラグ */
   const isOpen = useMemo(
     () =>
@@ -146,8 +146,8 @@ export const App = (props: AppProps) => {
     [isOpen, top, left],
   );
   const projectFilterStyle = useMemo<h.JSX.CSSProperties>(
-    () => !isOpen ? { display: "none" } : { top, right: `calc(3px + ${left})` },
-    [isOpen, top, left],
+    () => !isOpen ? { display: "none" } : { top, right },
+    [isOpen, top, right],
   );
 
   // API提供
@@ -198,6 +198,7 @@ export const App = (props: AppProps) => {
 }
 .projects {
   max-width: 10vw;
+  margin-right: 4px;
 }
 .container > :not(:first-child) {
   border-top: 1px solid var(--select-suggest-border-color, #eee);
@@ -222,12 +223,17 @@ a:not(.mark) {
   background-color: var(--select-suggest-selected-bg, #222);
   text-decoration: underline
 }
-.candidate img {
+img {
   height: 1.3em;
   width: 1.3em;
   position: relative;
   object-fit: cover;
   object-position: 0% 0%;
+}
+button{
+  background: unset;
+  color: unset;
+  border: unset;
 }
 .counter {
   color: var(--select-suggest-information-text-color, #aaa);
@@ -237,7 +243,7 @@ a:not(.mark) {
       </style>
       <div className="container projects" style={projectFilterStyle}>
         {projectProps.map((props) => (
-          <a
+          <button
             className="mark"
             tabIndex={0}
             onClick={props.onClick}
@@ -245,7 +251,7 @@ a:not(.mark) {
             {props.mark instanceof URL
               ? <img src={props.mark.href} />
               : `[${mark}]`}
-          </a>
+          </button>
         ))}
       </div>
       <div className="container candidates" ref={ref} style={divStyle}>
