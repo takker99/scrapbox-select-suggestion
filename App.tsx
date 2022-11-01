@@ -261,7 +261,7 @@ img {
           >
             {props.mark instanceof URL
               ? <img src={props.mark.href} />
-              : `[${mark}]`}
+              : `[${props.mark}]`}
           </div>
         ))}
       </div>
