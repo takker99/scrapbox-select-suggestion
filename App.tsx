@@ -19,7 +19,7 @@ import { usePosition } from "./usePosition.ts";
 import { useProjectFilter } from "./useProjectFilter.ts";
 import { Candidate as CandidateComponent } from "./Candidate.tsx";
 import { SelectInit, useSelect } from "./useSelect.ts";
-import { detectURL } from "./util.ts";
+import { detectURL } from "./detectURL.ts";
 import { logger } from "./debug.ts";
 import { incrementalSearch } from "./incrementalSearch.ts";
 import { sort } from "./search.ts";
@@ -96,7 +96,7 @@ export const App = (props: AppProps) => {
               name: project,
               mark: hideSelfMark && project === scrapbox.Project.name
                 ? ""
-                : detectURL(mark[project] ?? "", location.href) || project[0],
+                : detectURL(mark[project] ?? "", import.meta.url) || project[0],
               confirm: () => insertText(`[/${project}/${candidate.title}]`),
             }]
             : []
@@ -128,7 +128,7 @@ export const App = (props: AppProps) => {
         ? [{
           name: project,
           enable: enables.includes(project),
-          mark: detectURL(mark[project] ?? "", location.href) || project[0],
+          mark: detectURL(mark[project] ?? "", import.meta.url) || project[0],
           onClick: () => set(project, !enables.includes(project)),
         }]
         : []
@@ -201,7 +201,7 @@ export const App = (props: AppProps) => {
   margin-top: 14px;
   max-height: 80vh;
   z-index: 301;
-  
+
   background-color: var(--select-suggest-bg, #111);
   font-family: var(--select-suggest-font-family, "Open Sans", Helvetica, Arial, "Hiragino Sans", sans-serif);
   color: var(--select-suggest-text-color, #eee);
