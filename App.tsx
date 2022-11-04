@@ -4,14 +4,7 @@
 /** @jsx h */
 /** @jsxFrag Fragment */
 
-import {
-  Fragment,
-  h,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from "./deps/preact.tsx";
+import { Fragment, h, useEffect, useMemo, useRef } from "./deps/preact.tsx";
 import { useSelection } from "./useSelection.ts";
 import { useFrag } from "./useFrag.ts";
 import { useSource } from "./useSource.ts";
@@ -21,8 +14,7 @@ import { Candidate as CandidateComponent } from "./Candidate.tsx";
 import { SelectInit, useSelect } from "./useSelect.ts";
 import { detectURL } from "./detectURL.ts";
 import { logger } from "./debug.ts";
-import { incrementalSearch } from "./incrementalSearch.ts";
-import { sort } from "./search.ts";
+import { useSearch } from "./useSearch.ts";
 import { insertText, Scrapbox } from "./deps/scrapbox.ts";
 declare const scrapbox: Scrapbox;
 
@@ -65,38 +57,28 @@ export const App = (props: AppProps) => {
     enableSelfProjectOnStart,
   } = props;
 
-  const { text, range } = useSelection();
-  const [frag, setFrag] = useFrag(text, range);
-  const source = useSource(projects);
   const { projects: enables, set } = useProjectFilter(projects, {
     enableSelfProjectOnStart,
   });
 
-  // 検索
-  const [candidates, setCandidates] = useState<
-    { title: string; projects: string[] }[]
-  >([]);
-  useEffect(() => {
-    setCandidates([]); // 以前のを消して、描画がちらつかないようにする
-    if (frag !== "enable") return;
-    if (text.trim() === "") return;
-
-    return incrementalSearch(text, source, (candidates) =>
-      setCandidates(
-        sort(candidates, projects)
-          .map((page) => ({
-            title: page.title,
-            projects: page.metadata.map(({ project }) => project),
-          })),
-      ));
-  }, [text, source, frag]);
+  const [links, dispatch] = useSearch();
+  const { text, range } = useSelection();
+  useEffect(() => dispatch({ type: "query:changed", query: text }), [text]);
+  const source = useSource(projects);
+  useEffect(() => dispatch({ type: "source:changed", source }), [source]);
+  useEffect(() => dispatch({ type: "projects:changed", projects }), [projects]);
+  const [frag, setFrag] = useFrag(text, range);
+  useEffect(
+    () => dispatch({ type: "enable:changed", enable: frag === "enable" }),
+    [frag],
+  );
 
   // 表示する候補のみ、UI用データを作る
   const candidatesProps = useMemo(() => {
     logger.time("filtering by projects");
-    const result = candidates
-      .filter((candidate) =>
-        candidate.projects.some((project) => enables.includes(project))
+    const result = links
+      .filter((link) =>
+        link.projects.some((project) => enables.includes(project))
       )
       .map((candidate) => ({
         title: candidate.title,
@@ -116,7 +98,7 @@ export const App = (props: AppProps) => {
     logger.timeEnd("filtering by projects");
 
     return result;
-  }, [enables, candidates, mark, hideSelfMark]);
+  }, [enables, links, mark, hideSelfMark]);
 
   // 候補選択
   const visibleCandidateCount = Math.min(candidatesProps.length, limit);
@@ -128,7 +110,7 @@ export const App = (props: AppProps) => {
   const projectProps = useMemo(() => {
     // 見つかったprojects
     const found = new Set<string>();
-    for (const candidate of candidates) {
+    for (const candidate of links) {
       for (const project of candidate.projects) {
         found.add(project);
       }
@@ -143,7 +125,7 @@ export const App = (props: AppProps) => {
         }]
         : []
     );
-  }, [candidates, projects, enables, mark]);
+  }, [links, projects, enables, mark]);
 
   // スタイル設定
   const { ref, top, left, right } = usePosition(range);
@@ -168,10 +150,10 @@ export const App = (props: AppProps) => {
    */
   const projectFilterStyle = useMemo<h.JSX.CSSProperties>(
     () =>
-      (!isOpen && candidates.length === 0) || projects.length < 1
+      (!isOpen && links.length === 0) || projects.length < 1
         ? { display: "none" }
         : { top, right },
-    [isOpen, top, right, candidates.length, projects.length],
+    [isOpen, top, right, links.length, projects.length],
   );
 
   // API提供
