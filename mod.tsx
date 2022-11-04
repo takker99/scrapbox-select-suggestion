@@ -66,16 +66,22 @@ export const setup = (init?: SetupInit): Promise<Operators> => {
     hideSelfMark = true,
     enableSelfProjectOnStart = true,
   } = init ?? {};
-  const projects = init?.projects
+  const projects = (() => {
+    if (!init?.projects || init.projects.length === 0) {
+      return [scrapbox.Project.name];
+    }
+
     // フラグが立っているときのみ、現在projectを補完対象にする
-    ? (enableSelfProjectOnStart
+    const projects = enableSelfProjectOnStart
       ? [scrapbox.Project.name, ...init.projects]
-      : init.projects)
-      // 重複を省く
-      .filter((project, i) =>
-        !init.projects?.some?.((p, j) => j < i && p === project)
-      )
-    : [scrapbox.Project.name];
+      : init.projects;
+
+    // 重複を省く
+    return projects.filter((project, i) =>
+      !init.projects?.some?.((p, j) => j < i && p === project)
+    );
+  })();
+
   setDebugMode(debug);
   return new Promise<Operators>(
     (resolve) =>
