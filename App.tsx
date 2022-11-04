@@ -52,15 +52,25 @@ export interface AppProps {
   projects: string[];
   mark: Record<string, string | URL>;
   hideSelfMark: boolean;
+  enableSelfProjectOnStart: boolean;
 }
 
 export const App = (props: AppProps) => {
-  const { limit, callback, projects, mark, hideSelfMark } = props;
+  const {
+    limit,
+    callback,
+    projects,
+    mark,
+    hideSelfMark,
+    enableSelfProjectOnStart,
+  } = props;
 
   const { text, range } = useSelection();
   const [frag, setFrag] = useFrag(text, range);
   const source = useSource(projects);
-  const { projects: enables, set } = useProjectFilter(projects);
+  const { projects: enables, set } = useProjectFilter(projects, {
+    enableSelfProjectOnStart,
+  });
 
   // 検索
   const [candidates, setCandidates] = useState<

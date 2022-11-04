@@ -24,6 +24,8 @@ export interface SetupInit {
   /** 補完ソースに含めるproject names
    *
    * @default `[scrapbox.Project.name]`
+   *
+   * `enableSelfProjectOnStart`を`true`にすると、自動で`scrapbox.Project.name`が追加される
    */
   projects?: string[];
 
@@ -38,6 +40,12 @@ export interface SetupInit {
    * @default true (表示しない)
    */
   hideSelfMark?: boolean;
+
+  /** scriptを実行しているprojectのソースを、設定に関わらず無条件で有効にするかどうか
+   *
+   * @default true (ソースに含める)
+   */
+  enableSelfProjectOnStart?: boolean;
 }
 
 /** scrapbox-select-suggestionを起動する
@@ -51,13 +59,29 @@ export const setup = (init?: SetupInit): Promise<Operators> => {
   const shadowRoot = app.attachShadow({ mode: "open" });
   document.body.append(app);
 
-  const { limit = 5, debug = false, mark = {}, hideSelfMark = true } = init ??
-    {};
-  const projects = init?.projects
-    ? init.projects.filter((project, i) =>
-      !init.projects?.some?.((p, j) => j < i && p === project)
-    )
-    : [scrapbox.Project.name];
+  const {
+    limit = 5,
+    debug = false,
+    mark = {},
+    hideSelfMark = true,
+    enableSelfProjectOnStart = true,
+  } = init ?? {};
+  const projects = (() => {
+    if (!init?.projects || init.projects.length === 0) {
+      return [scrapbox.Project.name];
+    }
+
+    // フラグが立っているときのみ、現在projectを補完対象にする
+    const projects = enableSelfProjectOnStart
+      ? [scrapbox.Project.name, ...init.projects]
+      : init.projects;
+
+    // 重複を省く
+    return projects.filter((project, i) =>
+      !projects.some((p, j) => j < i && p === project)
+    );
+  })();
+
   setDebugMode(debug);
   return new Promise<Operators>(
     (resolve) =>
@@ -68,6 +92,7 @@ export const setup = (init?: SetupInit): Promise<Operators> => {
           mark={mark}
           hideSelfMark={hideSelfMark}
           callback={resolve}
+          enableSelfProjectOnStart={enableSelfProjectOnStart}
         />,
         shadowRoot,
       ),

@@ -1,6 +1,13 @@
 import { useCallback, useEffect, useState } from "./deps/preact.tsx";
+import { Scrapbox } from "./deps/scrapbox.ts";
+declare const scrapbox: Scrapbox;
 
 const key = "enableProjectsOnSuggestion";
+
+interface useProjectFilterOptions {
+  /** scriptを実行しているprojectのソースを、設定に関わらず無条件で有効にするかどうか */
+  enableSelfProjectOnStart: boolean;
+}
 
 interface UseProjectFilterResult {
   /** 検索対象のprojectsのリスト */
@@ -17,31 +24,39 @@ interface UseProjectFilterResult {
  */
 export const useProjectFilter = (
   projects: string[],
+  options: useProjectFilterOptions,
 ): UseProjectFilterResult => {
-  const [enableProjects, setEnableProjects] = useState(getEnables(projects));
+  const [enableProjects, setEnableProjects] = useState(
+    getEnables(projects, options),
+  );
   const set = useCallback((project: string, flag: boolean) => {
-    setFrag(project, flag, projects);
-    setEnableProjects(getEnables(projects));
-  }, [projects]);
+    setFrag(project, flag, projects, options);
+    setEnableProjects(getEnables(projects, options));
+  }, [projects, options.enableSelfProjectOnStart]);
 
   //更新通知を受け取る
   useEffect(() => {
     const listener = (e: StorageEvent) => {
       if (e.key !== key) return;
-      setEnableProjects(getEnables(projects));
+      setEnableProjects(getEnables(projects, options));
     };
     addEventListener("storage", listener);
     return () => removeEventListener("storage", listener);
-  }, [projects]);
+  }, [projects, options.enableSelfProjectOnStart]);
 
   return { projects: enableProjects, set };
 };
+
+let enableSelfProject = true;
 
 /** 有効化されているprojectsのリストを取得する
  *
  * 値が設定されていなかったり、型が違っていた場合は、初期値を入れる
  */
-const getEnables = (init: string[]): string[] => {
+const getEnables = (
+  init: string[],
+  options: useProjectFilterOptions,
+): string[] => {
   try {
     const value = localStorage.getItem(key);
     if (value === null) {
@@ -54,7 +69,15 @@ const getEnables = (init: string[]): string[] => {
       Array.isArray(list) &&
       list.every((project) => typeof project === "string")
     ) {
-      return list;
+      if (!options.enableSelfProjectOnStart) return list;
+      if (!init.includes(scrapbox.Project.name)) return list;
+      return list.includes(scrapbox.Project.name)
+        ? enableSelfProject
+          ? list
+          : list.filter((p) => p !== scrapbox.Project.name)
+        : enableSelfProject
+        ? [...list, scrapbox.Project.name]
+        : list;
     }
     setEnables(init);
     return init;
@@ -65,8 +88,16 @@ const getEnables = (init: string[]): string[] => {
   }
 };
 
-const setFrag = (project: string, flag: boolean, init: string[]): void => {
-  const old = getEnables(init);
+const setFrag = (
+  project: string,
+  flag: boolean,
+  init: string[],
+  options: useProjectFilterOptions,
+): void => {
+  const old = getEnables(init, options);
+  if (options.enableSelfProjectOnStart && project === scrapbox.Project.name) {
+    enableSelfProject = flag;
+  }
   setEnables(flag ? [...old, project] : old.filter((p) => p !== project));
 };
 
