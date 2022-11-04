@@ -78,7 +78,7 @@ export const setup = (init?: SetupInit): Promise<Operators> => {
 
     // 重複を省く
     return projects.filter((project, i) =>
-      !init.projects?.some?.((p, j) => j < i && p === project)
+      !projects.some((p, j) => j < i && p === project)
     );
   })();
 
