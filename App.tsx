@@ -88,7 +88,7 @@ export const App = (props: AppProps) => {
             title: page.title,
             projects: page.metadata.map(({ project }) => project),
           })),
-      ));
+      ), { chunk: 5000 });
   }, [text, source, frag]);
 
   // 表示する候補のみ、UI用データを作る
