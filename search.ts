@@ -1,5 +1,5 @@
-import { revertTitleLc, toTitleLc } from "./deps/scrapbox.ts";
-import { Asearch } from "./deps/deno-asearch.ts";
+import { revertTitleLc } from "./deps/scrapbox.ts";
+import { bitDP } from "./bitDP.ts";
 
 export interface Candidate {
   title: string;
@@ -11,8 +11,14 @@ export interface Candidate {
   }[];
 }
 export interface CandidateWithPoint extends Candidate {
-  /** 編集距離やマッチ位置から計算した優先度 */
-  point: number;
+  /** 編集距離 */
+  dist: number;
+  /** queryがマッチした位置
+   *
+   * - 1番目：開始位置
+   * - 2番目：終了位置
+   */
+  matches: [number, number][];
 }
 
 // deno-fmt-ignore
@@ -37,82 +43,71 @@ export interface Filter {
   (source: readonly Candidate[]): CandidateWithPoint[];
 }
 
-/** `query`に曖昧一致する候補を、編集距離つきで`chunk`個ずつ返す
+/** `query`に曖昧一致する候補を絞り込む函数を作る
  *
  * @param query 検索語句
  * @return 検索函数。検索不要なときは`undefined`を返す
  */
-export const makeFilter = (
-  query: string,
-): Filter | undefined => {
-  if (query.trim() === "") return;
+export const makeFilter = (query: string): Filter | undefined => {
+  /** キーワードリスト
+   *
+   * - 空白は取り除く
+   * - `_`は空白とみなす
+   * - 長い順に並び替えておく
+   *   - 長いqueryから検索したほうが、少なく絞り込める
+   */
+  const queries = revertTitleLc(query.trim()).split(/\s+/)
+    .sort((a, b) => b.length - a.length);
+  if (queries.length === 0 || queries.every((q) => q === "")) return;
 
-  // 空白を`_`に置換して、空白一致できるようにする
-  // さらに64文字に切り詰める
-  const queryLc = toTitleLc(
-    [...query.replace(/\s+/g, " ")].slice(0, 64).join(""),
-  );
-  const forwardMatch = Asearch(`${queryLc} `).match;
-  const match = Asearch(` ${queryLc} `).match;
-  const maxDistance = getMaxDistance[queryLc.length];
-
-  const queryIgnoreSpace = revertTitleLc(queryLc).trim();
-  // 空白をワイルドカードとして検索する
-  // 検索文字列が空白を含むときのみ実行
-  const ignoreSpace = /\s/.test(query)
-    ? {
-      forwardMatch: Asearch(`${queryIgnoreSpace} `).match,
-      match: Asearch(` ${queryIgnoreSpace} `).match,
-      distance: getMaxDistance[queryIgnoreSpace.length],
+  return (source) => {
+    let result = [...source];
+    const max = getMaxDistance[[...queries.join("")].length];
+    for (const query of queries) {
+      result = filter(query, max, result);
     }
-    : undefined;
+    return result as CandidateWithPoint[];
+  };
+};
 
-  return (source) =>
-    source.flatMap((page) => {
-      // 空白一致検索
-      {
-        const result = forwardMatch(page.titleLc, maxDistance);
-        if (result.found) {
-          return [{
-            point: result.distance,
-            ...page,
-          }];
-        }
-      }
-      {
-        const result = match(page.titleLc, maxDistance);
-        if (result.found) {
-          return [{
-            point: result.distance + 0.25,
-            ...page,
-          }];
-        }
-      }
-      if (!ignoreSpace) return [];
-      // 空白をワイルドカードとして検索
-      {
-        const result = ignoreSpace.forwardMatch(
-          page.title,
-          ignoreSpace.distance,
+const filter = (
+  query: string,
+  maxDistance: number,
+  source: (Candidate & { dist?: number; matches?: [number, number][] })[],
+): CandidateWithPoint[] => {
+  const m = [...query].length;
+  const filter_ = bitDP(query);
+
+  return source.flatMap(
+    ({ title, dist, matches, ...props }) => {
+      matches ??= [];
+      dist ??= 0;
+
+      const result = filter_(title)
+        // 別のqueryでマッチした箇所は除く
+        .flatMap((d, i) =>
+          dist! + d <= maxDistance &&
+            matches!.every(([s, e]) => i + m <= s || e < i)
+            ? [[i, d]]
+            : []
         );
-        if (result.found) {
-          return [{
-            point: result.distance + 0.5,
-            ...page,
-          }];
-        }
-      }
-      {
-        const result = ignoreSpace.match(page.title, ignoreSpace.distance);
-        if (result.found) {
-          return [{
-            point: result.distance + 0.75,
-            ...page,
-          }];
-        }
-      }
-      return [];
-    });
+      if (result.length === 0) return [];
+
+      const newMatch = result.reduce((prev, [i, dist]) => {
+        if (prev.dist <= dist) return prev;
+        prev.dist = dist;
+        prev.start = i;
+        prev.end = i + m - 1;
+        return prev;
+      }, { dist: m, start: 0, end: m - 1 });
+
+      const newDist = newMatch.dist + dist;
+      if (newDist > maxDistance) return [];
+
+      matches.push([newMatch.start, newMatch.end]);
+      return [{ title, dist: newDist, matches, ...props }];
+    },
+  );
 };
 
 /** 候補を並び替える
@@ -130,20 +125,31 @@ export const sort = (
   );
 
   return [...candidates].sort((a, b) => {
-    // 1. 優先順位順
-    const diff = a.point - b.point;
+    // 1. 編集距離が短い順
+    const diff = a.dist - b.dist;
     if (diff !== 0) return diff;
-    // 2. 文字列が短い順
+
+    // 2. マッチ位置が早い順
+    const sa = a.matches.map(([s]) => s).sort();
+    const sb = b.matches.map(([s]) => s).sort();
+    for (let i = 0; i < sa.length; i++) {
+      const sdiff = sa[i] - (sb[i] ?? sb.length);
+      if (sdiff !== 0) return sdiff;
+    }
+
+    // 3. 文字列が短い順
     const ldiff = a.title.length - b.title.length;
     if (ldiff !== 0) return ldiff;
-    // 3. projectsで若い順
+
+    // 4. projectsで若い順
     const pdiff = Math.min(
       ...a.metadata.map((meta) => projectMap[meta.project] ?? projects.length),
     ) - Math.min(
       ...b.metadata.map((meta) => projectMap[meta.project] ?? projects.length),
     );
     if (pdiff !== 0) return pdiff;
-    // 3. 更新日時が新しい順
+
+    // 5. 更新日時が新しい順
     return b.updated - a.updated;
   });
 };
