@@ -6,52 +6,30 @@ export interface IncrementalSearchOptions {
    * @default 1000
    */
   chunk?: number;
-  /** 検索結果を返す時間間隔 (単位はms)
-   *
-   * @default 500
-   */
-  interval?: number;
 }
 
 /** 中断可能な検索メソッド */
 export const incrementalSearch = (
   query: string,
-  source: Candidate[],
-  listener: (candidates: CandidateWithPoint[]) => void,
   options?: IncrementalSearchOptions,
-): () => void => {
+):
+  | ((
+    source: Candidate[],
+  ) => AsyncGenerator<CandidateWithPoint[], void, unknown>)
+  | undefined => {
   const filter = makeFilter(query);
-  if (!filter) {
-    listener([]);
-    return () => {};
-  }
+  if (!filter) return;
 
-  let terminate = false;
-  let timer: number | undefined;
-  const candidates: CandidateWithPoint[] = [];
-  const update = () => {
-    listener(candidates);
-    timer = undefined;
-  };
-  const total = Math.floor(source.length / (options?.chunk ?? 1000)) + 1;
-  const chunk = options?.chunk ?? 1000;
-  (async () => {
+  return (async function* (source: Candidate[]) {
+    const chunk = options?.chunk ?? 1000;
+    const total = Math.floor(source.length / chunk) + 1;
+
     // 検索する
     for (let i = 0; i < total; i++) {
       // 検索中断命令を受け付けるためのinterval
       await new Promise((resolve) => requestAnimationFrame(resolve));
-      if (terminate) return;
 
-      candidates.push(...filter(source.slice(i * chunk, (i + 1) * chunk)));
-      if (timer !== undefined) continue;
-      update();
-      timer = setTimeout(update, options?.interval ?? 500);
+      yield [...filter(source.slice(i * chunk, (i + 1) * chunk))];
     }
-  })();
-
-  // 検索を中断させる
-  return () => {
-    terminate = true;
-    clearTimeout(timer);
-  };
+  });
 };
