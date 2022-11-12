@@ -9,6 +9,7 @@ import {
   h,
   useCallback,
   useEffect,
+  useMemo,
   useReducer,
   useRef,
   useState,
@@ -165,28 +166,54 @@ export const App = (props: AppProps) => {
     [state.state, state.context, text, range],
   );
   // 入力補完の判定
+  /** []の中かどうかを示すフラグ
+   *
+   * 中の場合でも、stateがcompletionでなかったり選択範囲補完が起動していたりする場合はfalseを返す */
+  const [isInBracket, setIsInBracket] = useState(false);
   useEffect(
     () => {
       if (
         state.state !== "idle" && state.state !== "completion" &&
         state.state !== "canceled"
-      ) return;
+      ) {
+        setIsInBracket(false);
+        return;
+      }
 
       // 選択範囲補完が起動しているときは何もしない
-      if (state.state === "completion" && state.context === "selection") return;
+      if (state.state === "completion" && state.context === "selection") {
+        setIsInBracket(false);
+        return;
+      }
+
+      const cursor = takeCursor();
+      const callback = () => {
+        const { line, char } = cursor.getPosition();
+        const pos = detectLink(line, char);
+        if (!pos) {
+          setIsInBracket(false);
+          dispatch({ type: "completionend" });
+          return;
+        }
+        setIsInBracket(state.state !== "canceled");
+      };
+
+      cursor.addChangeListener(callback);
+      return () => cursor.removeChangeListener(callback);
+    }, // @ts-ignore contextはoptionalとして扱う
+    [state.state, state.context],
+  );
+
+  useEffect(
+    () => {
+      if (!isInBracket) return;
 
       const cursor = takeCursor();
 
       const callback = () => {
         const { line, char } = cursor.getPosition();
         const pos = detectLink(line, char);
-        if (!pos) {
-          console.info("End completion due to out of bracket");
-          dispatch({ type: "completionend" });
-          return;
-        }
-
-        if (state.state === "canceled") return;
+        if (!pos) return;
 
         if (scrapbox.Layout !== "page") return;
         const cursorLine = scrapbox.Page.lines[line];
@@ -199,21 +226,12 @@ export const App = (props: AppProps) => {
         });
       };
 
-      cursor.addChangeListener(callback);
-
-      // 入力補完が起動しているときは、文字入力も監視する
       const caret = textInput()!;
-      if (state.state === "completion") {
-        caret.addEventListener("change", callback);
-      }
+      caret.addEventListener("change", callback);
 
-      return () => {
-        cursor.removeChangeListener(callback);
-        caret.removeEventListener("change", callback);
-      };
+      return () => caret.removeEventListener("change", callback);
     },
-    // @ts-ignore contextはoptionalとして扱う
-    [state.state, state.context],
+    [isInBracket],
   );
 
   // API提供
