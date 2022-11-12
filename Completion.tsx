@@ -12,7 +12,7 @@ import {
   useMemo,
   useState,
 } from "./deps/preact.tsx";
-import { insertText, Range, Scrapbox } from "./deps/scrapbox.ts";
+import { insertText, Range, Scrapbox, takeCursor } from "./deps/scrapbox.ts";
 import {
   Candidate as CandidateComponent,
   CandidateProps,
@@ -196,7 +196,11 @@ export const Completion = (
           name: project,
           enable: enableProjects.includes(project),
           mark: detectURL(mark[project] ?? "", import.meta.url) || project[0],
-          onClick: () => set(project, !enableProjects.includes(project)),
+          onClick: () => {
+            const cursor = takeCursor();
+            set(project, !enableProjects.includes(project));
+            cursor.focus();
+          },
         }]
         : []
     );
