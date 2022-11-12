@@ -141,10 +141,12 @@ export const App = (props: AppProps) => {
 
       const cursorLine = scrapbox.Page.lines[range.start.line];
       if (
-        !isSelectMode(cursorLine, text) &&
-        (state.state !== "completion" || state.context === "selection")
+        !isSelectMode(cursorLine, text)
       ) {
-        dispatch({ type: "completionend" });
+        // 入力補完が起動しているときはスルー
+        if (!(state.state === "completion" && state.context === "input")) {
+          dispatch({ type: "completionend" });
+        }
         return;
       }
 
