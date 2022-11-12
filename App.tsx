@@ -20,7 +20,6 @@ import { SelectInit } from "./useSelect.ts";
 import { CSS } from "./CSS.tsx";
 import { Scrapbox } from "./deps/scrapbox.ts";
 import { reducer } from "./reducer.ts";
-import { takeStores } from "./deps/scrapbox.ts";
 declare const scrapbox: Scrapbox;
 
 /** 外部開放用API */
@@ -154,13 +153,10 @@ export const App = (props: AppProps) => {
       // 補完が一時的に終了していたら何もしない
       if (state.state === "canceled") return;
 
-      const { cursor } = takeStores();
       dispatch({
         type: "completionupdate",
         query: text.trim(),
         context: "selection",
-        range,
-        cursor,
       });
     },
     [state.state, text, range],

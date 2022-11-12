@@ -1,14 +1,9 @@
-import { Cursor, Range } from "./deps/scrapbox.ts";
-
 export type State = {
   state: "idle";
 } | {
   state: "completion";
   query: string;
   context: "selection";
-  results: { title: string; projects: string[] }[];
-  range: Range;
-  cursor: Cursor;
 } | {
   state: "canceled";
 } | {
@@ -25,12 +20,6 @@ export type Action = {
   type: "completionupdate";
   query: string;
   context: "selection";
-  range: Range;
-  cursor: Cursor;
-} | {
-  type: "sendresults";
-  query: string;
-  results: { title: string; projects: string[] }[];
 } | {
   type: "cancel";
 };
@@ -44,22 +33,8 @@ export const reducer = (state: State, action: Action): State => {
       return state.state === "canceled" ? state : {
         state: "completion",
         context: action.context,
-        results: [],
         query: action.query,
-        range: action.range,
-        cursor: action.cursor,
       };
-    case "sendresults":
-      return state.state !== "completion" || action.query !== state.query
-        ? state
-        : {
-          state: "completion",
-          results: action.results,
-          context: state.context,
-          query: state.query,
-          range: state.range,
-          cursor: state.cursor,
-        };
     case "completionend":
       return { state: "idle" };
     case "cancel":

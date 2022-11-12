@@ -29,7 +29,6 @@ declare const scrapbox: Scrapbox;
 
 export interface CompletionProps {
   query: string;
-  range: Range;
   limit: number;
   hideSelfMark: boolean;
   enableSelfProjectOnStart: boolean;
