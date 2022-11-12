@@ -155,11 +155,19 @@ export const App = (props: AppProps) => {
       // 補完が一時的に終了していたら何もしない
       if (state.state === "canceled") return;
 
+      // 左端の文字の位置を得る
+      const line = Math.min(range.start.line, range.end.line);
+      const char = range.start.line < range.end.line
+        ? range.start.char
+        : range.start.line === range.start.line
+        ? Math.min(range.start.char, range.end.char)
+        : range.end.char;
+
       dispatch({
         type: "completionupdate",
         query: text.trim(),
         context: "selection",
-        position: { line: range.start.line, char: range.start.char },
+        position: { line, char },
       });
     },
     // @ts-ignore contextはoptionalとして扱う
