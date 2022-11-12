@@ -145,6 +145,7 @@ export const App = (props: AppProps) => {
       ) {
         // 入力補完が起動しているときはスルー
         if (!(state.state === "completion" && state.context === "input")) {
+          console.info("End completion due to no selection");
           dispatch({ type: "completionend" });
         }
         return;
@@ -179,6 +180,7 @@ export const App = (props: AppProps) => {
         const { line, char } = cursor.getPosition();
         const pos = detectLink(line, char);
         if (!pos) {
+          console.info("End completion due to out of bracket");
           dispatch({ type: "completionend" });
           return;
         }
