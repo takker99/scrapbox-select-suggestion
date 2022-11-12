@@ -4,7 +4,7 @@
 /** @jsx h */
 /** @jsxFrag Fragment */
 
-import { Fragment, h, useEffect, useMemo } from "./deps/preact.tsx";
+import { Fragment, h, useEffect, useMemo, useState } from "./deps/preact.tsx";
 import { usePosition } from "./usePosition.ts";
 import { insertText, Range, Scrapbox } from "./deps/scrapbox.ts";
 import {
@@ -12,6 +12,9 @@ import {
   CandidateProps,
 } from "./Candidate.tsx";
 import { SelectInit, useSelect } from "./useSelect.ts";
+import { useSource } from "./useSource.ts";
+import { incrementalSearch } from "./incrementalSearch.ts";
+import { sort } from "./search.ts";
 import { useProjectFilter } from "./useProjectFilter.ts";
 import { Action } from "./reducer.ts";
 import { logger } from "./debug.ts";
@@ -19,7 +22,7 @@ import { detectURL } from "./detectURL.ts";
 declare const scrapbox: Scrapbox;
 
 export interface CompletionProps {
-  candidates: { title: string; projects: string[] }[];
+  query: string;
   range: Range;
   limit: number;
   hideSelfMark: boolean;
@@ -41,7 +44,7 @@ export interface Operators {
 
 export const Completion = (
   {
-    candidates,
+    query,
     range,
     limit,
     enableSelfProjectOnStart,
@@ -55,6 +58,26 @@ export const Completion = (
   const { projects: enableProjects, set } = useProjectFilter(projects, {
     enableSelfProjectOnStart,
   });
+
+  // 検索
+  const source = useSource(projects);
+  const [candidates, setCandidates] = useState<
+    { title: string; projects: string[] }[]
+  >([]);
+  useEffect(() =>
+    incrementalSearch(
+      query,
+      source,
+      (candidates) =>
+        setCandidates(
+          sort(candidates, projects)
+            .map((page) => ({
+              title: page.title,
+              projects: page.metadata.map(({ project }) => project),
+            })),
+        ),
+      { chunk: 5000 },
+    ), [source, query]);
 
   // 表示する候補のみ、UI用データを作る
   const candidatesProps = useMemo<Omit<CandidateProps, "selected">[]>(() => {

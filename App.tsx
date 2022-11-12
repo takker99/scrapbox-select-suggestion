@@ -14,12 +14,9 @@ import {
   useState,
 } from "./deps/preact.tsx";
 import { useSelection } from "./useSelection.ts";
-import { useSource } from "./useSource.ts";
 import { Completion, Operators as OperatorsBase } from "./Completion.tsx";
 import { SelectInit } from "./useSelect.ts";
 import { CSS } from "./CSS.tsx";
-import { incrementalSearch } from "./incrementalSearch.ts";
-import { sort } from "./search.ts";
 import { Scrapbox } from "./deps/scrapbox.ts";
 import { reducer } from "./reducer.ts";
 import { takeStores } from "./deps/scrapbox.ts";
@@ -167,24 +164,6 @@ export const App = (props: AppProps) => {
     [state.state, text, range],
   );
 
-  const source = useSource(projects);
-
-  // 検索
-  useEffect(() => {
-    if (state.state !== "completion") return;
-
-    return incrementalSearch(state.query, source, (candidates) =>
-      dispatch({
-        type: "sendresults",
-        query: state.query,
-        results: sort(candidates, projects)
-          .map((page) => ({
-            title: page.title,
-            projects: page.metadata.map(({ project }) => project),
-          })),
-      }), { chunk: 5000 });
-  }, [source, state]);
-
   // API提供
   const enable = useCallback(() => setDisable(false), []);
   const disable = useCallback(() => setDisable(true), []);
@@ -209,11 +188,10 @@ export const App = (props: AppProps) => {
       <CSS />
       {state.state === "completion" && (
         <Completion
-          candidates={state.results}
-          range={state.range}
           callback={callback_}
           projects={projects}
           dispatch={dispatch}
+          {...state}
           {...options}
         />
       )}
