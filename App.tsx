@@ -198,8 +198,9 @@ export const App = (props: AppProps) => {
         setIsInBracket(state.state !== "canceled");
       };
 
-      cursor.addChangeListener(callback);
-      return () => cursor.removeChangeListener(callback);
+      const caret = textInput()!;
+      caret.addEventListener("change", callback);
+      return () => caret.removeEventListener("change", callback);
     }, // @ts-ignore contextはoptionalとして扱う
     [state.state, state.context],
   );
@@ -226,10 +227,8 @@ export const App = (props: AppProps) => {
         });
       };
 
-      const caret = textInput()!;
-      caret.addEventListener("change", callback);
-
-      return () => caret.removeEventListener("change", callback);
+      cursor.addChangeListener(callback);
+      return () => cursor.removeChangeListener(callback);
     },
     [isInBracket],
   );
