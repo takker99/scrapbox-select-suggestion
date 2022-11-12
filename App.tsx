@@ -170,13 +170,14 @@ export const App = (props: AppProps) => {
   const disable = useCallback(() => setDisable(true), []);
   // ...でopInitが破壊されないようにする
   const exportRef = useRef<Operators>({ ...opInit, enable, disable });
-  const callback_ = useCallback((operators?: OperatorsBase) => {
+  const [operators, setOperators] = useState<OperatorsBase | undefined>();
+  useEffect(() => {
     // currentの参照を壊さずに更新する
     Object.assign(
       exportRef.current,
       state.state !== "completion" || !operators ? opInit : operators,
     );
-  }, [state.state]);
+  }, [state.state, operators]);
   useEffect(
     () => callback(exportRef.current),
     [callback],
@@ -191,7 +192,7 @@ export const App = (props: AppProps) => {
       <div className="compute" ref={ref} />
       {state.state === "completion" && (
         <Completion
-          callback={callback_}
+          callback={setOperators}
           projects={projects}
           dispatch={dispatch}
           position={position}
