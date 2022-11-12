@@ -238,7 +238,9 @@ export const App = (props: AppProps) => {
       const callback = () => {
         const { line, char } = cursor.getPosition();
         const pos = detectLink(line, char);
-        if (!pos) return;
+        if (pos) return;
+
+        dispatch({ type: "completionend" });
       };
 
       cursor.addChangeListener(callback);
