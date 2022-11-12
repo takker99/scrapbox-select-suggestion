@@ -6,12 +6,14 @@ export type State =
     state: "completion";
     query: string;
     context: "selection";
+    position: { line: number; char: number };
   }
   | {
     state: "completion";
     query: string;
     context: "input";
     range: { start: number; end: number };
+    position: { line: number; char: number };
   }
   | {
     state: "canceled";
@@ -30,11 +32,13 @@ export type Action = {
   type: "completionupdate";
   query: string;
   context: "selection";
+  position: { line: number; char: number };
 } | {
   type: "completionupdate";
   query: string;
   context: "input";
   range: { start: number; end: number };
+  position: { line: number; char: number };
 } | {
   type: "cancel";
 };

@@ -19,6 +19,7 @@ import { Completion, Operators as OperatorsBase } from "./Completion.tsx";
 import { SelectInit } from "./useSelect.ts";
 import { CSS } from "./CSS.tsx";
 import {
+  getCharDOM,
   Line,
   Scrapbox,
   takeCursor,
@@ -154,9 +155,10 @@ export const App = (props: AppProps) => {
         type: "completionupdate",
         query: text.trim(),
         context: "selection",
+        position: { line: range.start.line, char: range.start.char },
       });
     },
-    [state.state, text, range],
+    [state, text, range],
   );
   // 入力補完の判定
   useEffect(
@@ -185,9 +187,10 @@ export const App = (props: AppProps) => {
         const cursorLine = scrapbox.Page.lines[line];
         dispatch({
           type: "completionupdate",
-          query: cursorLine.text.slice(pos.start, pos.end),
+          query: cursorLine.text.slice(pos.start + 1, pos.end - 1),
           context: "input",
           range: pos,
+          position: { line, char },
         });
       };
 
@@ -204,7 +207,7 @@ export const App = (props: AppProps) => {
         caret.removeEventListener("change", callback);
       };
     },
-    [state.state],
+    [state],
   );
 
   // API提供
@@ -225,8 +228,9 @@ export const App = (props: AppProps) => {
     [callback],
   );
 
-  // 座標計算
-  const { ref, ...position } = usePosition(range);
+  const { ref, ...position } = usePosition(
+    state.state === "completion" ? state.position : { line: 0, char: 0 },
+  );
 
   return (
     <>
@@ -261,14 +265,11 @@ const isSelectMode = (cursorLine: Line, selectedText: string) =>
     ("tableBlock" in cursorLine && cursorLine.tableBlock.start));
 
 const detectLink = (line: number, char: number) => {
-  const lines = document.getElementsByClassName("lines")?.[0]?.children;
-  const lineDOM =lines?.[line];
-  const charDOM=lineDOM?.getElementsByClassName(`c-{char}`);
-  if (!charDOM) {
-    throw Error(`cannot found span.c-${char} in the ${line}th line.`);
-  }
+  const charDOM = getCharDOM(line, char);
+  // 行末にカーソルがあるときは、対応するDOMが存在しない
+  if (!charDOM) return;
   if (!(charDOM instanceof HTMLSpanElement)) {
-    throw TypeError( 'span.char-index is not HTMLSpanElement',);
+    throw TypeError(`span.c-${char} is not HTMLSpanElement`);
   }
 
   // リンクのDOMを取得する
@@ -277,14 +278,15 @@ const detectLink = (line: number, char: number) => {
   if (!link) return;
   if (!(link instanceof HTMLAnchorElement)) {
     throw TypeError(
-        'a.page-link:not([type="hashTag"]) is not HTMLAnchorElement',
-        );
+      'a.page-link:not([type="hashTag"]) is not HTMLAnchorElement',
+    );
   }
 
   // リンクの文字列の開始位置と終了位置を計算する
+  // []も込み
   const chars = Array.from(
-      link.getElementsByClassName("char-index"),
-      ) as HTMLSpanElement[];
+    link.getElementsByClassName("char-index"),
+  ) as HTMLSpanElement[];
   if (chars.length === 0) throw Error("a.page-link must have a char at least.");
 
   const isCursorLine = link.closest(".cursor-line") != null;

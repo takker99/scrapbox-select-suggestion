@@ -1,12 +1,12 @@
 /// <reference no-default-lib="true" />
 /// <reference lib="esnext" />
 /// <reference lib="dom" />
-import { Range, selections } from "./deps/scrapbox.ts";
 import { h, Ref, useMemo, useRef } from "./deps/preact.tsx";
+import { getCharDOM, Position } from "./deps/scrapbox.ts";
 
 /** 補完リストの表示位置を計算するhook */
 export const usePosition = (
-  range: Range,
+  pos: Position,
 ): Pick<h.JSX.CSSProperties, "top" | "left" | "right"> & {
   ref: Ref<HTMLDivElement>;
 } => {
@@ -23,20 +23,18 @@ export const usePosition = (
 
     /** 基準座標 */
     const parentRect = root.host?.parentElement?.getBoundingClientRect?.();
-    /** 選択範囲の座標 */
-    const rect = Array.from(
-      selections()?.getElementsByClassName?.("selection") ?? [],
-    )
-      .pop()?.getBoundingClientRect?.();
+    /** 合わせたいDOMの座標 */
+    const char = getCharDOM(pos.line, pos.char);
+    const rect = char?.getBoundingClientRect?.();
     if (!rect || !parentRect) return {};
 
     return {
       top: `${rect.bottom - parentRect.top}px`,
-      left: `${(rect.left - parentRect.left)}px`,
+      left: `${(rect?.left ?? 0 - parentRect.left)}px`,
       // 右端から位置合わせしたいときに使う
-      right: `${(parentRect.right - rect.left)}px`,
+      right: `${(parentRect.right - (rect?.left ?? 0))}px`,
     };
-  }, [, range]);
+  }, [pos.line, pos.char]);
 
   return { ref, ...style };
 };
