@@ -187,7 +187,10 @@ export const App = (props: AppProps) => {
       }
 
       const cursor = takeCursor();
-      const callback = () => {
+      const callback = (e: Event) => {
+        // IME変換中の文字入力は無視する
+        if ((e as InputEvent).isComposing) return;
+
         const { line, char } = cursor.getPosition();
         const pos = detectLink(line, char);
         if (!pos) {
@@ -199,8 +202,8 @@ export const App = (props: AppProps) => {
       };
 
       const caret = textInput()!;
-      caret.addEventListener("change", callback);
-      return () => caret.removeEventListener("change", callback);
+      caret.addEventListener("input", callback);
+      return () => caret.removeEventListener("input", callback);
     }, // @ts-ignore contextはoptionalとして扱う
     [state.state, state.context],
   );
