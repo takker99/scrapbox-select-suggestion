@@ -165,7 +165,7 @@ export const Completion = (
    */
   const projectFilterStyle = useMemo<h.JSX.CSSProperties>(
     () =>
-      candidates.length > 0 && top != null && left != null &&
+      candidates.length > 0 && top != null && right != null &&
         projects.length > 1
         ? { top, right }
         : { display: "none" },
