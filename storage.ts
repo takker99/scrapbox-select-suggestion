@@ -185,7 +185,7 @@ async function* fetchProjectStatus(
     newProjects = projects.map((project) => project.project);
   } else {
     for (const project of result.value.projects) {
-      if (!newProjects.includes(project.name)) continue;
+      if (!checkedMap.has(project.name)) continue;
       yield {
         ok: true,
         value: { ...project, checked: checkedMap.get(project.name) ?? 0 },
