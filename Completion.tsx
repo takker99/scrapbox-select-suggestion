@@ -117,7 +117,17 @@ export const Completion = (
       insertText(text);
       return;
     }
-    replaceLines(context.range.start, context.range.end, text);
+    const line = takeCursor().getPosition().line;
+    if (scrapbox.Layout !== "page") return;
+    const prev = scrapbox.Page.lines[line].text;
+
+    replaceLines(
+      line,
+      line,
+      `${prev.slice(0, context.range.start)}${text}${
+        prev.slice(context.range.end + 1)
+      }`,
+    );
   }, [context.context, context.range?.start, context.range?.end]);
 
   // 表示する候補のみ、UI用データを作る
