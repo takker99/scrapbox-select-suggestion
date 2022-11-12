@@ -9,13 +9,11 @@ import {
   h,
   useCallback,
   useEffect,
-  useMemo,
   useReducer,
   useRef,
   useState,
 } from "./deps/preact.tsx";
 import { useSelection } from "./useSelection.ts";
-import { usePosition } from "./usePosition.ts";
 import { Completion, Operators as OperatorsBase } from "./Completion.tsx";
 import { SelectInit } from "./useSelect.ts";
 import { CSS } from "./CSS.tsx";
@@ -105,7 +103,7 @@ export const App = (props: AppProps) => {
     projects,
     ...options
   } = props;
-  const [state, dispatch] = useReducer(reducer, { state: "idle" });
+  const [state, dispatch] = useReducer(reducer, { state: "idle", query: "" });
 
   // ページの種類で有効無効判定をする
   const [disabled, setDisable] = useState(false);
@@ -170,7 +168,6 @@ export const App = (props: AppProps) => {
         position: { line, char },
       });
     },
-    // @ts-ignore contextはoptionalとして扱う
     [state.state, state.context, text, range],
   );
   // 入力補完の判定
@@ -223,7 +220,7 @@ export const App = (props: AppProps) => {
       const caret = textInput()!;
       caret.addEventListener("input", callback);
       return () => caret.removeEventListener("input", callback);
-    }, // @ts-ignore contextはoptionalとして扱う
+    },
     [state.state, state.context],
   );
 
@@ -267,25 +264,16 @@ export const App = (props: AppProps) => {
     [callback],
   );
 
-  const { ref, ...position } = usePosition(
-    state.state === "completion" ? state.position : { line: 0, char: 0 },
-  );
-
   return (
     <>
       <CSS />
-      <div className="compute" ref={ref} />
-      {state.state === "completion" && (
-        <Completion
-          callback={setOperators}
-          projects={projects}
-          dispatch={dispatch}
-          position={position}
-          query={state.query}
-          context={state}
-          {...options}
-        />
-      )}
+      <Completion
+        callback={setOperators}
+        projects={projects}
+        dispatch={dispatch}
+        {...state}
+        {...options}
+      />
     </>
   );
 };

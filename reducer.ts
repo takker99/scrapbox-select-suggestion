@@ -1,25 +1,25 @@
+import type { Position } from "./deps/scrapbox.ts";
 export type State =
   | {
-    state: "idle";
+    state: "idle" | "canceled" | "disabled";
+    context?: "selection" | "input";
+    query: string;
+    range?: { start: number; end: number };
+    position?: Position;
   }
   | {
     state: "completion";
-    query: string;
     context: "selection";
-    position: { line: number; char: number };
+    query: string;
+    range?: { start: number; end: number };
+    position: Position;
   }
   | {
     state: "completion";
-    query: string;
     context: "input";
+    query: string;
     range: { start: number; end: number };
-    position: { line: number; char: number };
-  }
-  | {
-    state: "canceled";
-  }
-  | {
-    state: "disabled";
+    position: Position;
   };
 
 export type Action = {
@@ -44,9 +44,11 @@ export type Action = {
 };
 
 export const reducer = (state: State, action: Action): State => {
-  if (state.state === "disabled") {
-    return action.type === "enable" ? { state: "idle" } : state;
+  const { state: _, ...props } = state;
+  if (_ === "disabled") {
+    return action.type === "enable" ? { state: "idle", ...props } : state;
   }
+
   switch (action.type) {
     case "completionupdate": {
       const { type: _, ...props } = action;
@@ -56,11 +58,11 @@ export const reducer = (state: State, action: Action): State => {
       };
     }
     case "completionend":
-      return state.state === "idle" ? state : { state: "idle" };
+      return _ === "idle" ? state : { state: "idle", ...props };
     case "cancel":
-      return state.state === "canceled" ? state : { state: "canceled" };
+      return _ === "canceled" ? state : { state: "canceled", ...props };
     case "disable":
-      return { state: "disabled" };
+      return { state: "disabled", ...props };
     case "enable":
       return state;
   }
