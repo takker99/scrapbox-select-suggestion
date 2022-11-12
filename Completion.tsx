@@ -228,6 +228,7 @@ export const Completion = (
 const Mark = (
   props: {
     enable: boolean;
+    name: string;
     onClick: h.JSX.MouseEventHandler<HTMLDivElement>;
     mark: URL | string;
   },
@@ -235,6 +236,7 @@ const Mark = (
   <div
     className={props.enable ? "mark" : "mark disabled"}
     onClick={props.onClick}
+    title={props.name}
   >
     {props.mark instanceof URL
       ? <img src={props.mark.href} />

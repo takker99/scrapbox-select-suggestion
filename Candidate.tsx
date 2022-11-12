@@ -71,6 +71,7 @@ export const Mark = (
     tabIndex={0}
     href={`../${project}/${encodeTitleURI(title)}`}
     onClick={useConfirm(confirm)}
+    title={`/${project}/${encodeTitleURI(title)}`}
   >
     {mark instanceof URL ? <img src={mark.href} /> : `[${mark}]`}
   </a>
