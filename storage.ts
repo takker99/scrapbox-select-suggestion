@@ -3,7 +3,19 @@
 /// <reference lib="dom" />
 
 import { DBSchema, IDBPDatabase, openDB } from "./deps/idb.ts";
-import { getProject, readLinksBulk, toTitleLc } from "./deps/scrapbox-rest.ts";
+import {
+  getProject,
+  listProjects,
+  readLinksBulk,
+  Result,
+  toTitleLc,
+} from "./deps/scrapbox-rest.ts";
+import {
+  NotFoundError,
+  NotLoggedInError,
+  NotMemberError,
+  Project,
+} from "./deps/scrapbox.ts";
 import { logger } from "./debug.ts";
 
 /** リンクデータ
@@ -76,53 +88,52 @@ export const checkUpdate = async (
     }
     logger.debug(
       `checked. ${projectsMaybeNeededUpgrade.length} projects maybe need upgrade.`,
-      projectsMaybeNeededUpgrade,
     );
 
     const bc = new BroadcastChannel(notifyChannelName);
     const result: Source[] = [];
     // 一つづつ更新する
-    for (const status of projectsMaybeNeededUpgrade) {
-      const { project, checked } = status;
-      const res = await getProject(project);
+    for await (const res of fetchProjectStatus(projectsMaybeNeededUpgrade)) {
       // project dataを取得できないときは、無効なprojectに分類しておく
       if (!res.ok) {
-        projectStatus.push({ project, isValid: false });
+        projectStatus.push({ project: res.value.project, isValid: false });
         switch (res.value.name) {
           case "NotFoundError":
-            console.warn(`${tag} "${project}" is not found.`);
+            console.warn(`${tag} "${res.value.project}" is not found.`);
             continue;
           case "NotMemberError":
-            console.warn(`${tag} You are not a member of "${project}".`);
+            console.warn(
+              `${tag} You are not a member of "${res.value.project}".`,
+            );
             continue;
           case "NotLoggedInError":
             console.warn(
-              `${tag} You are not a member of "${project}" or You are not logged in yet.`,
+              `${tag} You are not a member of "${res.value.project}" or You are not logged in yet.`,
             );
             continue;
         }
       }
 
       // projectの最終更新日時から、updateの要不要を調べる
-      if (res.value.updated < checked) {
-        logger.debug(`no updates in "${project}"`);
+      if (res.value.updated < res.value.checked) {
+        logger.debug(`no updates in "${res.value.name}"`);
       } else {
         // リンクデータを更新する
         const data: Source = {
-          project,
-          links: await downloadLinks(project),
+          project: res.value.name,
+          links: await downloadLinks(res.value.name),
         };
         result.push(data);
 
-        logger.time(`write data of "${project}"`);
+        logger.time(`write data of "${res.value.name}"`);
         await write(data);
         // 更新通知を出す
-        bc.postMessage({ type: "update", project } as Notify);
-        logger.timeEnd(`write data of "${project}"`);
+        bc.postMessage({ type: "update", project: res.value.name } as Notify);
+        logger.timeEnd(`write data of "${res.value.name}"`);
       }
 
       projectStatus.push({
-        project,
+        project: res.value.name,
         isValid: true,
         id: res.value.id,
         checked: new Date().getTime() / 1000,
@@ -143,6 +154,52 @@ export const checkUpdate = async (
     await tx.done;
   }
 };
+
+async function* fetchProjectStatus(
+  projects: ProjectStatus[],
+): AsyncGenerator<
+  Result<
+    Project & { checked: number },
+    (NotLoggedInError | NotFoundError | NotMemberError) & { project: string }
+  >,
+  void,
+  unknown
+> {
+  // idがあるものとないものとに分ける
+  const projectIds: string[] = [];
+  let newProjects: string[] = [];
+  const checkedMap = new Map<string, number>();
+  for (const project of projects) {
+    if (project.id) {
+      projectIds.push(project.id);
+    } else {
+      newProjects.push(project.project);
+    }
+    checkedMap.set(project.project, project.checked);
+  }
+  const result = await listProjects(projectIds);
+  if (!result.ok) {
+    // log inしていないときは、getProject()で全てのprojectのデータを取得する
+    newProjects = projects.map((project) => project.project);
+  } else {
+    for (const project of result.value.projects) {
+      if (!newProjects.includes(project.name)) continue;
+      yield {
+        ok: true,
+        value: { ...project, checked: checkedMap.get(project.name) ?? 0 },
+      };
+    }
+  }
+  for (const name of newProjects) {
+    const res = await getProject(name);
+    yield res.ok
+      ? {
+        ok: true,
+        value: { ...res.value, checked: checkedMap.get(name) ?? 0 },
+      }
+      : { ok: false, value: { ...res.value, project: name } };
+  }
+}
 
 /** 補完ソースをDBから取得する
  *
