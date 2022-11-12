@@ -174,9 +174,7 @@ export const App = (props: AppProps) => {
     // currentの参照を壊さずに更新する
     Object.assign(
       exportRef.current,
-      state.state !== "completion" || !operators
-        ? opInit
-        : { ...operators, enable, disable },
+      state.state !== "completion" || !operators ? opInit : operators,
     );
   }, [state.state]);
   useEffect(
