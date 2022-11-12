@@ -207,6 +207,17 @@ export const App = (props: AppProps) => {
           return;
         }
         setIsInBracket(state.state !== "canceled");
+
+        // []内で文字入力したら、即座に補完を開始する
+        if (scrapbox.Layout !== "page" || state.state === "canceled") return;
+        const cursorLine = scrapbox.Page.lines[line];
+        dispatch({
+          type: "completionupdate",
+          query: cursorLine.text.slice(pos.start + 1, pos.end - 1),
+          context: "input",
+          range: pos,
+          position: { line, char: pos.start },
+        });
       };
 
       const caret = textInput()!;
@@ -216,6 +227,8 @@ export const App = (props: AppProps) => {
     [state.state, state.context],
   );
 
+  // カーソルが外に出たかどうかだけを監視する
+  // 外に出たらcompletionendを発行する
   useEffect(
     () => {
       if (!isInBracket) return;
@@ -226,16 +239,6 @@ export const App = (props: AppProps) => {
         const { line, char } = cursor.getPosition();
         const pos = detectLink(line, char);
         if (!pos) return;
-
-        if (scrapbox.Layout !== "page") return;
-        const cursorLine = scrapbox.Page.lines[line];
-        dispatch({
-          type: "completionupdate",
-          query: cursorLine.text.slice(pos.start + 1, pos.end - 1),
-          context: "input",
-          range: pos,
-          position: { line, char: pos.start },
-        });
       };
 
       cursor.addChangeListener(callback);
