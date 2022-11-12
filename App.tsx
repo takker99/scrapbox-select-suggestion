@@ -19,7 +19,6 @@ import { Completion, Operators as OperatorsBase } from "./Completion.tsx";
 import { SelectInit } from "./useSelect.ts";
 import { CSS } from "./CSS.tsx";
 import {
-  getCharDOM,
   Line,
   Scrapbox,
   takeCursor,
@@ -262,9 +261,14 @@ const isSelectMode = (cursorLine: Line, selectedText: string) =>
     ("tableBlock" in cursorLine && cursorLine.tableBlock.start));
 
 const detectLink = (line: number, char: number) => {
-  const charDOM = getCharDOM(line, char);
+  const lines = document.getElementsByClassName("lines")?.[0]?.children;
+  const lineDOM =lines?.[line];
+  const charDOM=lineDOM?.getElementsByClassName(`c-{char}`);
   if (!charDOM) {
     throw Error(`cannot found span.c-${char} in the ${line}th line.`);
+  }
+  if (!(charDOM instanceof HTMLSpanElement)) {
+    throw TypeError( 'span.char-index is not HTMLSpanElement',);
   }
 
   // リンクのDOMを取得する
@@ -273,14 +277,14 @@ const detectLink = (line: number, char: number) => {
   if (!link) return;
   if (!(link instanceof HTMLAnchorElement)) {
     throw TypeError(
-      'a.page-link:not([type="hashTag"]) is not HTMLAnchorElement',
-    );
+        'a.page-link:not([type="hashTag"]) is not HTMLAnchorElement',
+        );
   }
 
   // リンクの文字列の開始位置と終了位置を計算する
   const chars = Array.from(
-    link.getElementsByClassName("char-index"),
-  ) as HTMLSpanElement[];
+      link.getElementsByClassName("char-index"),
+      ) as HTMLSpanElement[];
   if (chars.length === 0) throw Error("a.page-link must have a char at least.");
 
   const isCursorLine = link.closest(".cursor-line") != null;
