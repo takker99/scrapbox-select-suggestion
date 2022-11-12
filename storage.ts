@@ -54,7 +54,6 @@ export const checkUpdate = async (
   // 更新する必要のあるデータを探し、フラグを立てる
   logger.debug("check updates of links...");
 
-  /** 1番目：project name 2番目：checked */
   const projectsMaybeNeededUpgrade: ProjectStatus[] = [];
   const projectStatus: SourceStatus[] = [];
   try {
@@ -89,6 +88,9 @@ export const checkUpdate = async (
     logger.debug(
       `checked. ${projectsMaybeNeededUpgrade.length} projects maybe need upgrade.`,
     );
+
+    // 更新するprojectsがなければ何もしない
+    if (projectsMaybeNeededUpgrade.length === 0) return [];
 
     const bc = new BroadcastChannel(notifyChannelName);
     const result: Source[] = [];
