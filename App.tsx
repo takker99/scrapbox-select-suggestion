@@ -161,7 +161,8 @@ export const App = (props: AppProps) => {
         position: { line: range.start.line, char: range.start.char },
       });
     },
-    [state, text, range],
+    // @ts-ignore contextはoptionalとして扱う
+    [state.state, state.context, text, range],
   );
   // 入力補完の判定
   useEffect(
@@ -211,7 +212,8 @@ export const App = (props: AppProps) => {
         caret.removeEventListener("change", callback);
       };
     },
-    [state],
+    // @ts-ignore contextはoptionalとして扱う
+    [state.state, state.context],
   );
 
   // API提供
