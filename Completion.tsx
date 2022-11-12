@@ -215,9 +215,9 @@ export const Completion = (
             selected={selectedIndex === i}
           />
         ))}
-        {candidatesProps.length > limit && (
+        {candidates.length > limit && (
           <div className="counter">
-            {`${candidatesProps.length - limit} more links`}
+            {`${candidates.length - limit} more links`}
           </div>
         )}
       </div>
