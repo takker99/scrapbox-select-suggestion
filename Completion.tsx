@@ -12,7 +12,12 @@ import {
   useMemo,
   useState,
 } from "./deps/preact.tsx";
-import { insertText, Range, Scrapbox, takeCursor } from "./deps/scrapbox.ts";
+import {
+  insertText,
+  replaceLines,
+  Scrapbox,
+  takeCursor,
+} from "./deps/scrapbox.ts";
 import {
   Candidate as CandidateComponent,
   CandidateProps,
@@ -31,6 +36,15 @@ export interface CompletionProps {
   query: string;
   limit: number;
   hideSelfMark: boolean;
+  context:
+    | {
+      context: "selection";
+      range?: undefined;
+    }
+    | {
+      context: "input";
+      range: { start: number; end: number };
+    };
   enableSelfProjectOnStart: boolean;
   callback: (operators?: Operators) => void;
   mark: Record<string, string | URL>;
@@ -57,6 +71,7 @@ export const Completion = (
       right,
     },
     limit,
+    context,
     enableSelfProjectOnStart,
     callback,
     projects,
@@ -89,6 +104,22 @@ export const Completion = (
       { chunk: 5000 },
     ), [source, query]);
 
+  /** 補完候補を挿入する函数
+   *
+   * 起動している補完の種類に応じて挙動を変える
+   */
+  const confirm = useCallback((title: string, project?: string) => {
+    // ユーザーが文字を入力したと補完判定で誤認識されないよう、一旦補完を切ってから編集する
+    dispatch({ type: "cancel" });
+
+    const text = project ? `[/${project}/${title}]` : `[${title}]`;
+    if (context.context === "selection") {
+      insertText(text);
+      return;
+    }
+    replaceLines(context.range.start, context.range.end, text);
+  }, [context.context, context.range?.start, context.range?.end]);
+
   // 表示する候補のみ、UI用データを作る
   const candidatesProps = useMemo<Omit<CandidateProps, "selected">[]>(() => {
     logger.time("filtering by projects");
@@ -106,30 +137,22 @@ export const Completion = (
               mark: hideSelfMark && project === scrapbox.Project.name
                 ? ""
                 : detectURL(mark[project] ?? "", import.meta.url) || project[0],
-              confirm: () => {
-                // ユーザーが文字を入力したと補完判定で誤認識されないよう、一旦補完を切ってから編集する
-                dispatch({ type: "cancel" });
-                insertText(`[/${project}/${candidate.title}]`);
-              },
+              confirm: () => confirm(candidate.title, project),
             }]
             : []
         ),
-        confirm: () => {
-          // ユーザーが文字を入力したと補完判定で誤認識されないよう、一旦補完を切ってから編集する
-          dispatch({ type: "cancel" });
-          insertText(`[${candidate.title}]`);
-        },
+        confirm: () => confirm(candidate.title),
       }));
     logger.timeEnd("filtering by projects");
 
     return result;
-  }, [enableProjects, candidates, limit, mark, hideSelfMark]);
+  }, [enableProjects, candidates, limit, mark, hideSelfMark, confirm]);
 
   // 候補選択
   const { selectedIndex, next, prev, selectLast, selectFirst } = useSelect(
     candidatesProps.length,
   );
-  const confirm = useCallback(
+  const confirmSelected = useCallback(
     () =>
       selectedIndex === -1
         ? false
@@ -143,7 +166,7 @@ export const Completion = (
         selectPrev: (init?: SelectInit) => (prev(init), true),
         selectFirst: () => (selectFirst(), true),
         selectLast: () => (selectLast(), true),
-        confirm,
+        confirm: confirmSelected,
         cancel: () => (dispatch({ type: "cancel" }), true),
       } as const,
     ), [
@@ -152,7 +175,7 @@ export const Completion = (
     prev,
     selectFirst,
     selectLast,
-    confirm,
+    confirmSelected,
   ]);
 
   /** 補完windowのスタイル */

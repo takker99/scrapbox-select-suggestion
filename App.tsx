@@ -18,7 +18,13 @@ import { usePosition } from "./usePosition.ts";
 import { Completion, Operators as OperatorsBase } from "./Completion.tsx";
 import { SelectInit } from "./useSelect.ts";
 import { CSS } from "./CSS.tsx";
-import { Scrapbox } from "./deps/scrapbox.ts";
+import {
+  getCharDOM,
+  Line,
+  Scrapbox,
+  takeCursor,
+  textInput,
+} from "./deps/scrapbox.ts";
 import { reducer } from "./reducer.ts";
 declare const scrapbox: Scrapbox;
 
@@ -121,6 +127,7 @@ export const App = (props: AppProps) => {
 
   // 補完開始判定
   const { text, range } = useSelection();
+  // 選択範囲補完の判定
   useEffect(
     () => {
       if (
@@ -130,21 +137,12 @@ export const App = (props: AppProps) => {
 
       // Layoutが"page"でなければ無効にする
       // scrapbox.Page.linesを使えるようにするため、Layout用callbackとは別に判定している
-      if (scrapbox.Layout !== "page") {
-        dispatch({ type: "disable" });
-        return;
-      }
+      if (scrapbox.Layout !== "page") return;
 
-      // 以下の条件で補完を終了する
-      // - 選択範囲が空
-      // - 複数行を選択している
-      // - コードブロック、タイトル行、テーブルのタイトルにいる
       const cursorLine = scrapbox.Page.lines[range.start.line];
       if (
-        text.trim() === "" || text.includes("\n") ||
-        "codeBlock" in cursorLine ||
-        "title" in cursorLine ||
-        ("tableBlock" in cursorLine && cursorLine.tableBlock.start)
+        !isSelectMode(cursorLine, text) &&
+        (state.state !== "completion" || state.context === "selection")
       ) {
         dispatch({ type: "completionend" });
         return;
@@ -160,6 +158,54 @@ export const App = (props: AppProps) => {
       });
     },
     [state.state, text, range],
+  );
+  // 入力補完の判定
+  useEffect(
+    () => {
+      if (
+        state.state !== "idle" && state.state !== "completion" &&
+        state.state !== "canceled"
+      ) return;
+
+      // 選択範囲補完が起動しているときは何もしない
+      if (state.state === "completion" && state.context === "selection") return;
+
+      const cursor = takeCursor();
+
+      const callback = () => {
+        const { line, char } = cursor.getPosition();
+        const pos = detectLink(line, char);
+        if (!pos) {
+          dispatch({ type: "completionend" });
+          return;
+        }
+
+        if (state.state === "canceled") return;
+
+        if (scrapbox.Layout !== "page") return;
+        const cursorLine = scrapbox.Page.lines[line];
+        dispatch({
+          type: "completionupdate",
+          query: cursorLine.text.slice(pos.start, pos.end),
+          context: "input",
+          range: pos,
+        });
+      };
+
+      cursor.addChangeListener(callback);
+
+      // 入力補完が起動しているときは、文字入力も監視する
+      const caret = textInput()!;
+      if (state.state === "completion") {
+        caret.addEventListener("change", callback);
+      }
+
+      return () => {
+        cursor.removeChangeListener(callback);
+        caret.removeEventListener("change", callback);
+      };
+    },
+    [state.state],
   );
 
   // API提供
@@ -193,10 +239,53 @@ export const App = (props: AppProps) => {
           projects={projects}
           dispatch={dispatch}
           position={position}
-          {...state}
+          query={state.query}
+          context={state}
           {...options}
         />
       )}
     </>
   );
+};
+
+/** 選択範囲入力補完を実行できるかどうか返す函数
+ *
+ * 補完しない条件
+ * - 選択範囲が空
+ * - 複数行を選択している
+ * - コードブロック、タイトル行、テーブルのタイトルにいる
+ */
+const isSelectMode = (cursorLine: Line, selectedText: string) =>
+  !(selectedText.trim() === "" || selectedText.includes("\n") ||
+    "codeBlock" in cursorLine ||
+    "title" in cursorLine ||
+    ("tableBlock" in cursorLine && cursorLine.tableBlock.start));
+
+const detectLink = (line: number, char: number) => {
+  const charDOM = getCharDOM(line, char);
+  if (!charDOM) {
+    throw Error(`cannot found span.c-${char} in the ${line}th line.`);
+  }
+
+  // リンクのDOMを取得する
+  // hashTagは未対応
+  const link = charDOM.closest('a.page-link:not([type="hashTag"])');
+  if (!link) return;
+  if (!(link instanceof HTMLAnchorElement)) {
+    throw TypeError(
+      'a.page-link:not([type="hashTag"]) is not HTMLAnchorElement',
+    );
+  }
+
+  // リンクの文字列の開始位置と終了位置を計算する
+  const chars = Array.from(
+    link.getElementsByClassName("char-index"),
+  ) as HTMLSpanElement[];
+  if (chars.length === 0) throw Error("a.page-link must have a char at least.");
+
+  const isCursorLine = link.closest(".cursor-line") != null;
+  const start = parseInt(chars[0].dataset.charIndex ?? "0");
+  const end = parseInt(chars[chars.length - 1].dataset.charIndex ?? "0");
+
+  return isCursorLine ? { start, end } : { start: start - 1, end: end + 1 };
 };
