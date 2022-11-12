@@ -7,36 +7,76 @@
 import {
   Fragment,
   h,
+  useCallback,
   useEffect,
-  useMemo,
+  useReducer,
   useRef,
   useState,
 } from "./deps/preact.tsx";
 import { useSelection } from "./useSelection.ts";
-import { useFrag } from "./useFrag.ts";
 import { useSource } from "./useSource.ts";
-import { usePosition } from "./usePosition.ts";
-import { useProjectFilter } from "./useProjectFilter.ts";
-import { Candidate as CandidateComponent } from "./Candidate.tsx";
-import { SelectInit, useSelect } from "./useSelect.ts";
-import { detectURL } from "./detectURL.ts";
-import { logger } from "./debug.ts";
+import { Completion, Operators as OperatorsBase } from "./Completion.tsx";
+import { SelectInit } from "./useSelect.ts";
+import { CSS } from "./CSS.tsx";
 import { incrementalSearch } from "./incrementalSearch.ts";
 import { sort } from "./search.ts";
-import { insertText, Scrapbox } from "./deps/scrapbox.ts";
+import { Scrapbox } from "./deps/scrapbox.ts";
+import { reducer } from "./reducer.ts";
+import { takeStores } from "./deps/scrapbox.ts";
 declare const scrapbox: Scrapbox;
 
+/** 外部開放用API */
 export interface Operators {
+  /** 次候補を選択する
+   *
+   * @return 補完候補がなければ`false`
+   */
   selectNext: (init?: SelectInit) => boolean;
+
+  /** 前候補を選択する
+   *
+   * @return 補完候補がなければ`false`
+   */
   selectPrev: (init?: SelectInit) => boolean;
+
+  /** 最初の候補を選択する
+   *
+   * @return 補完候補がなければ`false`
+   */
   selectFirst: () => boolean;
+
+  /** 最後の候補を選択する
+   *
+   * @return 補完候補がなければ`false`
+   */
   selectLast: () => boolean;
+
+  /** 現在選択している候補で補完を実行する
+   *
+   * @return 補完を実行しなかったら`false`
+   */
   confirm: () => boolean;
+
+  /** 一時的に補完を中断する
+   *
+   * 一旦補完条件から抜けるまで補完を実行しない
+   *
+   * @return 補完が開始されていなければ`false`
+   */
   cancel: () => boolean;
+
+  /** このUserScriptを有効化する
+   *
+   * defaultで有効
+   */
+  enable: () => void;
+
+  /** このUserScriptを無効化する */
+  disable: () => void;
 }
 
 /** 外部開放用APIの初期値 */
-const opInit: Operators = {
+export const opInit: OperatorsBase = {
   selectNext: () => false,
   selectPrev: () => false,
   selectFirst: () => false,
@@ -57,147 +97,108 @@ export interface AppProps {
 
 export const App = (props: AppProps) => {
   const {
-    limit,
     callback,
     projects,
-    mark,
-    hideSelfMark,
-    enableSelfProjectOnStart,
+    ...options
   } = props;
+  const [state, dispatch] = useReducer(reducer, { state: "idle" });
 
+  // ページの種類で有効無効判定をする
+  const [disabled, setDisable] = useState(false);
+  useEffect(() => {
+    if (disabled) {
+      dispatch({ type: "disable" });
+      return;
+    }
+
+    const callback = () =>
+      dispatch(
+        {
+          type: scrapbox.Layout === "page" ? "enable" : "disable",
+        },
+      );
+    scrapbox.addListener("layout:changed", callback);
+    return () => scrapbox.removeListener("layout:changed", callback);
+  }, [disabled]);
+
+  // 補完開始判定
   const { text, range } = useSelection();
-  const [frag, setFrag] = useFrag(text, range);
+  useEffect(
+    () => {
+      if (
+        state.state !== "idle" && state.state !== "completion" &&
+        state.state !== "canceled"
+      ) return;
+
+      // Layoutが"page"でなければ無効にする
+      // scrapbox.Page.linesを使えるようにするため、Layout用callbackとは別に判定している
+      if (scrapbox.Layout !== "page") {
+        dispatch({ type: "disable" });
+        return;
+      }
+
+      // 以下の条件で補完を終了する
+      // - 選択範囲が空
+      // - 複数行を選択している
+      // - コードブロック、タイトル行、テーブルのタイトルにいる
+      const cursorLine = scrapbox.Page.lines[range.start.line];
+      if (
+        text.trim() === "" || text.includes("\n") ||
+        "codeBlock" in cursorLine ||
+        "title" in cursorLine ||
+        ("tableBlock" in cursorLine && cursorLine.tableBlock.start)
+      ) {
+        dispatch({ type: "completionend" });
+        return;
+      }
+
+      // 補完が一時的に終了していたら何もしない
+      if (state.state === "canceled") return;
+
+      const { cursor } = takeStores();
+      dispatch({
+        type: "completionupdate",
+        query: text.trim(),
+        context: "selection",
+        range,
+        cursor,
+      });
+    },
+    [state.state, text, range],
+  );
+
   const source = useSource(projects);
-  const { projects: enables, set } = useProjectFilter(projects, {
-    enableSelfProjectOnStart,
-  });
 
   // 検索
-  const [candidates, setCandidates] = useState<
-    { title: string; projects: string[] }[]
-  >([]);
   useEffect(() => {
-    setCandidates([]); // 以前のを消して、描画がちらつかないようにする
-    if (frag !== "enable") return;
-    if (text.trim() === "") return;
+    if (state.state !== "completion") return;
 
-    return incrementalSearch(text, source, (candidates) =>
-      setCandidates(
-        sort(candidates, projects)
+    return incrementalSearch(state.query, source, (candidates) =>
+      dispatch({
+        type: "sendresults",
+        query: state.query,
+        results: sort(candidates, projects)
           .map((page) => ({
             title: page.title,
             projects: page.metadata.map(({ project }) => project),
           })),
-      ), { chunk: 5000 });
-  }, [text, source, frag]);
-
-  // 表示する候補のみ、UI用データを作る
-  const candidatesProps = useMemo(() => {
-    logger.time("filtering by projects");
-    const result = candidates
-      .filter((candidate) =>
-        candidate.projects.some((project) => enables.includes(project))
-      )
-      .map((candidate) => ({
-        title: candidate.title,
-        projects: candidate.projects.flatMap((project) =>
-          enables.includes(project)
-            ? [{
-              name: project,
-              mark: hideSelfMark && project === scrapbox.Project.name
-                ? ""
-                : detectURL(mark[project] ?? "", import.meta.url) || project[0],
-              confirm: () => insertText(`[/${project}/${candidate.title}]`),
-            }]
-            : []
-        ),
-        confirm: () => insertText(`[${candidate.title}]`),
-      }));
-    logger.timeEnd("filtering by projects");
-
-    return result;
-  }, [enables, candidates, mark, hideSelfMark]);
-
-  // 候補選択
-  const visibleCandidateCount = Math.min(candidatesProps.length, limit);
-  const { selectedIndex, next, prev, selectFirst, selectLast } = useSelect(
-    visibleCandidateCount,
-  );
-
-  // projectの絞り込み
-  const projectProps = useMemo(() => {
-    // 見つかったprojects
-    const found = new Set<string>();
-    for (const candidate of candidates) {
-      for (const project of candidate.projects) {
-        found.add(project);
-      }
-    }
-    return projects.flatMap((project) =>
-      found.has(project)
-        ? [{
-          name: project,
-          enable: enables.includes(project),
-          mark: detectURL(mark[project] ?? "", import.meta.url) || project[0],
-          onClick: () => set(project, !enables.includes(project)),
-        }]
-        : []
-    );
-  }, [candidates, projects, enables, mark]);
-
-  // スタイル設定
-  const { ref, top, left, right } = usePosition(range);
-  /** windowの開閉およびwindows操作の有効状態を決めるフラグ */
-  const isOpen = useMemo(
-    () =>
-      frag === "enable" && candidatesProps.length > 0 &&
-      top !== undefined &&
-      left !== undefined,
-    [frag, candidatesProps.length, top, left],
-  );
-  /** 補完windowのスタイル */
-  const divStyle = useMemo<h.JSX.CSSProperties>(
-    () => !isOpen ? { display: "none" } : { top, left },
-    [isOpen, top, left],
-  );
-  /** project絞り込みパネルのスタイル
-   *
-   * projectが一つしか指定されていなければ表示しない
-   *
-   * 非表示の検索候補があれば表示し続ける
-   */
-  const projectFilterStyle = useMemo<h.JSX.CSSProperties>(
-    () =>
-      (!isOpen && candidates.length === 0) || projects.length < 1
-        ? { display: "none" }
-        : { top, right },
-    [isOpen, top, right, candidates.length, projects.length],
-  );
+      }), { chunk: 5000 });
+  }, [source, state]);
 
   // API提供
+  const enable = useCallback(() => setDisable(false), []);
+  const disable = useCallback(() => setDisable(true), []);
   // ...でopInitが破壊されないようにする
-  const exportRef = useRef<Operators>({ ...opInit });
-  useEffect(() => {
+  const exportRef = useRef<Operators>({ ...opInit, enable, disable });
+  const callback_ = useCallback((operators?: OperatorsBase) => {
     // currentの参照を壊さずに更新する
     Object.assign(
       exportRef.current,
-      !isOpen ? opInit : {
-        selectNext: (init?: SelectInit) => (next(init), true),
-        selectPrev: (init?: SelectInit) => (prev(init), true),
-        selectFirst: () => (selectFirst(), true),
-        selectLast: () => (selectLast(), true),
-        confirm: () => {
-          const candidateEl = ref.current?.querySelector?.(
-            ".candidate.selected a.button",
-          );
-          return candidateEl instanceof HTMLAnchorElement
-            ? (candidateEl.click(), true)
-            : false;
-        },
-        cancel: () => (setFrag("disable"), true),
-      },
+      state.state !== "completion" || !operators
+        ? opInit
+        : { ...operators, enable, disable },
     );
-  }, [isOpen, next, prev, selectFirst, selectLast]);
+  }, [state.state]);
   useEffect(
     () => callback(exportRef.current),
     [callback],
@@ -205,90 +206,17 @@ export const App = (props: AppProps) => {
 
   return (
     <>
-      <style>
-        {`.container {
-  position: absolute;
-  margin-top: 14px;
-  max-height: 80vh;
-  z-index: 301;
-
-  background-color: var(--select-suggest-bg, #111);
-  font-family: var(--select-suggest-font-family, "Open Sans", Helvetica, Arial, "Hiragino Sans", sans-serif);
-  color: var(--select-suggest-text-color, #eee);
-  border-radius: 4px;
-}
-.candidates {
-  max-width: 80vw;
-}
-.projects {
-  max-width: 10vw;
-  margin-right: 4px;
-}
-.container.candidates > :not(:first-child) {
-  border-top: 1px solid var(--select-suggest-border-color, #eee);
-}
-.container.candidates > *{
-  font-size: 11px;
-  line-height: 1.2em;
-  padding: 0.5em 10px;
-}
-.candidate {
-  display: flex;
-}
-a {
-  display: block;
-  text-decoration: none;
-  color: inherit;
-}
-a:not(.mark) {
-  width: 100%;
-}
-.selected a {
-  background-color: var(--select-suggest-selected-bg, #222);
-  text-decoration: underline
-}
-img {
-  height: 1.3em;
-  width: 1.3em;
-  position: relative;
-  object-fit: cover;
-  object-position: 0% 0%;
-}
-.disabled {
-  filter: grayscale(1.0) opacity(0.5);
-}
-.counter {
-  color: var(--select-suggest-information-text-color, #aaa);
-  font-size: 80%;
-  font-style: italic;
-}`}
-      </style>
-      <div className="container projects" style={projectFilterStyle}>
-        {projectProps.map((props) => (
-          <div
-            className={props.enable ? "mark" : "mark disabled"}
-            onClick={props.onClick}
-          >
-            {props.mark instanceof URL
-              ? <img src={props.mark.href} />
-              : `[${props.mark}]`}
-          </div>
-        ))}
-      </div>
-      <div className="container candidates" ref={ref} style={divStyle}>
-        {candidatesProps.slice(0, visibleCandidateCount).map((props, i) => (
-          <CandidateComponent
-            key={props.title}
-            {...props}
-            selected={selectedIndex === i}
-          />
-        ))}
-        {candidatesProps.length > limit && (
-          <div className="counter">
-            {`${candidatesProps.length - limit} more links`}
-          </div>
-        )}
-      </div>
+      <CSS />
+      {state.state === "completion" && (
+        <Completion
+          candidates={state.results}
+          range={state.range}
+          callback={callback_}
+          projects={projects}
+          dispatch={dispatch}
+          {...options}
+        />
+      )}
     </>
   );
 };
