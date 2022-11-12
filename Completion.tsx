@@ -4,8 +4,14 @@
 /** @jsx h */
 /** @jsxFrag Fragment */
 
-import { Fragment, h, useEffect, useMemo, useState } from "./deps/preact.tsx";
-import { usePosition } from "./usePosition.ts";
+import {
+  Fragment,
+  h,
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+} from "./deps/preact.tsx";
 import { insertText, Range, Scrapbox } from "./deps/scrapbox.ts";
 import {
   Candidate as CandidateComponent,
@@ -30,6 +36,7 @@ export interface CompletionProps {
   callback: (operators?: Operators) => void;
   mark: Record<string, string | URL>;
   projects: string[];
+  position: Pick<h.JSX.CSSProperties, "top" | "left" | "right">;
   dispatch: (action: Action) => void;
 }
 
@@ -45,7 +52,11 @@ export interface Operators {
 export const Completion = (
   {
     query,
-    range,
+    position: {
+      top,
+      left,
+      right,
+    },
     limit,
     enableSelfProjectOnStart,
     callback,
@@ -119,6 +130,13 @@ export const Completion = (
   const { selectedIndex, next, prev, selectLast, selectFirst } = useSelect(
     candidatesProps.length,
   );
+  const confirm = useCallback(
+    () =>
+      selectedIndex === -1
+        ? false
+        : (candidatesProps.at(selectedIndex)?.confirm?.(), true),
+    [selectedIndex, candidatesProps],
+  );
   useEffect(() =>
     callback(
       candidatesProps.length === 0 ? undefined : {
@@ -126,14 +144,7 @@ export const Completion = (
         selectPrev: (init?: SelectInit) => (prev(init), true),
         selectFirst: () => (selectFirst(), true),
         selectLast: () => (selectLast(), true),
-        confirm: () => {
-          const candidateEl = ref.current?.querySelector?.(
-            ".candidate.selected a.button",
-          );
-          return candidateEl instanceof HTMLAnchorElement
-            ? (candidateEl.click(), true)
-            : false;
-        },
+        confirm,
         cancel: () => (dispatch({ type: "cancel" }), true),
       } as const,
     ), [
@@ -142,10 +153,8 @@ export const Completion = (
     prev,
     selectFirst,
     selectLast,
+    confirm,
   ]);
-
-  // スタイル設定
-  const { ref, top, left, right } = usePosition(range);
 
   /** 補完windowのスタイル */
   const listStyle = useMemo<h.JSX.CSSProperties>(
@@ -198,7 +207,7 @@ export const Completion = (
       <div className="container projects" style={projectFilterStyle}>
         {projectProps.map((props) => <Mark {...props} />)}
       </div>
-      <div className="container candidates" ref={ref} style={listStyle}>
+      <div className="container candidates" style={listStyle}>
         {candidatesProps.map((props, i) => (
           <CandidateComponent
             key={props.title}

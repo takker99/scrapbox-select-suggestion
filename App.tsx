@@ -14,6 +14,7 @@ import {
   useState,
 } from "./deps/preact.tsx";
 import { useSelection } from "./useSelection.ts";
+import { usePosition } from "./usePosition.ts";
 import { Completion, Operators as OperatorsBase } from "./Completion.tsx";
 import { SelectInit } from "./useSelect.ts";
 import { CSS } from "./CSS.tsx";
@@ -183,14 +184,19 @@ export const App = (props: AppProps) => {
     [callback],
   );
 
+  // 座標計算
+  const { ref, ...position } = usePosition(range);
+
   return (
     <>
       <CSS />
+      <div className="compute" ref={ref} />
       {state.state === "completion" && (
         <Completion
           callback={callback_}
           projects={projects}
           dispatch={dispatch}
+          position={position}
           {...state}
           {...options}
         />

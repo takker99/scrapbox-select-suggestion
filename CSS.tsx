@@ -62,6 +62,9 @@ filter: grayscale(1.0) opacity(0.5);
 color: var(--select-suggest-information-text-color, #aaa);
        font-size: 80%;
        font-style: italic;
+}
+.compute {
+  display: none;
 }`}
   </style>
 );
