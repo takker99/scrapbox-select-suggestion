@@ -194,7 +194,7 @@ export const App = (props: AppProps) => {
           query: cursorLine.text.slice(pos.start + 1, pos.end - 1),
           context: "input",
           range: pos,
-          position: { line, char },
+          position: { line, char: pos.start },
         });
       };
 
