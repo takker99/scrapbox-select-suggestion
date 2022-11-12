@@ -115,6 +115,7 @@ export const App = (props: AppProps) => {
           type: scrapbox.Layout === "page" ? "enable" : "disable",
         },
       );
+    callback();
     scrapbox.addListener("layout:changed", callback);
     return () => scrapbox.removeListener("layout:changed", callback);
   }, [disabled]);
