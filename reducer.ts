@@ -56,9 +56,9 @@ export const reducer = (state: State, action: Action): State => {
       };
     }
     case "completionend":
-      return { state: "idle" };
+      return state.state === "idle" ? state : { state: "idle" };
     case "cancel":
-      return { state: "canceled" };
+      return state.state === "canceled" ? state : { state: "canceled" };
     case "disable":
       return { state: "disabled" };
     case "enable":
