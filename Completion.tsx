@@ -17,6 +17,7 @@ import {
   replaceLines,
   Scrapbox,
   takeCursor,
+  textInput,
 } from "./deps/scrapbox.ts";
 import {
   Candidate as CandidateComponent,
@@ -202,9 +203,8 @@ export const Completion = (
           enable: enableProjects.includes(project),
           mark: detectURL(mark[project] ?? "", import.meta.url) || project[0],
           onClick: () => {
-            const cursor = takeCursor();
             set(project, !enableProjects.includes(project));
-            cursor.focus();
+            textInput()!.focus();
           },
         }]
         : []
