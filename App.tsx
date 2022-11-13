@@ -192,10 +192,7 @@ export const App = (props: AppProps) => {
       }
 
       const cursor = takeCursor();
-      const callback = (e: Event) => {
-        // IME変換中の文字入力は無視する
-        if ((e as InputEvent).isComposing) return;
-
+      const callback = () => {
         const { line, char } = cursor.getPosition();
         const pos = detectLink(line, char);
         if (!pos) {
@@ -217,9 +214,8 @@ export const App = (props: AppProps) => {
         });
       };
 
-      const caret = textInput()!;
-      caret.addEventListener("input", callback);
-      return () => caret.removeEventListener("input", callback);
+      scrapbox.addListener("lines:changed", callback);
+      return () => scrapbox.removeListener("lines:changed", callback);
     },
     [state.state, state.context],
   );
@@ -295,9 +291,6 @@ const detectLink = (line: number, char: number) => {
   const charDOM = getCharDOM(line, char);
   // 行末にカーソルがあるときは、対応するDOMが存在しない
   if (!charDOM) return;
-  if (!(charDOM instanceof HTMLSpanElement)) {
-    throw TypeError(`span.c-${char} is not HTMLSpanElement`);
-  }
 
   // リンクのDOMを取得する
   // hashTagは未対応
