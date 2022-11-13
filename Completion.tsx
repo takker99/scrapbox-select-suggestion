@@ -216,10 +216,11 @@ export const Completion = (
   const listStyle = useMemo<h.JSX.CSSProperties>(
     () =>
       // undefinedとnullをまとめて判定したいので、厳密比較!==は使わない
-      candidatesProps.length > 0 && top != null && left != null
+      state === "completion" && candidatesProps.length > 0 && top != null &&
+        left != null
         ? { top, left }
         : { display: "none" },
-    [candidatesProps.length, top, left],
+    [candidatesProps.length, top, left, state],
   );
 
   /** project絞り込みパネルのスタイル
@@ -230,11 +231,12 @@ export const Completion = (
    */
   const projectFilterStyle = useMemo<h.JSX.CSSProperties>(
     () =>
-      candidates.length > 0 && top != null && right != null &&
+      state === "completion" && candidates.length > 0 && top != null &&
+        right != null &&
         projects.length > 1
         ? { top, right }
         : { display: "none" },
-    [top, right, candidates.length, projects.length],
+    [top, right, candidates.length, projects.length, state],
   );
 
   return (
