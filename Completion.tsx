@@ -24,10 +24,11 @@ import {
 } from "./Candidate.tsx";
 import { SelectInit, useSelect } from "./useSelect.ts";
 import { useSource } from "./useSource.ts";
+import { usePosition } from "./usePosition.ts";
 import { incrementalSearch } from "./incrementalSearch.ts";
 import { sort } from "./search.ts";
 import { useProjectFilter } from "./useProjectFilter.ts";
-import { Action } from "./reducer.ts";
+import { Action, State } from "./reducer.ts";
 import { logger } from "./debug.ts";
 import { detectURL } from "./detectURL.ts";
 declare const scrapbox: Scrapbox;
@@ -35,21 +36,15 @@ declare const scrapbox: Scrapbox;
 export interface CompletionProps {
   query: string;
   limit: number;
+  context?: State["context"];
+  state: State["state"];
+  range?: State["range"];
+  position?: State["position"];
   hideSelfMark: boolean;
-  context:
-    | {
-      context: "selection";
-      range?: undefined;
-    }
-    | {
-      context: "input";
-      range: { start: number; end: number };
-    };
   enableSelfProjectOnStart: boolean;
   callback: (operators?: Operators) => void;
   mark: Record<string, string | URL>;
   projects: string[];
-  position: Pick<h.JSX.CSSProperties, "top" | "left" | "right">;
   dispatch: (action: Action) => void;
 }
 
@@ -65,12 +60,10 @@ export interface Operators {
 export const Completion = (
   {
     query,
-    position: {
-      top,
-      left,
-      right,
-    },
+    position,
+    state,
     limit,
+    range,
     context,
     enableSelfProjectOnStart,
     callback,
@@ -89,8 +82,12 @@ export const Completion = (
   const [candidates, setCandidates] = useState<
     { title: string; projects: string[] }[]
   >([]);
-  useEffect(() =>
-    incrementalSearch(
+  useEffect(() => {
+    if (state !== "completion") {
+      setCandidates([]);
+      return;
+    }
+    return incrementalSearch(
       query,
       source,
       (candidates) =>
@@ -102,7 +99,8 @@ export const Completion = (
             })),
         ),
       { chunk: 5000 },
-    ), [source, query]);
+    );
+  }, [state, source, query]);
 
   /** 補完候補を挿入する函数
    *
@@ -113,7 +111,7 @@ export const Completion = (
     dispatch({ type: "cancel" });
 
     const text = project ? `[/${project}/${title}]` : `[${title}]`;
-    if (context.context === "selection") {
+    if (context === "selection") {
       insertText(text);
       return;
     }
@@ -124,11 +122,11 @@ export const Completion = (
     replaceLines(
       line,
       line,
-      `${prev.slice(0, context.range.start)}${text}${
-        prev.slice(context.range.end + 1)
+      `${prev.slice(0, range?.start ?? 0)}${text}${
+        prev.slice((range?.end ?? 0) + 1)
       }`,
     );
-  }, [context.context, context.range?.start, context.range?.end]);
+  }, [context, range?.start, range?.end]);
 
   // 表示する候補のみ、UI用データを作る
   const candidatesProps = useMemo<Omit<CandidateProps, "selected">[]>(() => {
@@ -188,31 +186,6 @@ export const Completion = (
     confirmSelected,
   ]);
 
-  /** 補完windowのスタイル */
-  const listStyle = useMemo<h.JSX.CSSProperties>(
-    () =>
-      // undefinedとnullをまとめて判定したいので、厳密比較!==は使わない
-      candidatesProps.length > 0 && top != null && left != null
-        ? { top, left }
-        : { display: "none" },
-    [candidatesProps.length, top, left],
-  );
-
-  /** project絞り込みパネルのスタイル
-   *
-   * projectが一つしか指定されていなければ表示しない
-   *
-   * 非表示の検索候補があれば表示し続ける
-   */
-  const projectFilterStyle = useMemo<h.JSX.CSSProperties>(
-    () =>
-      candidates.length > 0 && top != null && right != null &&
-        projects.length > 1
-        ? { top, right }
-        : { display: "none" },
-    [top, right, candidates.length, projects.length],
-  );
-
   // projectの絞り込み
   const projectProps = useMemo(() => {
     // 見つかったprojects
@@ -238,12 +211,43 @@ export const Completion = (
     );
   }, [candidates, projects, enableProjects, mark]);
 
+  const { ref, top, left, right } = usePosition(
+    position ?? { line: 0, char: 0 },
+  );
+
+  /** 補完windowのスタイル */
+  const listStyle = useMemo<h.JSX.CSSProperties>(
+    () =>
+      // undefinedとnullをまとめて判定したいので、厳密比較!==は使わない
+      state === "completion" && candidatesProps.length > 0 && top != null &&
+        left != null
+        ? { top, left }
+        : { display: "none" },
+    [candidatesProps.length, top, left, state],
+  );
+
+  /** project絞り込みパネルのスタイル
+   *
+   * projectが一つしか指定されていなければ表示しない
+   *
+   * 非表示の検索候補があれば表示し続ける
+   */
+  const projectFilterStyle = useMemo<h.JSX.CSSProperties>(
+    () =>
+      state === "completion" && candidates.length > 0 && top != null &&
+        right != null &&
+        projects.length > 1
+        ? { top, right }
+        : { display: "none" },
+    [top, right, candidates.length, projects.length, state],
+  );
+
   return (
     <>
       <div className="container projects" style={projectFilterStyle}>
         {projectProps.map((props) => <Mark {...props} />)}
       </div>
-      <div className="container candidates" style={listStyle}>
+      <div ref={ref} className="container candidates" style={listStyle}>
         {candidatesProps.map((props, i) => (
           <CandidateComponent
             key={props.title}
