@@ -83,7 +83,10 @@ export const Completion = (
     { title: string; projects: string[] }[]
   >([]);
   useEffect(() => {
-    if (state !== "completion") return;
+    if (state !== "completion") {
+      setCandidates([]);
+      return;
+    }
     return incrementalSearch(
       query,
       source,
