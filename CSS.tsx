@@ -24,6 +24,10 @@ max-width: 80vw;
 .projects {
 max-width: 10vw;
 margin-right: 4px;
+display: grid;
+grid-template-rows: repeat(4, 1fr);
+grid-auto-flow: column;
+     direction: rtl;
 }
 .container.candidates > :not(:first-child) {
   border-top: 1px solid var(--select-suggest-border-color, #eee);
