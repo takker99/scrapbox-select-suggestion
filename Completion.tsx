@@ -27,7 +27,7 @@ import { SelectInit, useSelect } from "./useSelect.ts";
 import { useSource } from "./useSource.ts";
 import { usePosition } from "./usePosition.ts";
 import { incrementalSearch } from "./incrementalSearch.ts";
-import { sort } from "./search.ts";
+import { makeCompareAse } from "./sort.ts";
 import { useProjectFilter } from "./useProjectFilter.ts";
 import { Action, State } from "./reducer.ts";
 import { logger } from "./debug.ts";
@@ -83,6 +83,7 @@ export const Completion = (
   const [candidates, setCandidates] = useState<
     { title: string; projects: string[] }[]
   >([]);
+  const compareAse = useMemo(() => makeCompareAse(projects), [projects]);
   useEffect(() => {
     if (state !== "completion") {
       setCandidates([]);
@@ -93,15 +94,14 @@ export const Completion = (
       source,
       (candidates) =>
         setCandidates(
-          sort(candidates, projects)
-            .map((page) => ({
-              title: page.title,
-              projects: page.metadata.map(({ project }) => project),
-            })),
+          candidates.sort(compareAse).map((page) => ({
+            title: page.title,
+            projects: page.metadata.map(({ project }) => project),
+          })),
         ),
       { chunk: 5000 },
     );
-  }, [state, source, query]);
+  }, [state, source, query, compareAse]);
 
   /** 補完候補を挿入する函数
    *
