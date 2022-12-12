@@ -22,7 +22,7 @@ export const CSS = () => (
 .candidates {
   max-width: 80vw;
 }
-.candidates:is(:not([data-os*="android"]), :not([data-os*="ios"])) {
+.candidates:not([data-os*="android"]):not([data-os*="ios"]) {
   font-size:11px;
 
 }
