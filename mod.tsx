@@ -41,6 +41,13 @@ export interface SetupInit {
    */
   hideSelfMark?: boolean;
 
+  /** カスタムCSS
+   *
+   * URL or URL文字列の場合は、CSSファイルへのURLだとみなして<link />で読み込む
+   * それ以外の場合は、インラインCSSとして<style />で読み込む
+   */
+  style?: URL | string;
+
   /** scriptを実行しているprojectのソースを、設定に関わらず無条件で有効にするかどうか
    *
    * @default true (ソースに含める)
@@ -63,6 +70,7 @@ export const setup = (init?: SetupInit): Promise<Operators> => {
     limit = 5,
     debug = false,
     mark = {},
+    style = "",
     hideSelfMark = true,
     enableSelfProjectOnStart = true,
   } = init ?? {};
@@ -91,6 +99,7 @@ export const setup = (init?: SetupInit): Promise<Operators> => {
           projects={projects}
           mark={mark}
           hideSelfMark={hideSelfMark}
+          style={style}
           callback={resolve}
           enableSelfProjectOnStart={enableSelfProjectOnStart}
         />,

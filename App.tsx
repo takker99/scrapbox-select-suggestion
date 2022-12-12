@@ -15,6 +15,7 @@ import {
 } from "./deps/preact.tsx";
 import { useSelection } from "./useSelection.ts";
 import { Completion, Operators as OperatorsBase } from "./Completion.tsx";
+import { UserCSS } from "./UserCSS.tsx";
 import { SelectInit } from "./useSelect.ts";
 import { CSS } from "./CSS.tsx";
 import {
@@ -93,6 +94,7 @@ export interface AppProps {
   callback: (operators: Operators) => void;
   projects: string[];
   mark: Record<string, string | URL>;
+  style: string | URL;
   hideSelfMark: boolean;
   enableSelfProjectOnStart: boolean;
 }
@@ -101,6 +103,7 @@ export const App = (props: AppProps) => {
   const {
     callback,
     projects,
+    style,
     ...options
   } = props;
   const [state, dispatch] = useReducer(reducer, { state: "idle", query: "" });
@@ -263,6 +266,7 @@ export const App = (props: AppProps) => {
   return (
     <>
       <CSS />
+      <UserCSS style={style} />
       <Completion
         callback={setOperators}
         projects={projects}
