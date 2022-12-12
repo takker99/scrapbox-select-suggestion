@@ -1,4 +1,5 @@
-import { Candidate, CandidateWithPoint, makeFilter } from "./search.ts";
+import { makeFilter, MatchInfo } from "./search.ts";
+import { Candidate } from "./source.ts";
 import { logger } from "./debug.ts";
 
 export interface IncrementalSearchOptions {
@@ -18,10 +19,10 @@ export interface IncrementalSearchOptions {
 export const incrementalSearch = (
   query: string,
   source: Candidate[],
-  listener: (candidates: CandidateWithPoint[]) => void,
+  listener: (candidates: (Candidate & MatchInfo)[]) => void,
   options?: IncrementalSearchOptions,
 ): () => void => {
-  const filter = makeFilter(query);
+  const filter = makeFilter<Candidate>(query);
   if (!filter) {
     listener([]);
     return () => {};
@@ -29,7 +30,7 @@ export const incrementalSearch = (
 
   let terminate = false;
   let timer: number | undefined;
-  const candidates: CandidateWithPoint[] = [];
+  const candidates: (Candidate & MatchInfo)[] = [];
   const update = () => {
     listener(candidates);
     timer = undefined;

@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "./deps/preact.tsx";
-import { Candidate } from "./search.ts";
 import { checkUpdate, listenUpdate, load, Source } from "./storage.ts";
+import { Candidate } from "./source.ts";
 
 /** 補完ソースを提供するhook */
 export const useSource = (
