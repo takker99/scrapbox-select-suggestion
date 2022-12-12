@@ -226,6 +226,9 @@ export const Completion = (
     [candidatesProps.length, top, left, state],
   );
 
+  /** UserAgent判定 */
+  const os = useMemo(() => document.documentElement.dataset.os ?? "", []);
+
   /** project絞り込みパネルのスタイル
    *
    * projectが一つしか指定されていなければ表示しない
@@ -244,10 +247,19 @@ export const Completion = (
 
   return (
     <>
-      <div className="container projects" style={projectFilterStyle}>
+      <div
+        className="container projects"
+        data-os={os}
+        style={projectFilterStyle}
+      >
         {projectProps.map((props) => <Mark {...props} />)}
       </div>
-      <div ref={ref} className="container candidates" style={listStyle}>
+      <div
+        ref={ref}
+        className="container candidates"
+        data-os={os}
+        style={listStyle}
+      >
         {candidatesProps.map((props, i) => (
           <CandidateComponent
             key={props.title}

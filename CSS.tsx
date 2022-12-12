@@ -15,31 +15,40 @@ export const CSS = () => (
 
   background-color: var(--select-suggest-bg, #111);
   font-family: var(--select-suggest-font-family, "Open Sans", Helvetica, Arial, "Hiragino Sans", sans-serif);
+  font-size: 14px;
   color: var(--select-suggest-text-color, #eee);
   border-radius: 4px;
 }
 .candidates {
   max-width: 80vw;
 }
+.candidates:is(:not([data-os*="android"]), :not([data-os*="ios"])) {
+  font-size:11px;
+
+}
 .projects {
-  max-width: 10vw;
   margin-right: 4px;
   display: grid;
   grid-template-rows: repeat(4, 1fr);
   grid-auto-flow: column;
   direction: rtl;
 }
-.container.candidates > :not(:first-child) {
+.projects:is([data-os*="android"], [data-os*="ios"]) > * {
+  padding: 6px;
+}
+
+.candidates > :not(:first-child) {
   border-top: 1px solid var(--select-suggest-border-color, #eee);
 }
-.container.candidates > *{
-  font-size: 11px;
+.candidates > *{
   line-height: 1.2em;
   padding: 0.5em 10px;
 }
+
 .candidate {
   display: flex;
 }
+
 a {
   display: block;
   text-decoration: none;
