@@ -29,7 +29,7 @@ export const CSS = () => (
 .projects {
   margin-right: 4px;
   display: grid;
-  grid-template-rows: repeat(4, 1fr);
+  grid-template-rows: repeat(4, min-content);
   grid-auto-flow: column;
   direction: rtl;
 }
