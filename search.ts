@@ -59,9 +59,8 @@ export const makeFilter = <T extends Candidate>(
 
   return (source) => {
     let result = [...source];
-    const max = getMaxDistance[[...queries.join("")].length];
     for (const query of queries) {
-      result = filter(query, max, result);
+      result = filter(query, result);
     }
     return result as (T & MatchInfo)[];
   };
@@ -69,10 +68,10 @@ export const makeFilter = <T extends Candidate>(
 
 const filter = <T extends Candidate>(
   query: string,
-  maxDistance: number,
   source: (T & Partial<MatchInfo>)[],
 ): (T & MatchInfo)[] => {
   const m = [...query].length;
+  const maxDistance = getMaxDistance[m];
   const filter_ = bitDP(query);
 
   return source.flatMap(
@@ -81,9 +80,9 @@ const filter = <T extends Candidate>(
       dist ??= 0;
 
       const result = filter_(title)
-        // 別のqueryでマッチした箇所は除く
         .flatMap((d, i) =>
-          dist! + d <= maxDistance &&
+          d <= maxDistance &&
+            // 別のqueryでマッチした箇所は除く
             matches!.every(([s, e]) => i + m <= s || e < i)
             ? [[i, d]]
             : []
@@ -94,15 +93,18 @@ const filter = <T extends Candidate>(
         if (prev.dist <= dist) return prev;
         prev.dist = dist;
         prev.start = i;
-        prev.end = i + m - 1;
         return prev;
-      }, { dist: m, start: 0, end: m - 1 });
+      }, { dist: m, start: 0 });
 
-      const newDist = newMatch.dist + dist;
-      if (newDist > maxDistance) return [];
-
-      matches.push([newMatch.start, newMatch.end]);
-      return [{ title, dist: newDist, matches, ...props } as (T & MatchInfo)];
+      matches.push([newMatch.start, newMatch.start + m - 1]);
+      return [
+        {
+          title,
+          dist: newMatch.dist + dist,
+          matches,
+          ...props,
+        } as (T & MatchInfo),
+      ];
     },
   );
 };
