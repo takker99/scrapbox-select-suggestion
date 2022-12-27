@@ -18,13 +18,8 @@ import { Completion, Operators as OperatorsBase } from "./Completion.tsx";
 import { UserCSS } from "./UserCSS.tsx";
 import { SelectInit } from "./useSelect.ts";
 import { CSS } from "./CSS.tsx";
-import {
-  getCharDOM,
-  Line,
-  Scrapbox,
-  takeCursor,
-  textInput,
-} from "./deps/scrapbox.ts";
+import { detectLink } from "./detectLink.ts";
+import { Line, Scrapbox, takeCursor, textInput } from "./deps/scrapbox.ts";
 import { reducer } from "./reducer.ts";
 declare const scrapbox: Scrapbox;
 
@@ -290,32 +285,3 @@ const isSelectMode = (cursorLine: Line, selectedText: string) =>
     "codeBlock" in cursorLine ||
     "title" in cursorLine ||
     ("tableBlock" in cursorLine && cursorLine.tableBlock.start));
-
-const detectLink = (line: number, char: number) => {
-  const charDOM = getCharDOM(line, char);
-  // 行末にカーソルがあるときは、対応するDOMが存在しない
-  if (!charDOM) return;
-
-  // リンクのDOMを取得する
-  // hashTagは未対応
-  const link = charDOM.closest('a.page-link:not([type="hashTag"])');
-  if (!link) return;
-  if (!(link instanceof HTMLAnchorElement)) {
-    throw TypeError(
-      'a.page-link:not([type="hashTag"]) is not HTMLAnchorElement',
-    );
-  }
-
-  // リンクの文字列の開始位置と終了位置を計算する
-  // []も込み
-  const chars = Array.from(
-    link.getElementsByClassName("char-index"),
-  ) as HTMLSpanElement[];
-  if (chars.length === 0) throw Error("a.page-link must have a char at least.");
-
-  const isCursorLine = link.closest(".cursor-line") != null;
-  const start = parseInt(chars[0].dataset.charIndex ?? "0");
-  const end = parseInt(chars[chars.length - 1].dataset.charIndex ?? "0");
-
-  return isCursorLine ? { start, end } : { start: start - 1, end: end + 1 };
-};
