@@ -205,7 +205,7 @@ export const App = (props: AppProps) => {
         const cursorLine = scrapbox.Page.lines[line];
         dispatch({
           type: "completionupdate",
-          query: cursorLine.text.slice(pos.start + 1, pos.end - 1),
+          query: cursorLine.text.slice(pos.start + 1, pos.end),
           context: "input",
           range: pos,
           position: { line, char: pos.start },
