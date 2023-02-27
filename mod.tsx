@@ -35,12 +35,6 @@ export interface SetupInit {
    */
   mark?: Record<string, string | URL>;
 
-  /** 現在ページと同じprojectのアイコンを表示するかどうか
-   *
-   * @default true (表示しない)
-   */
-  hideSelfMark?: boolean;
-
   /** カスタムCSS
    *
    * URL or URL文字列の場合は、CSSファイルへのURLだとみなして<link />で読み込む
@@ -71,7 +65,6 @@ export const setup = (init?: SetupInit): Promise<Operators> => {
     debug = false,
     mark = {},
     style = "",
-    hideSelfMark = true,
     enableSelfProjectOnStart = true,
   } = init ?? {};
   const projects = (() => {
@@ -98,7 +91,6 @@ export const setup = (init?: SetupInit): Promise<Operators> => {
           limit={limit}
           projects={projects}
           mark={mark}
-          hideSelfMark={hideSelfMark}
           style={style}
           callback={resolve}
           enableSelfProjectOnStart={enableSelfProjectOnStart}
