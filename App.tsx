@@ -90,7 +90,6 @@ export interface AppProps {
   projects: string[];
   mark: Record<string, string | URL>;
   style: string | URL;
-  hideSelfMark: boolean;
   enableSelfProjectOnStart: boolean;
 }
 

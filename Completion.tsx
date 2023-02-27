@@ -41,7 +41,6 @@ export interface CompletionProps {
   state: State["state"];
   range?: State["range"];
   position?: State["position"];
-  hideSelfMark: boolean;
   enableSelfProjectOnStart: boolean;
   callback: (operators?: Operators) => void;
   mark: Record<string, string | URL>;
@@ -71,7 +70,6 @@ export const Completion = (
     projects,
     dispatch,
     mark,
-    hideSelfMark,
   }: CompletionProps,
 ) => {
   const { projects: enableProjects, set } = useProjectFilter(projects, {
@@ -143,9 +141,10 @@ export const Completion = (
           enableProjects.includes(project)
             ? [{
               name: project,
-              mark: hideSelfMark && project === scrapbox.Project.name
+              mark: project === scrapbox.Project.name && projects.length < 2
                 ? ""
-                : detectURL(mark[project] ?? "", import.meta.url) || project[0],
+                : detectURL(mark[project] ?? "", import.meta.url) ||
+                  project[0],
               confirm: () => confirm(candidate.title, project),
             }]
             : []
@@ -155,7 +154,7 @@ export const Completion = (
     logger.timeEnd("filtering by projects");
 
     return result;
-  }, [enableProjects, candidates, limit, mark, hideSelfMark, confirm]);
+  }, [enableProjects, projects.length, candidates, limit, mark, confirm]);
 
   // 候補選択
   const { selectedIndex, next, prev, selectLast, selectFirst } = useSelect(
