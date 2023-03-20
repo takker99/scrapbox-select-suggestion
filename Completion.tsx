@@ -29,6 +29,7 @@ import { usePosition } from "./usePosition.ts";
 import { incrementalSearch } from "./incrementalSearch.ts";
 import { makeCompareAse } from "./sort.ts";
 import { useProjectFilter } from "./useProjectFilter.ts";
+import { useOS } from "./useOS.ts";
 import { Action, State } from "./reducer.ts";
 import { logger } from "./debug.ts";
 import { detectURL } from "./detectURL.ts";
@@ -225,9 +226,6 @@ export const Completion = (
     [candidatesProps.length, top, left, state],
   );
 
-  /** UserAgent判定 */
-  const os = useMemo(() => document.documentElement.dataset.os ?? "", []);
-
   /** project絞り込みパネルのスタイル
    *
    * projectが一つしか指定されていなければ表示しない
@@ -243,6 +241,8 @@ export const Completion = (
         : { display: "none" },
     [top, right, candidates.length, projects.length, state],
   );
+
+  const os = useOS();
 
   return (
     <>
