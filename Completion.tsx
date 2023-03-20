@@ -192,13 +192,12 @@ export const Completion = (
 
   // projectの絞り込み
   const projectProps = useMemo(() => {
-    // 見つかったprojects
-    const found = new Set<string>();
-    for (const candidate of candidates) {
-      for (const project of candidate.projects) {
-        found.add(project);
-      }
-    }
+    /** 検索で見つかったprojects */
+    const found = new Set(
+      candidates.flatMap((candidate) => candidate.projects),
+    );
+
+    // 予め設定されたprojectsから、検索で見つかったもののみ表示する
     return projects.flatMap((project) =>
       found.has(project)
         ? [{
