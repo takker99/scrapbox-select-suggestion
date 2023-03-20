@@ -92,11 +92,14 @@ export const Completion = (
       query,
       source,
       (candidates) =>
-        setCandidates(
-          candidates.sort(compareAse).map((page) => ({
-            title: page.title,
-            projects: page.metadata.map(({ project }) => project),
-          })),
+        setCandidates((prev) =>
+          // まだ候補が見つからない場合は、前回の検索結果を表示したままにする
+          candidates.length === 0
+            ? prev
+            : candidates.sort(compareAse).map((page) => ({
+              title: page.title,
+              projects: page.metadata.map(({ project }) => project),
+            }))
         ),
       { chunk: 5000 },
     );
