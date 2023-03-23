@@ -12,12 +12,7 @@ import {
   useMemo,
   useState,
 } from "./deps/preact.tsx";
-import {
-  insertText,
-  replaceLines,
-  Scrapbox,
-  takeCursor,
-} from "./deps/scrapbox.ts";
+import { Scrapbox } from "./deps/scrapbox.ts";
 import {
   Candidate as CandidateComponent,
   CandidateProps,
@@ -29,23 +24,23 @@ import { incrementalSearch } from "./incrementalSearch.ts";
 import { makeCompareAse } from "./sort.ts";
 import { useProjectFilter } from "./useProjectFilter.ts";
 import { useOS } from "./useOS.ts";
-import { Action, State } from "./reducer.ts";
+import { UseLifecycleResult } from "./useLifecycle.ts";
+import { CompletionState } from "./reducer.ts";
 import { logger } from "./debug.ts";
 import { detectURL } from "./detectURL.ts";
 declare const scrapbox: Scrapbox;
 
-export interface CompletionProps {
-  query: string;
+export interface CompletionProps extends
+  Pick<
+    UseLifecycleResult,
+    "confirmAfter" | "cancel" | "freezeUntil"
+  >,
+  Omit<CompletionState, "type" | "context"> {
   limit: number;
-  context?: State["context"];
-  state: State["state"];
-  range?: State["range"];
-  position?: State["position"];
   enableSelfProjectOnStart: boolean;
   callback: (operators?: Operators) => void;
   mark: Record<string, string | URL>;
   projects: string[];
-  dispatch: (action: Action) => void;
 }
 
 export interface Operators {
@@ -59,76 +54,37 @@ export interface Operators {
 
 export const Completion = (
   {
-    query,
     position,
-    state,
+    query,
+    start,
     limit,
-    range,
-    context,
     enableSelfProjectOnStart,
     callback,
     projects,
-    dispatch,
     mark,
+    confirmAfter,
+    cancel,
+    freezeUntil,
   }: CompletionProps,
 ) => {
   const { projects: enableProjects, set } = useProjectFilter(projects, {
     enableSelfProjectOnStart,
   });
 
-  // 検索
-  const source = useSource(projects);
-  const [candidates, setCandidates] = useState<
-    { title: string; projects: string[] }[]
-  >([]);
-  const compareAse = useMemo(() => makeCompareAse(projects), [projects]);
-  useEffect(() => {
-    if (state !== "completion") {
-      setCandidates([]);
-      return;
-    }
-    return incrementalSearch(
-      query,
-      source,
-      (candidates) =>
-        setCandidates((prev) =>
-          // まだ候補が見つからない場合は、前回の検索結果を表示したままにする
-          candidates.length === 0
-            ? prev
-            : candidates.sort(compareAse).map((page) => ({
-              title: page.title,
-              projects: page.metadata.map(({ project }) => project),
-            }))
-        ),
-      { chunk: 5000 },
-    );
-  }, [state, source, query, compareAse]);
+  /** 検索結果 */
+  const candidates = useCandidates(projects, query);
 
   /** 補完候補を挿入する函数
    *
    * 起動している補完の種類に応じて挙動を変える
    */
   const confirm = useCallback((title: string, project?: string) => {
-    // ユーザーが文字を入力したと補完判定で誤認識されないよう、一旦補完を切ってから編集する
-    dispatch({ type: "cancel" });
-
     const text = project ? `[/${project}/${title}]` : `[${title}]`;
-    if (context === "selection") {
-      insertText(text);
-      return;
-    }
-    const line = takeCursor().getPosition().line;
-    if (scrapbox.Layout !== "page") return;
-    const prev = scrapbox.Page.lines[line].text;
-
-    replaceLines(
-      line,
-      line,
-      `${prev.slice(0, range?.start ?? 0)}${text}${
-        prev.slice((range?.end ?? 0) + 1)
-      }`,
+    // ユーザーが文字を入力したと補完判定で誤認識されないよう、一旦補完を切ってから編集する
+    confirmAfter((prev) =>
+      `${prev.slice(0, start)}${text}${prev.slice(start + [...query].length)}`
     );
-  }, [context, range?.start, range?.end]);
+  }, [start, query]);
 
   // 表示する候補のみ、UI用データを作る
   const candidatesProps = useMemo<Omit<CandidateProps, "selected">[]>(() => {
@@ -178,7 +134,7 @@ export const Completion = (
         selectFirst: () => (selectFirst(), true),
         selectLast: () => (selectLast(), true),
         confirm: confirmSelected,
-        cancel: () => (dispatch({ type: "cancel" }), true),
+        cancel: () => (cancel(), true),
       } as const,
     ), [
     callback,
@@ -203,28 +159,27 @@ export const Completion = (
           name: project,
           enable: enableProjects.includes(project),
           mark: detectURL(mark[project] ?? "", import.meta.url) || project[0],
-          onClick: () => {
-            set(project, !enableProjects.includes(project));
-            takeCursor().focus();
-          },
+          onClick: () =>
+            freezeUntil(() => set(project, !enableProjects.includes(project))),
         }]
         : []
     );
   }, [candidates, projects, enableProjects, mark]);
 
-  const { ref, top, left, right } = usePosition(
-    position ?? { line: 0, char: 0 },
-  );
+  const { ref, top, left, right } = usePosition({
+    line: position.line,
+    char: start,
+  });
 
   /** 補完windowのスタイル */
   const listStyle = useMemo<h.JSX.CSSProperties>(
     () =>
       // undefinedとnullをまとめて判定したいので、厳密比較!==は使わない
-      state === "completion" && candidatesProps.length > 0 && top != null &&
+      candidatesProps.length > 0 && top != null &&
         left != null
         ? { top, left }
         : { display: "none" },
-    [candidatesProps.length, top, left, state],
+    [candidatesProps.length, top, left],
   );
 
   /** project絞り込みパネルのスタイル
@@ -235,12 +190,13 @@ export const Completion = (
    */
   const projectFilterStyle = useMemo<h.JSX.CSSProperties>(
     () =>
-      state === "completion" && candidates.length > 0 && top != null &&
+      // undefinedとnullをまとめて判定したいので、厳密比較!==は使わない
+      candidatesProps.length > 0 && top != null &&
         right != null &&
         projects.length > 1
         ? { top, right }
         : { display: "none" },
-    [top, right, candidates.length, projects.length, state],
+    [top, right, candidates.length, projects.length],
   );
 
   const os = useOS();
@@ -275,6 +231,36 @@ export const Completion = (
       </div>
     </>
   );
+};
+
+const useCandidates = (
+  projects: string[],
+  query: string,
+) => {
+  // 検索
+  const source = useSource(projects);
+  const [candidates, setCandidates] = useState<
+    { title: string; projects: string[] }[]
+  >([]);
+  const compareAse = useMemo(() => makeCompareAse(projects), [projects]);
+  useEffect(() =>
+    incrementalSearch(
+      query,
+      source,
+      (candidates) =>
+        setCandidates((prev) =>
+          // まだ候補が見つからない場合は、前回の検索結果を表示したままにする
+          candidates.length === 0
+            ? prev
+            : candidates.sort(compareAse).map((page) => ({
+              title: page.title,
+              projects: page.metadata.map(({ project }) => project),
+            }))
+        ),
+      { chunk: 5000 },
+    ), [source, query, compareAse]);
+
+  return candidates;
 };
 
 const Mark = (
