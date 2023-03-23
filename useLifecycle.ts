@@ -2,9 +2,21 @@
 /// <reference lib="esnext" />
 /// <reference lib="dom" />
 
-import { useCallback, useEffect, useReducer, useRef } from "./deps/preact.tsx";
-import { useSelection } from "./useSelection.ts";
-import { insertText, Line, Scrapbox, takeStores } from "./deps/scrapbox.ts";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useReducer,
+  useRef,
+} from "./deps/preact.tsx";
+import {
+  insertText,
+  Line,
+  Scrapbox,
+  takeCursor,
+  takeSelection,
+  takeStores,
+} from "./deps/scrapbox.ts";
 import { reducer, State } from "./reducer.ts";
 declare const scrapbox: Scrapbox;
 
@@ -34,24 +46,34 @@ export interface UseLifecycleResult {
 export const useLifecycle = (): UseLifecycleResult => {
   const [state, dispatch] = useReducer(reducer, { type: "ready" });
 
-  /** cacheしたページ本文。
+  const getLines = useCachedLines();
+  /** dispatchをdebounceしたもの
    *
-   * 他のeventがlines:changedと同じタイミングでdispatchが飛ばないよう、re-renderの対象からlinesを外しておく
+   * cursor:changedのみ100ms待機させる
    */
-  const lines = useRef<Line[] | undefined>();
+  const debouncedDispatch = useMemo(() => {
+    let timer: number | undefined;
+    return (type: "lines:changed" | "selection:changed" | "cursor:changed") => {
+      if (timer !== undefined) clearTimeout(timer);
+      timer = setTimeout(
+        () => {
+          const { cursor, selection } = takeStores();
+          dispatch({
+            type,
+            lines: getLines(),
+            range: selection.getRange({ normalizeOrder: true }),
+            position: cursor.getPosition(),
+          });
+        },
+        type === "cursor:changed" ? 100 : undefined,
+      );
+    };
+  }, []);
+
   // テキスト入力監視
   useEffect(() => {
     const callback = () => {
-      lines.current = scrapbox.Layout === "page"
-        ? scrapbox.Page.lines
-        : undefined;
-      const { cursor, selection } = takeStores();
-      dispatch({
-        type: "lines:changed",
-        lines: lines.current,
-        range: selection.getRange({ normalizeOrder: true }),
-        position: cursor.getPosition(),
-      });
+      debouncedDispatch("lines:changed");
     };
     scrapbox.addListener("lines:changed", callback);
     scrapbox.addListener("layout:changed", callback);
@@ -62,30 +84,23 @@ export const useLifecycle = (): UseLifecycleResult => {
   }, []);
 
   // 選択範囲変更監視
-  const selection = useSelection();
   useEffect(() => {
-    const { cursor, selection } = takeStores();
-    dispatch({
-      type: "selection:changed",
-      lines: lines.current,
-      range: selection.getRange({ normalizeOrder: true }),
-      position: cursor.getPosition(),
-    });
-  }, [selection]);
+    const callback = () => {
+      debouncedDispatch("selection:changed");
+    };
+    const selection = takeSelection();
+    selection.addChangeListener(callback);
+    return () => selection.removeChangeListener(callback);
+  }, []);
 
   // カーソル操作監視
   // 入力補完が起動しているときのみ監視する
   useEffect(() => {
     if (state.context !== "input") return;
-    const { cursor, selection } = takeStores();
     const callback = () => {
-      dispatch({
-        type: "cursor:changed",
-        lines: lines.current,
-        range: selection.getRange({ normalizeOrder: true }),
-        position: cursor.getPosition(),
-      });
+      debouncedDispatch("cursor:changed");
     };
+    const cursor = takeCursor();
     cursor.addChangeListener(callback);
     return () => cursor.removeChangeListener(callback);
   }, [state.context]);
@@ -111,12 +126,13 @@ export const useLifecycle = (): UseLifecycleResult => {
   );
   const confirmAfter: UseLifecycleResult["confirmAfter"] = useCallback(
     async (updator) => {
+      const lines = getLines();
       // 補完が無効のときは何もしない
-      if (!lines.current) return;
+      if (!lines) return;
       dispatch({ type: "lock" });
       const { cursor, selection } = takeStores();
       const line = cursor.getPosition().line;
-      const prev = lines.current[line].text;
+      const prev = lines[line].text;
       const text = await Promise.resolve(
         updator(prev),
       );
@@ -133,4 +149,33 @@ export const useLifecycle = (): UseLifecycleResult => {
   );
 
   return { state, setEnable, cancel, freezeUntil, confirmAfter };
+};
+
+/** scrapbox.Page.linesを遅延取得するhooks
+ *
+ * scrapbox.Page.linesの生成には時間がかかるので、実際に必要になるまで呼び出さないようにする
+ */
+const useCachedLines = (): () => Line[] | undefined => {
+  const lines = useRef(scrapbox.Page.lines);
+  const isUpdatedYet = useRef(false);
+
+  useEffect(() => {
+    const callback = () => {
+      isUpdatedYet.current = true;
+    };
+    scrapbox.addListener("lines:changed", callback);
+    scrapbox.addListener("layout:changed", callback);
+    return () => {
+      scrapbox.removeListener("lines:changed", callback);
+      scrapbox.removeListener("layout:changed", callback);
+    };
+  }, []);
+
+  return useCallback(() => {
+    if (isUpdatedYet.current) {
+      lines.current = scrapbox.Page.lines;
+      isUpdatedYet.current = false;
+    }
+    return lines.current ?? undefined;
+  }, []);
 };
