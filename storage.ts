@@ -16,7 +16,9 @@ import {
   NotMemberError,
   Project,
 } from "./deps/scrapbox.ts";
-import { logger } from "./debug.ts";
+import { createDebug } from "./debug.ts";
+
+const logger = createDebug("scrapbox-select-suggestion:storage.ts");
 
 /** リンクデータ
  *
