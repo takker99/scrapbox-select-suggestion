@@ -16,9 +16,7 @@ import { Completion, Operators as OperatorsBase } from "./Completion.tsx";
 import { UserCSS } from "./UserCSS.tsx";
 import { SelectInit } from "./useSelect.ts";
 import { CSS } from "./CSS.tsx";
-import { Scrapbox } from "./deps/scrapbox.ts";
 import { useLifecycle } from "./useLifecycle.ts";
-declare const scrapbox: Scrapbox;
 
 /** 外部開放用API */
 export interface Operators {
