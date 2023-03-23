@@ -1,0 +1,1319 @@
+[
+  {
+    "id": "63f9c73f28fa81001b7cbaa4",
+    "text": "scrapbox2anki",
+    "userId": "5ef2bdebb60650001e1280f0",
+    "created": 1677313857,
+    "updated": 1677313859,
+    "title": true,
+    "section": { "number": 0, "start": true, "end": false }
+  },
+  {
+    "id": "63f9c7dd1280f00000dd8782",
+    "text": "[scrapbox]上で[apkg]を作成するworkflow",
+    "userId": "5ef2bdebb60650001e1280f0",
+    "created": 1677314014,
+    "updated": 1677314024,
+    "section": { "number": 0, "start": false, "end": false },
+    "nodes": [
+      {
+        "type": "link",
+        "unit": {
+          "page": "scrapbox",
+          "content": "scrapbox",
+          "whole": "[scrapbox]"
+        },
+        "children": "scrapbox"
+      },
+      "上で",
+      {
+        "type": "link",
+        "unit": { "page": "apkg", "content": "apkg", "whole": "[apkg]" },
+        "children": "apkg"
+      },
+      "を作成するworkflow"
+    ]
+  },
+  {
+    "id": "63f9c7e91280f00000dd8783",
+    "text": " https://github.com/takker99/scrapbox2anki",
+    "userId": "5ef2bdebb60650001e1280f0",
+    "created": 1677314026,
+    "updated": 1677316188,
+    "section": { "number": 0, "start": false, "end": false },
+    "nodes": {
+      "type": "indent",
+      "unit": {
+        "whole": " https://github.com/takker99/scrapbox2anki",
+        "tag": " ",
+        "content": "https://github.com/takker99/scrapbox2anki"
+      },
+      "children": {
+        "type": "url",
+        "unit": {
+          "content": "https://github.com/takker99/scrapbox2anki",
+          "whole": "https://github.com/takker99/scrapbox2anki"
+        },
+        "children": "https://github.com/takker99/scrapbox2anki"
+      }
+    }
+  },
+  {
+    "id": "63f9c7421280f00000dd877b",
+    "text": "[Scrapboxを使ったAnkiデータ構築案：穴埋め特化ver]やら[Scrapboxを使ったAnkiデータ構築案1]やらのコードを全部ここに入れることにした",
+    "userId": "5ef2bdebb60650001e1280f0",
+    "created": 1677313859,
+    "updated": 1677313885,
+    "section": { "number": 0, "start": false, "end": false },
+    "nodes": [
+      {
+        "type": "link",
+        "unit": {
+          "page": "Scrapboxを使ったAnkiデータ構築案：穴埋め特化ver",
+          "content": "Scrapboxを使ったAnkiデータ構築案：穴埋め特化ver",
+          "whole": "[Scrapboxを使ったAnkiデータ構築案：穴埋め特化ver]"
+        },
+        "children": "Scrapboxを使ったAnkiデータ構築案：穴埋め特化ver"
+      },
+      "やら",
+      {
+        "type": "link",
+        "unit": {
+          "page": "Scrapboxを使ったAnkiデータ構築案1",
+          "content": "Scrapboxを使ったAnkiデータ構築案1",
+          "whole": "[Scrapboxを使ったAnkiデータ構築案1]"
+        },
+        "children": "Scrapboxを使ったAnkiデータ構築案1"
+      },
+      "やらのコードを全部ここに入れることにした"
+    ]
+  },
+  {
+    "id": "63f9e6f31280f00000dae692",
+    "text": " コードが複数のページに分かれて複雑になってきた",
+    "userId": "5ef2bdebb60650001e1280f0",
+    "created": 1677321971,
+    "updated": 1677321972,
+    "section": { "number": 0, "start": false, "end": false },
+    "nodes": {
+      "type": "indent",
+      "unit": {
+        "whole": " コードが複数のページに分かれて複雑になってきた",
+        "tag": " ",
+        "content": "コードが複数のページに分かれて複雑になってきた"
+      },
+      "children": "コードが複数のページに分かれて複雑になってきた"
+    }
+  },
+  {
+    "id": "63f9c75c1280f00000dd877d",
+    "text": "  [scrapboxでコードの差分を管理するのは非常に難しい]",
+    "userId": "5ef2bdebb60650001e1280f0",
+    "created": 1677313885,
+    "updated": 1677321972,
+    "section": { "number": 0, "start": false, "end": false },
+    "nodes": {
+      "type": "indent",
+      "unit": {
+        "whole": "  [scrapboxでコードの差分を管理するのは非常に難しい]",
+        "tag": "  ",
+        "content": "[scrapboxでコードの差分を管理するのは非常に難しい]"
+      },
+      "children": {
+        "type": "link",
+        "unit": {
+          "page": "scrapboxでコードの差分を管理するのは非常に難しい",
+          "content": "scrapboxでコードの差分を管理するのは非常に難しい",
+          "whole": "[scrapboxでコードの差分を管理するのは非常に難しい]"
+        },
+        "children": "scrapboxでコードの差分を管理するのは非常に難しい"
+      }
+    }
+  },
+  {
+    "id": "63f9e6f61280f00000dae69b",
+    "text": " 各ページでコードに言及している箇所がある場合は、代わりに[code2svg]の画像を置いた",
+    "userId": "5ef2bdebb60650001e1280f0",
+    "created": 1677321975,
+    "updated": 1677322003,
+    "section": { "number": 0, "start": false, "end": false },
+    "nodes": {
+      "type": "indent",
+      "unit": {
+        "whole": " 各ページでコードに言及している箇所がある場合は、代わりに[code2svg]の画像を置いた",
+        "tag": " ",
+        "content": "各ページでコードに言及している箇所がある場合は、代わりに[code2svg]の画像を置いた"
+      },
+      "children": [
+        "各ページでコードに言及している箇所がある場合は、代わりに",
+        {
+          "type": "link",
+          "unit": {
+            "page": "code2svg",
+            "content": "code2svg",
+            "whole": "[code2svg]"
+          },
+          "children": "code2svg"
+        },
+        "の画像を置いた"
+      ]
+    }
+  },
+  {
+    "id": "63f9c7431280f00000dd877c",
+    "text": "",
+    "userId": "5ef2bdebb60650001e1280f0",
+    "created": 1677313860,
+    "updated": 1677313860,
+    "section": { "number": 0, "start": false, "end": true },
+    "nodes": ""
+  },
+  {
+    "id": "63f9e43f1280f00000dae665",
+    "text": "やること",
+    "userId": "5ef2bdebb60650001e1280f0",
+    "created": 1677321280,
+    "updated": 1677321284,
+    "section": { "number": 1, "start": true, "end": false },
+    "nodes": "やること"
+  },
+  {
+    "id": "63f9e4421280f00000dae666",
+    "text": " ✅gitに移動する",
+    "userId": "5ef2bdebb60650001e1280f0",
+    "created": 1677321284,
+    "updated": 1677321291,
+    "section": { "number": 1, "start": false, "end": false },
+    "nodes": {
+      "type": "indent",
+      "unit": {
+        "whole": " ✅gitに移動する",
+        "tag": " ",
+        "content": "✅gitに移動する"
+      },
+      "children": "✅gitに移動する"
+    }
+  },
+  {
+    "id": "63f9e44b1280f00000dae668",
+    "text": " ✅apkgを生成するコードを完成させる",
+    "userId": "5ef2bdebb60650001e1280f0",
+    "created": 1677321292,
+    "updated": 1677417321,
+    "section": { "number": 1, "start": false, "end": false },
+    "nodes": {
+      "type": "indent",
+      "unit": {
+        "whole": " ✅apkgを生成するコードを完成させる",
+        "tag": " ",
+        "content": "✅apkgを生成するコードを完成させる"
+      },
+      "children": "✅apkgを生成するコードを完成させる"
+    }
+  },
+  {
+    "id": "63f9e6ec1280f00000dae683",
+    "text": "  型エラーをなくす",
+    "userId": "5ef2bdebb60650001e1280f0",
+    "created": 1677321965,
+    "updated": 1677321965,
+    "section": { "number": 1, "start": false, "end": false },
+    "nodes": {
+      "type": "indent",
+      "unit": {
+        "whole": "  型エラーをなくす",
+        "tag": "  ",
+        "content": "型エラーをなくす"
+      },
+      "children": "型エラーをなくす"
+    }
+  },
+  {
+    "id": "63f9e6ec1280f00000dae684",
+    "text": "  動作確認",
+    "userId": "5ef2bdebb60650001e1280f0",
+    "created": 1677321965,
+    "updated": 1677321965,
+    "section": { "number": 1, "start": false, "end": false },
+    "nodes": {
+      "type": "indent",
+      "unit": { "whole": "  動作確認", "tag": "  ", "content": "動作確認" },
+      "children": "動作確認"
+    }
+  },
+  {
+    "id": "63f9e6ec1280f00000dae685",
+    "text": " ✅apkgの更新で、正しく上書きされるか確認する",
+    "userId": "5ef2bdebb60650001e1280f0",
+    "created": 1677321965,
+    "updated": 1677417319,
+    "section": { "number": 1, "start": false, "end": false },
+    "nodes": {
+      "type": "indent",
+      "unit": {
+        "whole": " ✅apkgの更新で、正しく上書きされるか確認する",
+        "tag": " ",
+        "content": "✅apkgの更新で、正しく上書きされるか確認する"
+      },
+      "children": "✅apkgの更新で、正しく上書きされるか確認する"
+    }
+  },
+  {
+    "id": "63fb5b6a1280f00000858ee4",
+    "text": "",
+    "userId": "5ef2bdebb60650001e1280f0",
+    "created": 1677417323,
+    "updated": 1677417323,
+    "section": { "number": 1, "start": false, "end": true },
+    "nodes": ""
+  },
+  {
+    "id": "63fb5b6a1280f00000858ee5",
+    "text": "改善点",
+    "userId": "5ef2bdebb60650001e1280f0",
+    "created": 1677417323,
+    "updated": 1677417327,
+    "section": { "number": 2, "start": true, "end": false },
+    "nodes": "改善点"
+  },
+  {
+    "id": "6416d6521280f0000011c746",
+    "text": " [⬜defaultのdeck (Anki)とnote type (Anki)を指定する]",
+    "userId": "5ef2bdebb60650001e1280f0",
+    "created": 1679218259,
+    "updated": 1679468599,
+    "section": { "number": 2, "start": false, "end": false },
+    "nodes": {
+      "type": "indent",
+      "unit": {
+        "whole": " [⬜defaultのdeck (Anki)とnote type (Anki)を指定する]",
+        "tag": " ",
+        "content": "[⬜defaultのdeck (Anki)とnote type (Anki)を指定する]"
+      },
+      "children": {
+        "type": "link",
+        "unit": {
+          "page": "⬜defaultのdeck (Anki)とnote type (Anki)を指定する",
+          "content": "⬜defaultのdeck (Anki)とnote type (Anki)を指定する",
+          "whole": "[⬜defaultのdeck (Anki)とnote type (Anki)を指定する]"
+        },
+        "children": "⬜defaultのdeck (Anki)とnote type (Anki)を指定する"
+      }
+    }
+  },
+  {
+    "id": "6413b5631280f000007e5f04",
+    "text": "　deck/note typeが指定されていない問題は除外する",
+    "userId": "5ef2bdebb60650001e1280f0",
+    "created": 1679013219,
+    "updated": 1679013225,
+    "section": { "number": 2, "start": false, "end": false },
+    "nodes": {
+      "type": "indent",
+      "unit": {
+        "whole": "　deck/note typeが指定されていない問題は除外する",
+        "tag": "　",
+        "content": "deck/note typeが指定されていない問題は除外する"
+      },
+      "children": "deck/note typeが指定されていない問題は除外する"
+    }
+  },
+  {
+    "id": "6413b5691280f000007e5f05",
+    "text": "　 警告に除外したページと問題を出す",
+    "userId": "5ef2bdebb60650001e1280f0",
+    "created": 1679013225,
+    "updated": 1679013242,
+    "section": { "number": 2, "start": false, "end": false },
+    "nodes": {
+      "type": "indent",
+      "unit": {
+        "whole": "　 警告に除外したページと問題を出す",
+        "tag": "　 ",
+        "content": "警告に除外したページと問題を出す"
+      },
+      "children": "警告に除外したページと問題を出す"
+    }
+  },
+  {
+    "id": "6416d5d41280f0000011c741",
+    "text": " [⬜タイトルの書式でdeckページ/note typeページかどうかを判断する]",
+    "userId": "5ef2bdebb60650001e1280f0",
+    "created": 1679218133,
+    "updated": 1679468551,
+    "section": { "number": 2, "start": false, "end": false },
+    "nodes": {
+      "type": "indent",
+      "unit": {
+        "whole": " [⬜タイトルの書式でdeckページ/note typeページかどうかを判断する]",
+        "tag": " ",
+        "content": "[⬜タイトルの書式でdeckページ/note typeページかどうかを判断する]"
+      },
+      "children": {
+        "type": "link",
+        "unit": {
+          "page": "⬜タイトルの書式でdeckページ/note typeページかどうかを判断する",
+          "content": "⬜タイトルの書式でdeckページ/note typeページかどうかを判断する",
+          "whole": "[⬜タイトルの書式でdeckページ/note typeページかどうかを判断する]"
+        },
+        "children": "⬜タイトルの書式でdeckページ/note typeページかどうかを判断する"
+      }
+    }
+  },
+  {
+    "id": "640fe5241280f00000135fd8",
+    "text": " crawlに統一する",
+    "userId": "5ef2bdebb60650001e1280f0",
+    "created": 1678763300,
+    "updated": 1678763308,
+    "section": { "number": 2, "start": false, "end": false },
+    "nodes": {
+      "type": "indent",
+      "unit": {
+        "whole": " crawlに統一する",
+        "tag": " ",
+        "content": "crawlに統一する"
+      },
+      "children": "crawlに統一する"
+    }
+  },
+  {
+    "id": "6415a9381280f000008d9ce0",
+    "text": " 　[api/page-data/export/:projectname.json]だと行IDを取得できないので使わない",
+    "userId": "5ef2bdebb60650001e1280f0",
+    "created": 1679141175,
+    "updated": 1679141178,
+    "section": { "number": 2, "start": false, "end": false },
+    "nodes": {
+      "type": "indent",
+      "unit": {
+        "whole": " 　[api/page-data/export/:projectname.json]だと行IDを取得できないので使わない",
+        "tag": " 　",
+        "content": "[api/page-data/export/:projectname.json]だと行IDを取得できないので使わない"
+      },
+      "children": [
+        {
+          "type": "link",
+          "unit": {
+            "page": "api/page-data/export/:projectname.json",
+            "content": "api/page-data/export/:projectname.json",
+            "whole": "[api/page-data/export/:projectname.json]"
+          },
+          "children": "api/page-data/export/:projectname.json"
+        },
+        "だと行IDを取得できないので使わない"
+      ]
+    }
+  },
+  {
+    "id": "6415a92a1280f000008d9cdf",
+    "text": " 　[ある日時以降に更新されたすべてのscrapboxのページを取得するscript]を使う",
+    "userId": "5ef2bdebb60650001e1280f0",
+    "created": 1679141161,
+    "updated": 1679141166,
+    "section": { "number": 2, "start": false, "end": false },
+    "nodes": {
+      "type": "indent",
+      "unit": {
+        "whole": " 　[ある日時以降に更新されたすべてのscrapboxのページを取得するscript]を使う",
+        "tag": " 　",
+        "content": "[ある日時以降に更新されたすべてのscrapboxのページを取得するscript]を使う"
+      },
+      "children": [
+        {
+          "type": "link",
+          "unit": {
+            "page": "ある日時以降に更新されたすべてのscrapboxのページを取得するscript",
+            "content": "ある日時以降に更新されたすべてのscrapboxのページを取得するscript",
+            "whole": "[ある日時以降に更新されたすべてのscrapboxのページを取得するscript]"
+          },
+          "children": "ある日時以降に更新されたすべてのscrapboxのページを取得するscript"
+        },
+        "を使う"
+      ]
+    }
+  },
+  {
+    "id": "640fe5301280f00000135fd9",
+    "text": " 　crawlした日時を特定のページに記録しておく",
+    "userId": "5ef2bdebb60650001e1280f0",
+    "created": 1678763312,
+    "updated": 1678763345,
+    "section": { "number": 2, "start": false, "end": false },
+    "nodes": {
+      "type": "indent",
+      "unit": {
+        "whole": " 　crawlした日時を特定のページに記録しておく",
+        "tag": " 　",
+        "content": "crawlした日時を特定のページに記録しておく"
+      },
+      "children": "crawlした日時を特定のページに記録しておく"
+    }
+  },
+  {
+    "id": "640fe5501280f00000135fda",
+    "text": " 　　次回はその日時以降に更新されたページのみを確認する",
+    "userId": "5ef2bdebb60650001e1280f0",
+    "created": 1678763345,
+    "updated": 1678763363,
+    "section": { "number": 2, "start": false, "end": false },
+    "nodes": {
+      "type": "indent",
+      "unit": {
+        "whole": " 　　次回はその日時以降に更新されたページのみを確認する",
+        "tag": " 　　",
+        "content": "次回はその日時以降に更新されたページのみを確認する"
+      },
+      "children": "次回はその日時以降に更新されたページのみを確認する"
+    }
+  },
+  {
+    "id": "6415a9481280f000008d9ce1",
+    "text": " [scrapboxでscrapbox2ankiを動かすテスト]を統合する",
+    "userId": "5ef2bdebb60650001e1280f0",
+    "created": 1679141191,
+    "updated": 1679141202,
+    "section": { "number": 2, "start": false, "end": false },
+    "nodes": {
+      "type": "indent",
+      "unit": {
+        "whole": " [scrapboxでscrapbox2ankiを動かすテスト]を統合する",
+        "tag": " ",
+        "content": "[scrapboxでscrapbox2ankiを動かすテスト]を統合する"
+      },
+      "children": [
+        {
+          "type": "link",
+          "unit": {
+            "page": "scrapboxでscrapbox2ankiを動かすテスト",
+            "content": "scrapboxでscrapbox2ankiを動かすテスト",
+            "whole": "[scrapboxでscrapbox2ankiを動かすテスト]"
+          },
+          "children": "scrapboxでscrapbox2ankiを動かすテスト"
+        },
+        "を統合する"
+      ]
+    }
+  },
+  {
+    "id": "6415a9531280f000008d9ce3",
+    "text": "  bookmarkletを作成例としてrepoに入れておく",
+    "userId": "5ef2bdebb60650001e1280f0",
+    "created": 1679141202,
+    "updated": 1679141221,
+    "section": { "number": 2, "start": false, "end": false },
+    "nodes": {
+      "type": "indent",
+      "unit": {
+        "whole": "  bookmarkletを作成例としてrepoに入れておく",
+        "tag": "  ",
+        "content": "bookmarkletを作成例としてrepoに入れておく"
+      },
+      "children": "bookmarkletを作成例としてrepoに入れておく"
+    }
+  },
+  {
+    "id": "63f9e43f1280f00000dae664",
+    "text": "",
+    "userId": "5ef2bdebb60650001e1280f0",
+    "created": 1677321280,
+    "updated": 1677321280,
+    "section": { "number": 2, "start": false, "end": true },
+    "nodes": ""
+  },
+  {
+    "id": "641185be1280f00000dd3ada",
+    "text": "2023-03-15",
+    "userId": "5ef2bdebb60650001e1280f0",
+    "created": 1678869949,
+    "updated": 1678869952,
+    "section": { "number": 3, "start": true, "end": false },
+    "nodes": "2023-03-15"
+  },
+  {
+    "id": "641185c11280f00000dd3adb",
+    "text": " 17:45:51 [deck (Anki)]と[note type (Anki)]を[api/pages/:projectname/:pagetitle]から取得する",
+    "userId": "5ef2bdebb60650001e1280f0",
+    "created": 1678869952,
+    "updated": 1678869964,
+    "section": { "number": 3, "start": false, "end": false },
+    "nodes": {
+      "type": "indent",
+      "unit": {
+        "whole": " 17:45:51 [deck (Anki)]と[note type (Anki)]を[api/pages/:projectname/:pagetitle]から取得する",
+        "tag": " ",
+        "content": "17:45:51 [deck (Anki)]と[note type (Anki)]を[api/pages/:projectname/:pagetitle]から取得する"
+      },
+      "children": [
+        "17:45:51 ",
+        {
+          "type": "link",
+          "unit": {
+            "page": "deck (Anki)",
+            "content": "deck (Anki)",
+            "whole": "[deck (Anki)]"
+          },
+          "children": "deck (Anki)"
+        },
+        "と",
+        {
+          "type": "link",
+          "unit": {
+            "page": "note type (Anki)",
+            "content": "note type (Anki)",
+            "whole": "[note type (Anki)]"
+          },
+          "children": "note type (Anki)"
+        },
+        "を",
+        {
+          "type": "link",
+          "unit": {
+            "page": "api/pages/:projectname/:pagetitle",
+            "content": "api/pages/:projectname/:pagetitle",
+            "whole": "[api/pages/:projectname/:pagetitle]"
+          },
+          "children": "api/pages/:projectname/:pagetitle"
+        },
+        "から取得する"
+      ]
+    }
+  },
+  {
+    "id": "641185cd1280f00000dd3adc",
+    "text": "  テストをそれぞれ1通りだけ書いた",
+    "userId": "5ef2bdebb60650001e1280f0",
+    "created": 1678869965,
+    "updated": 1678869969,
+    "section": { "number": 3, "start": false, "end": false },
+    "nodes": {
+      "type": "indent",
+      "unit": {
+        "whole": "  テストをそれぞれ1通りだけ書いた",
+        "tag": "  ",
+        "content": "テストをそれぞれ1通りだけ書いた"
+      },
+      "children": "テストをそれぞれ1通りだけ書いた"
+    }
+  },
+  {
+    "id": "641185d21280f00000dd3add",
+    "text": "   失敗するパターンのテストも書きたい",
+    "userId": "5ef2bdebb60650001e1280f0",
+    "created": 1678869969,
+    "updated": 1678869979,
+    "section": { "number": 3, "start": false, "end": false },
+    "nodes": {
+      "type": "indent",
+      "unit": {
+        "whole": "   失敗するパターンのテストも書きたい",
+        "tag": "   ",
+        "content": "失敗するパターンのテストも書きたい"
+      },
+      "children": "失敗するパターンのテストも書きたい"
+    }
+  },
+  {
+    "id": "641187231280f00000dd3ade",
+    "text": "   `updated`もテストしたい",
+    "userId": "5ef2bdebb60650001e1280f0",
+    "created": 1678870306,
+    "updated": 1678870313,
+    "section": { "number": 3, "start": false, "end": false },
+    "nodes": {
+      "type": "indent",
+      "unit": {
+        "whole": "   `updated`もテストしたい",
+        "tag": "   ",
+        "content": "`updated`もテストしたい"
+      },
+      "children": [
+        {
+          "type": "code",
+          "unit": { "whole": "`updated`", "content": "updated" },
+          "children": "updated"
+        },
+        "もテストしたい"
+      ]
+    }
+  },
+  {
+    "id": "641188a21280f00000308c1a",
+    "text": "  まあいいや。テストを拡充するのは後にして、とりあえずPRしよう",
+    "userId": "5ef2bdebb60650001e1280f0",
+    "created": 1678870689,
+    "updated": 1678870705,
+    "section": { "number": 3, "start": false, "end": false },
+    "nodes": {
+      "type": "indent",
+      "unit": {
+        "whole": "  まあいいや。テストを拡充するのは後にして、とりあえずPRしよう",
+        "tag": "  ",
+        "content": "まあいいや。テストを拡充するのは後にして、とりあえずPRしよう"
+      },
+      "children": "まあいいや。テストを拡充するのは後にして、とりあえずPRしよう"
+    }
+  },
+  {
+    "id": "641188ea1280f00000308c1b",
+    "text": "  17:59:27 [merged https://github.com/takker99/scrapbox2anki/pull/6]",
+    "userId": "5ef2bdebb60650001e1280f0",
+    "created": 1678870761,
+    "updated": 1678870767,
+    "section": { "number": 3, "start": false, "end": false },
+    "nodes": {
+      "type": "indent",
+      "unit": {
+        "whole": "  17:59:27 [merged https://github.com/takker99/scrapbox2anki/pull/6]",
+        "tag": "  ",
+        "content": "17:59:27 [merged https://github.com/takker99/scrapbox2anki/pull/6]"
+      },
+      "children": [
+        "17:59:27 ",
+        {
+          "type": "urlLink",
+          "unit": {
+            "link": "https://github.com/takker99/scrapbox2anki/pull/6",
+            "title": "merged",
+            "content": "merged https://github.com/takker99/scrapbox2anki/pull/6",
+            "whole": "[merged https://github.com/takker99/scrapbox2anki/pull/6]"
+          },
+          "children": "merged https://github.com/takker99/scrapbox2anki/pull/6"
+        }
+      ]
+    }
+  },
+  {
+    "id": "63fb3d301280f000004676ef",
+    "text": "2023-02-26",
+    "userId": "5ef2bdebb60650001e1280f0",
+    "created": 1677409585,
+    "updated": 1677409587,
+    "section": { "number": 3, "start": false, "end": false },
+    "nodes": "2023-02-26"
+  },
+  {
+    "id": "63fb3d331280f000004676f0",
+    "text": " 20:06:25 [papaparse]と[Deno v1.31]との食い合わせが悪いので、[deno_std/encodings/csv]に変えた",
+    "userId": "5ef2bdebb60650001e1280f0",
+    "created": 1677409587,
+    "updated": 1677409625,
+    "section": { "number": 3, "start": false, "end": false },
+    "nodes": {
+      "type": "indent",
+      "unit": {
+        "whole": " 20:06:25 [papaparse]と[Deno v1.31]との食い合わせが悪いので、[deno_std/encodings/csv]に変えた",
+        "tag": " ",
+        "content": "20:06:25 [papaparse]と[Deno v1.31]との食い合わせが悪いので、[deno_std/encodings/csv]に変えた"
+      },
+      "children": [
+        "20:06:25 ",
+        {
+          "type": "link",
+          "unit": {
+            "page": "papaparse",
+            "content": "papaparse",
+            "whole": "[papaparse]"
+          },
+          "children": "papaparse"
+        },
+        "と",
+        {
+          "type": "link",
+          "unit": {
+            "page": "Deno v1.31",
+            "content": "Deno v1.31",
+            "whole": "[Deno v1.31]"
+          },
+          "children": "Deno v1.31"
+        },
+        "との食い合わせが悪いので、",
+        {
+          "type": "link",
+          "unit": {
+            "page": "deno_std/encodings/csv",
+            "content": "deno_std/encodings/csv",
+            "whole": "[deno_std/encodings/csv]"
+          },
+          "children": "deno_std/encodings/csv"
+        },
+        "に変えた"
+      ]
+    }
+  },
+  {
+    "id": "63fb3d591280f000004676f3",
+    "text": "  詳細は[papaparse]に書いた",
+    "userId": "5ef2bdebb60650001e1280f0",
+    "created": 1677409625,
+    "updated": 1677409631,
+    "section": { "number": 3, "start": false, "end": false },
+    "nodes": {
+      "type": "indent",
+      "unit": {
+        "whole": "  詳細は[papaparse]に書いた",
+        "tag": "  ",
+        "content": "詳細は[papaparse]に書いた"
+      },
+      "children": [
+        "詳細は",
+        {
+          "type": "link",
+          "unit": {
+            "page": "papaparse",
+            "content": "papaparse",
+            "whole": "[papaparse]"
+          },
+          "children": "papaparse"
+        },
+        "に書いた"
+      ]
+    }
+  },
+  {
+    "id": "63fb3d5f1280f000004676f4",
+    "text": "  https://github.com/takker99/scrapbox2anki/pull/1",
+    "userId": "5ef2bdebb60650001e1280f0",
+    "created": 1677409631,
+    "updated": 1677409749,
+    "section": { "number": 3, "start": false, "end": false },
+    "nodes": {
+      "type": "indent",
+      "unit": {
+        "whole": "  https://github.com/takker99/scrapbox2anki/pull/1",
+        "tag": "  ",
+        "content": "https://github.com/takker99/scrapbox2anki/pull/1"
+      },
+      "children": {
+        "type": "url",
+        "unit": {
+          "content": "https://github.com/takker99/scrapbox2anki/pull/1",
+          "whole": "https://github.com/takker99/scrapbox2anki/pull/1"
+        },
+        "children": "https://github.com/takker99/scrapbox2anki/pull/1"
+      }
+    }
+  },
+  {
+    "id": "63fb3d341280f000004676f1",
+    "text": " `mod.ts`を大体書いた",
+    "userId": "5ef2bdebb60650001e1280f0",
+    "created": 1677409588,
+    "updated": 1677409594,
+    "section": { "number": 3, "start": false, "end": false },
+    "nodes": {
+      "type": "indent",
+      "unit": {
+        "whole": " `mod.ts`を大体書いた",
+        "tag": " ",
+        "content": "`mod.ts`を大体書いた"
+      },
+      "children": [
+        {
+          "type": "code",
+          "unit": { "whole": "`mod.ts`", "content": "mod.ts" },
+          "children": "mod.ts"
+        },
+        "を大体書いた"
+      ]
+    }
+  },
+  {
+    "id": "63fb3d3a1280f000004676f2",
+    "text": "  あとはテストするだけ",
+    "userId": "5ef2bdebb60650001e1280f0",
+    "created": 1677409595,
+    "updated": 1677409597,
+    "section": { "number": 3, "start": false, "end": false },
+    "nodes": {
+      "type": "indent",
+      "unit": {
+        "whole": "  あとはテストするだけ",
+        "tag": "  ",
+        "content": "あとはテストするだけ"
+      },
+      "children": "あとはテストするだけ"
+    }
+  },
+  {
+    "id": "63f9e41e1280f00000dae663",
+    "text": "2023-02-25",
+    "userId": "5ef2bdebb60650001e1280f0",
+    "created": 1677321247,
+    "updated": 1677321248,
+    "section": { "number": 3, "start": false, "end": false },
+    "nodes": "2023-02-25"
+  },
+  {
+    "id": "63f9e9e41280f00000b31e08",
+    "text": " 19:58:45 apkg生成コードを移植中",
+    "userId": "5ef2bdebb60650001e1280f0",
+    "created": 1677322725,
+    "updated": 1677322736,
+    "section": { "number": 3, "start": false, "end": false },
+    "nodes": {
+      "type": "indent",
+      "unit": {
+        "whole": " 19:58:45 apkg生成コードを移植中",
+        "tag": " ",
+        "content": "19:58:45 apkg生成コードを移植中"
+      },
+      "children": "19:58:45 apkg生成コードを移植中"
+    }
+  },
+  {
+    "id": "63f9e9ef1280f00000b31e09",
+    "text": " 　未実装の関数周り以外は全部型チェックを通した",
+    "userId": "5ef2bdebb60650001e1280f0",
+    "created": 1677322736,
+    "updated": 1677322755,
+    "section": { "number": 3, "start": false, "end": false },
+    "nodes": {
+      "type": "indent",
+      "unit": {
+        "whole": " 　未実装の関数周り以外は全部型チェックを通した",
+        "tag": " 　",
+        "content": "未実装の関数周り以外は全部型チェックを通した"
+      },
+      "children": "未実装の関数周り以外は全部型チェックを通した"
+    }
+  },
+  {
+    "id": "63f9ea021280f00000b31e0a",
+    "text": " 　これ以上は明日やろう",
+    "userId": "5ef2bdebb60650001e1280f0",
+    "created": 1677322755,
+    "updated": 1677322761,
+    "section": { "number": 3, "start": false, "end": false },
+    "nodes": {
+      "type": "indent",
+      "unit": {
+        "whole": " 　これ以上は明日やろう",
+        "tag": " 　",
+        "content": "これ以上は明日やろう"
+      },
+      "children": "これ以上は明日やろう"
+    }
+  },
+  {
+    "id": "63f9ea9e1280f00000b31e0b",
+    "text": " 　[api/table/:projectname/:pagetitle/:filename.csv]のPRをmergeしないとな",
+    "userId": "5ef2bdebb60650001e1280f0",
+    "created": 1677322911,
+    "updated": 1677322945,
+    "section": { "number": 3, "start": false, "end": false },
+    "nodes": {
+      "type": "indent",
+      "unit": {
+        "whole": " 　[api/table/:projectname/:pagetitle/:filename.csv]のPRをmergeしないとな",
+        "tag": " 　",
+        "content": "[api/table/:projectname/:pagetitle/:filename.csv]のPRをmergeしないとな"
+      },
+      "children": [
+        {
+          "type": "link",
+          "unit": {
+            "page": "api/table/:projectname/:pagetitle/:filename.csv",
+            "content": "api/table/:projectname/:pagetitle/:filename.csv",
+            "whole": "[api/table/:projectname/:pagetitle/:filename.csv]"
+          },
+          "children": "api/table/:projectname/:pagetitle/:filename.csv"
+        },
+        "のPRをmergeしないとな"
+      ]
+    }
+  },
+  {
+    "id": "63fad46f1280f000008a3b74",
+    "text": " 　 2023-02-26 12:39:29 done",
+    "userId": "5ef2bdebb60650001e1280f0",
+    "created": 1677382767,
+    "updated": 1677382770,
+    "section": { "number": 3, "start": false, "end": false },
+    "nodes": {
+      "type": "indent",
+      "unit": {
+        "whole": " 　 2023-02-26 12:39:29 done",
+        "tag": " 　 ",
+        "content": "2023-02-26 12:39:29 done"
+      },
+      "children": "2023-02-26 12:39:29 done"
+    }
+  },
+  {
+    "id": "63f9e4171280f00000dae65b",
+    "text": " 19:12:53 全部のコードを移植し終えた",
+    "userId": "5ef2bdebb60650001e1280f0",
+    "created": 1677321240,
+    "updated": 1677321246,
+    "section": { "number": 3, "start": false, "end": false },
+    "nodes": {
+      "type": "indent",
+      "unit": {
+        "whole": " 19:12:53 全部のコードを移植し終えた",
+        "tag": " ",
+        "content": "19:12:53 全部のコードを移植し終えた"
+      },
+      "children": "19:12:53 全部のコードを移植し終えた"
+    }
+  },
+  {
+    "id": "63f9e41d1280f00000dae65c",
+    "text": " 　`note.test.ts`がエラーを吐く",
+    "userId": "5ef2bdebb60650001e1280f0",
+    "created": 1677321246,
+    "updated": 1677321246,
+    "section": { "number": 3, "start": false, "end": false },
+    "nodes": {
+      "type": "indent",
+      "unit": {
+        "whole": " 　`note.test.ts`がエラーを吐く",
+        "tag": " 　",
+        "content": "`note.test.ts`がエラーを吐く"
+      },
+      "children": [
+        {
+          "type": "code",
+          "unit": { "whole": "`note.test.ts`", "content": "note.test.ts" },
+          "children": "note.test.ts"
+        },
+        "がエラーを吐く"
+      ]
+    }
+  },
+  {
+    "id": "63f9e41d1280f00000dae65d",
+    "text": " 　 `id`が毎回変わる？",
+    "userId": "5ef2bdebb60650001e1280f0",
+    "created": 1677321246,
+    "updated": 1677321246,
+    "section": { "number": 3, "start": false, "end": false },
+    "nodes": {
+      "type": "indent",
+      "unit": {
+        "whole": " 　 `id`が毎回変わる？",
+        "tag": " 　 ",
+        "content": "`id`が毎回変わる？"
+      },
+      "children": [
+        {
+          "type": "code",
+          "unit": { "whole": "`id`", "content": "id" },
+          "children": "id"
+        },
+        "が毎回変わる？"
+      ]
+    }
+  },
+  {
+    "id": "63f9e41d1280f00000dae65e",
+    "text": "  これを直したら終わりにする",
+    "userId": "5ef2bdebb60650001e1280f0",
+    "created": 1677321246,
+    "updated": 1677321246,
+    "section": { "number": 3, "start": false, "end": false },
+    "nodes": {
+      "type": "indent",
+      "unit": {
+        "whole": "  これを直したら終わりにする",
+        "tag": "  ",
+        "content": "これを直したら終わりにする"
+      },
+      "children": "これを直したら終わりにする"
+    }
+  },
+  {
+    "id": "63f9e41d1280f00000dae65f",
+    "text": "   あと5min",
+    "userId": "5ef2bdebb60650001e1280f0",
+    "created": 1677321246,
+    "updated": 1677321246,
+    "section": { "number": 3, "start": false, "end": false },
+    "nodes": {
+      "type": "indent",
+      "unit": { "whole": "   あと5min", "tag": "   ", "content": "あと5min" },
+      "children": "あと5min"
+    }
+  },
+  {
+    "id": "63f9e41d1280f00000dae660",
+    "text": "   ああ、`new Date()`で作っちゃっているせいか",
+    "userId": "5ef2bdebb60650001e1280f0",
+    "created": 1677321246,
+    "updated": 1677321246,
+    "section": { "number": 3, "start": false, "end": false },
+    "nodes": {
+      "type": "indent",
+      "unit": {
+        "whole": "   ああ、`new Date()`で作っちゃっているせいか",
+        "tag": "   ",
+        "content": "ああ、`new Date()`で作っちゃっているせいか"
+      },
+      "children": [
+        "ああ、",
+        {
+          "type": "code",
+          "unit": { "whole": "`new Date()`", "content": "new Date()" },
+          "children": "new Date()"
+        },
+        "で作っちゃっているせいか"
+      ]
+    }
+  },
+  {
+    "id": "63f9e41d1280f00000dae661",
+    "text": "   19:29:35 修正done",
+    "userId": "5ef2bdebb60650001e1280f0",
+    "created": 1677321246,
+    "updated": 1677321246,
+    "section": { "number": 3, "start": false, "end": false },
+    "nodes": {
+      "type": "indent",
+      "unit": {
+        "whole": "   19:29:35 修正done",
+        "tag": "   ",
+        "content": "19:29:35 修正done"
+      },
+      "children": "19:29:35 修正done"
+    }
+  },
+  {
+    "id": "63f9e41d1280f00000dae662",
+    "text": " 19:33:33 ciも入れた",
+    "userId": "5ef2bdebb60650001e1280f0",
+    "created": 1677321246,
+    "updated": 1677321246,
+    "section": { "number": 3, "start": false, "end": false },
+    "nodes": {
+      "type": "indent",
+      "unit": {
+        "whole": " 19:33:33 ciも入れた",
+        "tag": " ",
+        "content": "19:33:33 ciも入れた"
+      },
+      "children": "19:33:33 ciも入れた"
+    }
+  },
+  {
+    "id": "63f9c8871280f00000dd8785",
+    "text": "",
+    "userId": "5ef2bdebb60650001e1280f0",
+    "created": 1677314184,
+    "updated": 1677314184,
+    "section": { "number": 3, "start": false, "end": true },
+    "nodes": ""
+  },
+  {
+    "id": "64118f881280f00000308c1d",
+    "text": "[build https://scrapbox-bundler.vercel.app?url=https://scrapbox.io/api/code/takker/scrapbox2anki/mod.ts&bundle&minify&run&reload]",
+    "userId": "5ef2bdebb60650001e1280f0",
+    "created": 1678872456,
+    "updated": 1678872481,
+    "section": { "number": 4, "start": true, "end": false },
+    "nodes": {
+      "type": "urlLink",
+      "unit": {
+        "link": "https://scrapbox-bundler.vercel.app?url=https://scrapbox.io/api/code/takker/scrapbox2anki/mod.ts&bundle&minify&run&reload",
+        "title": "build",
+        "content": "build https://scrapbox-bundler.vercel.app?url=https://scrapbox.io/api/code/takker/scrapbox2anki/mod.ts&bundle&minify&run&reload",
+        "whole": "[build https://scrapbox-bundler.vercel.app?url=https://scrapbox.io/api/code/takker/scrapbox2anki/mod.ts&bundle&minify&run&reload]"
+      },
+      "children": "build https://scrapbox-bundler.vercel.app?url=https://scrapbox.io/api/code/takker/scrapbox2anki/mod.ts&bundle&minify&run&reload"
+    }
+  },
+  {
+    "id": "63fb656a1280f00000858ef5",
+    "text": "code:mod.ts",
+    "userId": "5ef2bdebb60650001e1280f0",
+    "created": 1677419883,
+    "updated": 1677419886,
+    "section": { "number": 4, "start": false, "end": false },
+    "codeBlock": {
+      "lang": "ts",
+      "filename": "mod.ts",
+      "indent": 1,
+      "start": true,
+      "end": false
+    }
+  },
+  {
+    "id": "63fb656d1280f00000858ef6",
+    "text": " export * from \"https://raw.githubusercontent.com/takker99/scrapbox2anki/0.0.3/mod.ts\";",
+    "userId": "5ef2bdebb60650001e1280f0",
+    "created": 1677419886,
+    "updated": 1678870812,
+    "section": { "number": 4, "start": false, "end": false },
+    "codeBlock": {
+      "lang": "ts",
+      "filename": "mod.ts",
+      "indent": 1,
+      "start": false,
+      "end": true
+    }
+  },
+  {
+    "id": "63fb656a1280f00000858ef4",
+    "text": "",
+    "userId": "5ef2bdebb60650001e1280f0",
+    "created": 1677419883,
+    "updated": 1677419883,
+    "section": { "number": 4, "start": false, "end": true },
+    "nodes": ""
+  },
+  {
+    "id": "6416d70e1280f0000011c749",
+    "text": "#2023-03-19 18:34:07 ",
+    "userId": "5ef2bdebb60650001e1280f0",
+    "created": 1679218447,
+    "updated": 1679218448,
+    "section": { "number": 5, "start": true, "end": false },
+    "nodes": [
+      {
+        "type": "hashTag",
+        "unit": {
+          "page": "2023-03-19",
+          "tag": "#",
+          "content": "2023-03-19",
+          "whole": "#2023-03-19"
+        },
+        "children": "#2023-03-19"
+      },
+      " 18:34:07 "
+    ]
+  },
+  {
+    "id": "6415a9a51280f000008d9ce4",
+    "text": "#2023-03-18 21:08:06 ",
+    "userId": "5ef2bdebb60650001e1280f0",
+    "created": 1679141284,
+    "updated": 1679141286,
+    "section": { "number": 5, "start": false, "end": false },
+    "nodes": [
+      {
+        "type": "hashTag",
+        "unit": {
+          "page": "2023-03-18",
+          "tag": "#",
+          "content": "2023-03-18",
+          "whole": "#2023-03-18"
+        },
+        "children": "#2023-03-18"
+      },
+      " 21:08:06 "
+    ]
+  },
+  {
+    "id": "641189781280f00000308c1c",
+    "text": "#2023-03-15 18:01:46 ",
+    "userId": "5ef2bdebb60650001e1280f0",
+    "created": 1678870904,
+    "updated": 1678870905,
+    "section": { "number": 5, "start": false, "end": false },
+    "nodes": [
+      {
+        "type": "hashTag",
+        "unit": {
+          "page": "2023-03-15",
+          "tag": "#",
+          "content": "2023-03-15",
+          "whole": "#2023-03-15"
+        },
+        "children": "#2023-03-15"
+      },
+      " 18:01:46 "
+    ]
+  },
+  {
+    "id": "640fe56c1280f00000135fdb",
+    "text": "#2023-03-14 12:09:33 ",
+    "userId": "5ef2bdebb60650001e1280f0",
+    "created": 1678763371,
+    "updated": 1678763373,
+    "section": { "number": 5, "start": false, "end": false },
+    "nodes": [
+      {
+        "type": "hashTag",
+        "unit": {
+          "page": "2023-03-14",
+          "tag": "#",
+          "content": "2023-03-14",
+          "whole": "#2023-03-14"
+        },
+        "children": "#2023-03-14"
+      },
+      " 12:09:33 "
+    ]
+  },
+  {
+    "id": "63fd34a91280f0000007881e",
+    "text": "#2023-02-28 07:54:35 ",
+    "userId": "5ef2bdebb60650001e1280f0",
+    "created": 1677538474,
+    "updated": 1677538476,
+    "section": { "number": 5, "start": false, "end": false },
+    "nodes": [
+      {
+        "type": "hashTag",
+        "unit": {
+          "page": "2023-02-28",
+          "tag": "#",
+          "content": "2023-02-28",
+          "whole": "#2023-02-28"
+        },
+        "children": "#2023-02-28"
+      },
+      " 07:54:35 "
+    ]
+  },
+  {
+    "id": "63fad4811280f000008a3b75",
+    "text": "#2023-02-26 12:39:46 ",
+    "userId": "5ef2bdebb60650001e1280f0",
+    "created": 1677382785,
+    "updated": 1677382786,
+    "section": { "number": 5, "start": false, "end": false },
+    "nodes": [
+      {
+        "type": "hashTag",
+        "unit": {
+          "page": "2023-02-26",
+          "tag": "#",
+          "content": "2023-02-26",
+          "whole": "#2023-02-26"
+        },
+        "children": "#2023-02-26"
+      },
+      " 12:39:46 "
+    ]
+  },
+  {
+    "id": "63f9c8881280f00000dd8786",
+    "text": "#2023-02-25 17:36:24 ",
+    "userId": "5ef2bdebb60650001e1280f0",
+    "created": 1677314184,
+    "updated": 1677314185,
+    "section": { "number": 5, "start": false, "end": false },
+    "nodes": [
+      {
+        "type": "hashTag",
+        "unit": {
+          "page": "2023-02-25",
+          "tag": "#",
+          "content": "2023-02-25",
+          "whole": "#2023-02-25"
+        },
+        "children": "#2023-02-25"
+      },
+      " 17:36:24 "
+    ]
+  },
+  {
+    "id": "63f9c8881280f00000dd8787",
+    "text": "",
+    "userId": "5ef2bdebb60650001e1280f0",
+    "created": 1677314185,
+    "updated": 1677314185,
+    "section": { "number": 5, "start": false, "end": true },
+    "nodes": ""
+  }
+]

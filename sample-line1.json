@@ -1,0 +1,44 @@
+{
+  "id": "630b81111280f0000001e8c4",
+  "text": "[選択範囲]中の文字列に近い[リンク]を表示して[リンクの入力補完]を行うUserScript",
+  "userId": "5ef2bdebb60650001e1280f0",
+  "created": 1668239855,
+  "updated": 1668239855,
+  "section": {
+    "number": 0,
+    "start": false,
+    "end": false
+  },
+  "nodes": [
+    {
+      "type": "link",
+      "unit": {
+        "page": "選択範囲",
+        "content": "選択範囲",
+        "whole": "[選択範囲]"
+      },
+      "children": "選択範囲"
+    },
+    "中の文字列に近い",
+    {
+      "type": "link",
+      "unit": {
+        "page": "リンク",
+        "content": "リンク",
+        "whole": "[リンク]"
+      },
+      "children": "リンク"
+    },
+    "を表示して",
+    {
+      "type": "link",
+      "unit": {
+        "page": "リンクの入力補完",
+        "content": "リンクの入力補完",
+        "whole": "[リンクの入力補完]"
+      },
+      "children": "リンクの入力補完"
+    },
+    "を行うUserScript"
+  ]
+}
