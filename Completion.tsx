@@ -26,9 +26,11 @@ import { useProjectFilter } from "./useProjectFilter.ts";
 import { useOS } from "./useOS.ts";
 import { UseLifecycleResult } from "./useLifecycle.ts";
 import { CompletionState } from "./reducer.ts";
-import { logger } from "./debug.ts";
+import { createDebug } from "./debug.ts";
 import { detectURL } from "./detectURL.ts";
 declare const scrapbox: Scrapbox;
+
+const logger = createDebug("scrapbox-select-suggestion:Completion.tsx");
 
 export interface CompletionProps extends
   Pick<

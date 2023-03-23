@@ -1,6 +1,8 @@
 import { makeFilter, MatchInfo } from "./search.ts";
 import { Candidate } from "./source.ts";
-import { logger } from "./debug.ts";
+import { createDebug } from "./debug.ts";
+
+const logger = createDebug("scrapbox-select-suggestion:incrementalSearch.ts");
 
 export interface IncrementalSearchOptions {
   /** 一度に検索する候補の最大数
@@ -40,19 +42,19 @@ export const incrementalSearch = (
   const total = Math.floor(source.length / chunk) + 1;
   (async () => {
     // 検索する
+    logger.time(`search for "${query}"`);
     for (let i = 0; i < total; i++) {
       // 検索中断命令を受け付けるためのinterval
       await new Promise((resolve) => requestAnimationFrame(resolve));
       if (terminate) return;
 
-      logger.time(`[${i}/${total - 1}] search for "${query}"`);
       candidates.push(...filter(source.slice(i * chunk, (i + 1) * chunk)));
-      logger.timeEnd(`[${i}/${total - 1}] search for "${query}"`);
 
       if (timer !== undefined) continue;
       update();
       timer = setTimeout(update, options?.interval ?? 500);
     }
+    logger.timeEnd(`search for "${query}"`);
   })();
 
   // 検索を中断させる
