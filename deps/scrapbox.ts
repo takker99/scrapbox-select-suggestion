@@ -4,10 +4,10 @@ export type {
   Candidate,
   Line,
   Scrapbox,
-} from "https://raw.githubusercontent.com/scrapbox-jp/types/0.3.8/userscript.ts";
+} from "https://raw.githubusercontent.com/scrapbox-jp/types/0.3.9/userscript.ts";
 export type {
   NotFoundError,
   NotLoggedInError,
   NotMemberError,
   Project,
-} from "https://raw.githubusercontent.com/scrapbox-jp/types/0.3.8/rest.ts";
+} from "https://raw.githubusercontent.com/scrapbox-jp/types/0.3.9/rest.ts";
