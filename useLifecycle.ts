@@ -49,7 +49,6 @@ export const useLifecycle = (): UseLifecycleResult => {
       dispatch({
         type: "lines:changed",
         lines: lines.current,
-        selectedText: selection.getSelectedText(),
         range: selection.getRange({ normalizeOrder: true }),
         position: cursor.getPosition(),
       });
@@ -69,7 +68,6 @@ export const useLifecycle = (): UseLifecycleResult => {
     dispatch({
       type: "selection:changed",
       lines: lines.current,
-      selectedText: selection.getSelectedText(),
       range: selection.getRange({ normalizeOrder: true }),
       position: cursor.getPosition(),
     });
@@ -84,7 +82,6 @@ export const useLifecycle = (): UseLifecycleResult => {
       dispatch({
         type: "cursor:changed",
         lines: lines.current,
-        selectedText: selection.getSelectedText(),
         range: selection.getRange({ normalizeOrder: true }),
         position: cursor.getPosition(),
       });
