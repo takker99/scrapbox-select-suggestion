@@ -166,9 +166,10 @@ export const Completion = (
     );
   }, [candidates, projects, enableProjects, mark]);
 
-  const { ref, top, left, right } = usePosition(
-    position ?? { line: 0, char: 0 },
-  );
+  const { ref, top, left, right } = usePosition({
+    line: position.line,
+    char: start,
+  });
 
   /** 補完windowのスタイル */
   const listStyle = useMemo<h.JSX.CSSProperties>(
