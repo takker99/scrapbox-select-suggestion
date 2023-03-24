@@ -1,23 +1,34 @@
-import {
-  useEffect,
-  useMemo,
-  useReducer,
-  useRef,
-  useState,
-} from "./deps/preact.tsx";
-import { useSource } from "./useSource.ts";
-import { makeCompareAse } from "./sort.ts";
+import { useEffect, useReducer, useRef, useState } from "./deps/preact.tsx";
+import { Link, useSource } from "./useSource.ts";
+import { compareAse } from "./sort.ts";
 import { makeFilter, MatchInfo } from "./search.ts";
-import { Candidate } from "./source.ts";
 import { createDebug } from "./debug.ts";
 
 const logger = createDebug("scrapbox-select-suggestion:useSearch.ts");
+
+/** 検索結果 */
+export interface SearchResult {
+  /** candidatesの編集距離から計算されるスコア
+   *
+   * これをもとにprojectの優先順位を作る
+   */
+  point: number;
+
+  /** 一番短い編集距離でマッチした候補の、その編集距離
+   *
+   * projectの並び替えで使う
+   */
+  leastDistanceMatched: number;
+
+  /** 検索結果 */
+  candidates: (Link & MatchInfo)[];
+}
 
 /** あいまい検索するhooks */
 export const useSearch = (
   projects: string[],
   query: string,
-): { title: string; projects: string[] }[] => {
+): Map<string, SearchResult> => {
   const source = useSource(projects);
   const [state, dispatch] = useReducer(reducer, {
     type: "query",
@@ -27,7 +38,7 @@ export const useSearch = (
   useEffect(() => dispatch({ source }), [source]);
   useEffect(() => dispatch({ query }), [query]);
 
-  const [candidates, setCandidates] = useState<(Candidate & MatchInfo)[]>([]);
+  const [candidates, setCandidates] = useState(new Map<string, SearchResult>());
   const done = useRef<Promise<void>>(Promise.resolve());
   useEffect(() => {
     let terminate = false;
@@ -35,47 +46,71 @@ export const useSearch = (
       // 前回の検索処理が終了してから, 次のを開始する
       await done.current;
 
-      const stack: (Candidate & MatchInfo)[] = [];
-      let timer: number | undefined;
-      let returned = false;
-      for await (
-        const candidates of incrementalSearch(state.query, state.source, {
-          chunk: 5000,
-        })
-      ) {
-        if (terminate) return;
-        stack.push(...candidates);
-        // 何も見つかっていないときと、ソースが更新されたときは、途中経過を返さない
-        if (stack.length === 0 || state.type === "source") continue;
-        clearTimeout(timer);
-        timer = setTimeout(() => {
-          returned = true;
-          setCandidates(stack);
-        }, 500);
+      /** このMapに新しい検索結果を入れていく */
+      const resultMap = new Map<string, SearchResult>();
+      let calledSetCandidate = false;
+      for (const [project, links] of state.source.entries()) {
+        const stack: (Link & MatchInfo)[] = [];
+
+        let timer: number | undefined;
+        // project内のリンクをあいまい検索する
+        for await (
+          const candidates of incrementalSearch(state.query, links, {
+            chunk: 5000,
+          })
+        ) {
+          if (terminate) return;
+          stack.push(...candidates);
+          // 何も見つかっていないときと、ソース更新をトリガーにした検索のときは、途中経過を返さない
+          if (stack.length === 0 || state.type === "source") continue;
+
+          clearTimeout(timer);
+          timer = setTimeout(() => {
+            resultMap.set(project, makeSearchResult(stack));
+            setCandidates(new Map(resultMap));
+            calledSetCandidate = true;
+          }, 500);
+        }
+
+        // ソース更新をトリガーにした検索のときは、for loop内で一度もmapにデータが格納されないので、ここで格納しておく
+        if (state.type === "source") {
+          resultMap.set(project, makeSearchResult(stack));
+        }
       }
-      // timerが一度も呼びされなかったとき(=500ms経過する前に検索し終わった場合)は、timerを止めて即座にここで更新する
+
+      // setCandidateが一度も呼び出されなかった時(=500ms経過する前に検索し終わった場合)は、timerを止めて即座にここで更新する
       // これは検索結果が0件だった場合と、ソースのみが更新された場合も含む
-      if (returned) return;
-      setCandidates(stack);
+      if (calledSetCandidate) return;
+      setCandidates(new Map(resultMap));
     })();
+
     return () => terminate = true;
   }, [state]);
 
-  // 並べ替え & 加工して返却する
-  const compareAse = useMemo(() => makeCompareAse(projects), [projects]);
-  return useMemo(() =>
-    candidates.sort(compareAse).map((page) => ({
-      title: page.title,
-      projects: page.metadata.map(({ project }) => project),
-    })), [candidates, compareAse]);
+  return candidates;
+};
+
+/** 検索結果の並び替え & 統計データ取得 */
+const makeSearchResult = (links: (Link & MatchInfo)[]) => {
+  links.sort(compareAse);
+
+  const candidates: (Link & MatchInfo)[] = [];
+  let point = 0;
+  let leastDistanceMatched = 10000;
+  for (const link of links) {
+    point += 0.5 ** link.dist;
+    if (leastDistanceMatched > link.dist) leastDistanceMatched = link.dist;
+  }
+
+  return { point, leastDistanceMatched, candidates };
 };
 
 interface State {
   type: "source" | "query";
-  source: Candidate[];
+  source: Map<string, Link[]>;
   query: string;
 }
-type Action = { source: Candidate[] } | { query: string };
+type Action = { source: Map<string, Link[]> } | { query: string };
 
 const reducer = (state: State, action: Action): State =>
   "query" in action
@@ -97,10 +132,10 @@ interface IncrementalSearchOptions {
 /** 中断可能な検索 */
 async function* incrementalSearch(
   query: string,
-  source: Candidate[],
+  source: Link[],
   options?: IncrementalSearchOptions,
-): AsyncGenerator<(Candidate & MatchInfo)[], void, unknown> {
-  const filter = makeFilter<Candidate>(query);
+): AsyncGenerator<(Link & MatchInfo)[], void, unknown> {
+  const filter = makeFilter<Link>(query);
   if (!filter) return;
 
   const chunk = options?.chunk ?? 1000;

@@ -11,7 +11,7 @@ import {
   useEffect,
   useMemo,
 } from "./deps/preact.tsx";
-import { Scrapbox, textInput } from "./deps/scrapbox.ts";
+import { Scrapbox, textInput, toTitleLc } from "./deps/scrapbox.ts";
 import {
   Candidate as CandidateComponent,
   CandidateProps,
@@ -24,6 +24,7 @@ import { useOS } from "./useOS.ts";
 import { UseLifecycleResult } from "./useLifecycle.ts";
 import { CompletionState } from "./reducer.ts";
 import { createDebug } from "./debug.ts";
+import { compareAse } from "./sort.ts";
 import { detectURL } from "./detectURL.ts";
 declare const scrapbox: Scrapbox;
 
@@ -91,34 +92,71 @@ export const Completion = (
     );
   }, [start, query]);
 
-  // 表示する候補のみ、UI用データを作る
-  const candidatesProps = useMemo<Omit<CandidateProps, "selected">[]>(() => {
+  const linkMap = useMemo(() => {
     logger.time("filtering by projects");
-    const result = candidates
-      .filter((candidate) =>
-        candidate.projects.some((project) => enableProjects.includes(project))
-      )
-      .slice(0, limit)
-      .map((candidate) => ({
-        title: candidate.title,
-        projects: candidate.projects.flatMap((project) =>
-          enableProjects.includes(project)
-            ? [{
-              name: project,
-              mark: project === scrapbox.Project.name && projects.length < 2
-                ? ""
-                : detectURL(mark[project] ?? "", import.meta.url) ||
-                  project[0],
-              confirm: () => confirm(candidate.title, project),
-            }]
-            : []
-        ),
-        confirm: () => confirm(candidate.title),
-      }));
-    logger.timeEnd("filtering by projects");
 
-    return result;
-  }, [enableProjects, projects.length, candidates, limit, mark, confirm]);
+    // 指定されたprojectsの検索結果のみを使う
+    const searchResultList = [...candidates.entries()].filter(([project]) =>
+      enableProjects.includes(project)
+    );
+
+    // 表示する候補を大雑把に絞り込む
+    const filteredLinks = searchResultList.flatMap((
+      [project, { candidates }],
+    ) =>
+      candidates.slice(0, limit).map((candidate) => ({
+        project,
+        ...candidate,
+      }))
+    ).sort(compareAse);
+
+    // 重複を除いてlimit個に絞り込む
+
+    /** linkLcをキーにして、表示するリンクデータを格納する*/
+    const linkMap = new Map<string, [string, Set<string>]>();
+    for (const link of filteredLinks) {
+      const key = toTitleLc(link.title);
+      const l = linkMap.get(key);
+      if (!l) {
+        linkMap.set(key, [link.title, new Set([link.project])]);
+        continue;
+      }
+      l[1].add(link.project);
+    }
+
+    // 各projectから、同名のlinkがあるかどうか確認する
+    for (const [project, { candidates }] of searchResultList) {
+      for (const { title } of candidates) {
+        linkMap.get(toTitleLc(title))?.[1]?.add(project);
+      }
+    }
+
+    logger.timeEnd("filtering by projects");
+    return linkMap;
+  }, [candidates]);
+
+  // 表示する候補のみ、UI用データを作る
+  const candidatesProps = useMemo<Omit<CandidateProps, "selected">[]>(
+    () =>
+      [...linkMap.values()]
+        .map(([title, pset]) => ({
+          title,
+          projects: [...pset].flatMap((project) =>
+            enableProjects.includes(project)
+              ? [{
+                name: project,
+                mark: project === scrapbox.Project.name && project.length < 2
+                  ? ""
+                  : detectURL(mark[project] ?? "", import.meta.url) ||
+                    project[0],
+                confirm: () => confirm(title, project),
+              }]
+              : []
+          ),
+          confirm: () => confirm(title),
+        })),
+    [linkMap, enableProjects, projects.length, mark, confirm],
+  );
 
   // 候補選択
   const { selectedIndex, next, prev, selectLast, selectFirst } = useSelect(
@@ -153,9 +191,7 @@ export const Completion = (
   // projectの絞り込み
   const projectProps = useMemo(() => {
     /** 検索で見つかったprojects */
-    const found = new Set(
-      candidates.flatMap((candidate) => candidate.projects),
-    );
+    const found = new Set(candidates.keys());
 
     // 予め設定されたprojectsから、検索で見つかったもののみ表示する
     return projects.flatMap((project) =>
@@ -204,7 +240,7 @@ export const Completion = (
         projects.length > 1
         ? { top, right }
         : { display: "none" },
-    [top, right, candidates.length, projects.length],
+    [top, right, candidatesProps.length, projects.length],
   );
 
   const os = useOS();
