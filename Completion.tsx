@@ -10,7 +10,6 @@ import {
   useCallback,
   useEffect,
   useMemo,
-  useState,
 } from "./deps/preact.tsx";
 import { Scrapbox, textInput } from "./deps/scrapbox.ts";
 import {
@@ -18,10 +17,8 @@ import {
   CandidateProps,
 } from "./Candidate.tsx";
 import { SelectInit, useSelect } from "./useSelect.ts";
-import { useSource } from "./useSource.ts";
 import { usePosition } from "./usePosition.ts";
-import { incrementalSearch } from "./incrementalSearch.ts";
-import { makeCompareAse } from "./sort.ts";
+import { useSearch } from "./useSearch.ts";
 import { useProjectFilter } from "./useProjectFilter.ts";
 import { useOS } from "./useOS.ts";
 import { UseLifecycleResult } from "./useLifecycle.ts";
@@ -74,7 +71,7 @@ export const Completion = (
   });
 
   /** 検索結果 */
-  const candidates = useCandidates(projects, query);
+  const candidates = useSearch(projects, query);
 
   /** 補完候補を挿入する函数
    *
@@ -238,36 +235,6 @@ export const Completion = (
       </div>
     </>
   );
-};
-
-const useCandidates = (
-  projects: string[],
-  query: string,
-) => {
-  // 検索
-  const source = useSource(projects);
-  const [candidates, setCandidates] = useState<
-    { title: string; projects: string[] }[]
-  >([]);
-  const compareAse = useMemo(() => makeCompareAse(projects), [projects]);
-  useEffect(() =>
-    incrementalSearch(
-      query,
-      source,
-      (candidates) =>
-        setCandidates((prev) =>
-          // まだ候補が見つからない場合は、前回の検索結果を表示したままにする
-          candidates.length === 0
-            ? prev
-            : candidates.sort(compareAse).map((page) => ({
-              title: page.title,
-              projects: page.metadata.map(({ project }) => project),
-            }))
-        ),
-      { chunk: 5000 },
-    ), [source, query, compareAse]);
-
-  return candidates;
 };
 
 const Mark = (
