@@ -23,11 +23,8 @@ import { useProjectFilter } from "./useProjectFilter.ts";
 import { useOS } from "./useOS.ts";
 import { UseLifecycleResult } from "./useLifecycle.ts";
 import { CompletionState } from "./reducer.ts";
-import { createDebug } from "./debug.ts";
 import { detectURL } from "./detectURL.ts";
 declare const scrapbox: Scrapbox;
-
-const logger = createDebug("scrapbox-select-suggestion:Completion.tsx");
 
 export interface CompletionProps extends
   Pick<
@@ -39,7 +36,7 @@ export interface CompletionProps extends
   enableSelfProjectOnStart: boolean;
   callback: (operators?: Operators) => void;
   mark: Record<string, string | URL>;
-  projects: string[];
+  projects: Set<string>;
 }
 
 export interface Operators {
@@ -72,7 +69,7 @@ export const Completion = (
   });
 
   /** 検索結果 */
-  const candidates = useSearch(
+  const { projectScore, items } = useSearch(
     projects,
     context === "input" ? query.slice(1, -1) : query,
   );
@@ -93,32 +90,34 @@ export const Completion = (
 
   // 表示する候補のみ、UI用データを作る
   const candidatesProps = useMemo<Omit<CandidateProps, "selected">[]>(() => {
-    logger.time("filtering by projects");
-    const result = candidates
-      .filter((candidate) =>
-        candidate.projects.some((project) => enableProjects.includes(project))
-      )
-      .slice(0, limit)
-      .map((candidate) => ({
-        title: candidate.title,
-        projects: candidate.projects.flatMap((project) =>
+    // 絞り込みをかけながら変換する
+    const result: Omit<CandidateProps, "selected">[] = [];
+    for (const item of items) {
+      if (result.length === limit) break;
+      if (!item.projects.some((project) => enableProjects.includes(project))) {
+        continue;
+      }
+
+      result.push({
+        title: item.title,
+        projects: item.projects.flatMap((project) =>
           enableProjects.includes(project)
             ? [{
               name: project,
-              mark: project === scrapbox.Project.name && projects.length < 2
+              mark: project === scrapbox.Project.name && projects.size < 2
                 ? ""
                 : detectURL(mark[project] ?? "", import.meta.url) ||
                   project[0],
-              confirm: () => confirm(candidate.title, project),
+              confirm: () => confirm(item.title, project),
             }]
             : []
         ),
-        confirm: () => confirm(candidate.title),
-      }));
-    logger.timeEnd("filtering by projects");
+        confirm: () => confirm(item.title),
+      });
+    }
 
     return result;
-  }, [enableProjects, projects.length, candidates, limit, mark, confirm]);
+  }, [enableProjects, projects.size, items, limit, mark, confirm]);
 
   // 候補選択
   const { selectedIndex, next, prev, selectLast, selectFirst } = useSelect(
@@ -151,15 +150,12 @@ export const Completion = (
   ]);
 
   // projectの絞り込み
-  const projectProps = useMemo(() => {
-    /** 検索で見つかったprojects */
-    const found = new Set(
-      candidates.flatMap((candidate) => candidate.projects),
-    );
-
+  const projectProps = useMemo(() =>
     // 予め設定されたprojectsから、検索で見つかったもののみ表示する
-    return projects.flatMap((project) =>
-      found.has(project)
+    [...projects].sort((a, b) =>
+      (projectScore.get(b) ?? 0) - (projectScore.get(a) ?? 0)
+    ).flatMap((project) =>
+      projectScore.has(project)
         ? [{
           name: project,
           enable: enableProjects.includes(project),
@@ -171,8 +167,7 @@ export const Completion = (
             }),
         }]
         : []
-    );
-  }, [candidates, projects, enableProjects, mark]);
+    ), [projectScore, enableProjects, mark]);
 
   const { ref, top, left, right } = usePosition({
     line: position.line,
@@ -199,12 +194,12 @@ export const Completion = (
   const projectFilterStyle = useMemo<h.JSX.CSSProperties>(
     () =>
       // undefinedとnullをまとめて判定したいので、厳密比較!==は使わない
-      candidatesProps.length > 0 && top != null &&
+      items.length > 0 && top != null &&
         right != null &&
-        projects.length > 1
+        projects.size > 1
         ? { top, right }
         : { display: "none" },
-    [top, right, candidates.length, projects.length],
+    [top, right, items.length, projects.size],
   );
 
   const os = useOS();
@@ -231,9 +226,9 @@ export const Completion = (
             selected={selectedIndex === i}
           />
         ))}
-        {candidates.length > limit && (
+        {items.length > limit && (
           <div className="counter">
-            {`${candidates.length - limit} more links`}
+            {`${items.length - limit} more links`}
           </div>
         )}
       </div>

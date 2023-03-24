@@ -1,15 +1,20 @@
 import { useCallback, useEffect, useState } from "./deps/preact.tsx";
 import { checkUpdate, listenUpdate, load, Source } from "./storage.ts";
+import { createDebug } from "./debug.ts";
 import { Candidate } from "./source.ts";
+
+const logger = createDebug("scrapbox-select-suggestion:useSource.ts");
 
 /** 補完ソースを提供するhook */
 export const useSource = (
-  projects: string[],
+  projects: Iterable<string>,
 ): Candidate[] => {
   const [candidates, setCandidates] = useState<Candidate[]>([]);
 
   const update = useCallback(
     (sources: Source[]) => {
+      const start = new Date();
+
       const result = new Map<string, Omit<Candidate, "titleLc">>();
       for (const { project, links } of sources) {
         for (const [title, titleLc, hasIcon, , , updated] of links) {
@@ -21,10 +26,15 @@ export const useSource = (
           });
         }
       }
+      const candidates = [...result.entries()].map(([titleLc, data]) => ({
+        titleLc,
+        ...data,
+      }));
 
-      setCandidates(
-        [...result.entries()].map(([titleLc, data]) => ({ titleLc, ...data })),
-      );
+      const ms = new Date().getTime() - start.getTime();
+      logger.debug(`Compiled ${candidates.length} source in ${ms}ms`);
+
+      setCandidates(candidates);
     },
     [],
   );
@@ -34,7 +44,7 @@ export const useSource = (
     let terminate = false;
 
     const update_ = async () => {
-      const sources = await load(projects);
+      const sources = await load([...projects]);
       if (terminate) return;
 
       update(sources);
@@ -42,17 +52,17 @@ export const useSource = (
 
     update_();
 
-    // 更新通知を受け取る
     let timer: number | undefined;
+    // 更新通知を受け取る
     // 10秒待ってから更新する
-    const cleanup = listenUpdate(projects, () => {
+    const cleanup = listenUpdate([...projects], () => {
       clearTimeout(timer);
       timer = setTimeout(update_, 10000);
     });
 
     // 定期的に更新する
     const callback = async () => {
-      const result = await checkUpdate(projects, 600);
+      const result = await checkUpdate([...projects], 600);
       if (result.length === 0 || terminate) return;
       update_();
     };
