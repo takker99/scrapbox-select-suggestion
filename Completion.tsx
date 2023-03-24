@@ -160,6 +160,7 @@ export const Completion = (
           name: project,
           enable: enableProjects.includes(project),
           mark: detectURL(mark[project] ?? "", import.meta.url) || project[0],
+          score: projectScore.get(project)!,
           onClick: () =>
             freezeUntil(() => {
               set(project, !enableProjects.includes(project));
@@ -240,12 +241,14 @@ const Mark = (
   props: {
     enable: boolean;
     name: string;
+    score: number;
     onClick: h.JSX.MouseEventHandler<HTMLDivElement>;
     mark: URL | string;
   },
 ) => (
   <div
     className={props.enable ? "mark" : "mark disabled"}
+    data-score={props.score.toPrecision(3)}
     onClick={props.onClick}
     title={props.name}
   >
