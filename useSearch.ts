@@ -31,7 +31,7 @@ export const useSearch = (
       for await (
         const candidates of incrementalSearch(query, source, { chunk: 5000 })
       ) {
-        if (terminate) break;
+        if (terminate) return;
         stack.push(...candidates);
         clearTimeout(timer);
         timer = setTimeout(() => {
@@ -43,6 +43,8 @@ export const useSearch = (
           );
         }, 500);
       }
+      // 検索結果が0件の場合は、候補を空にする
+      if (stack.length === 0) setCandidates([]);
     })();
     return () => terminate = true;
   }, [source, query, compareAse]);
