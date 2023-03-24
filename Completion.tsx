@@ -81,8 +81,8 @@ export const Completion = (
     const text = project ? `[/${project}/${title}]` : `[${title}]`;
     // ユーザーが文字を入力したと補完判定で誤認識されないよう、一旦補完を切ってから編集する
     confirmAfter((prev) =>
-      `${prev.slice(0, start)}${text}${
-        prev.slice(start + [...query].length + 2)
+      `${[...prev].slice(0, start).join("")}${text}${
+        [...prev].slice(start + [...query].length + 2).join("")
       }`
     );
   }, [start, query]);
