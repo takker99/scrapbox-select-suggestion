@@ -72,8 +72,8 @@ async function* incrementalSearch(
   const chunk = options?.chunk ?? 1000;
   const total = Math.floor(source.length / chunk) + 1;
   let i = 0;
+  const start = new Date();
   try {
-    logger.time(`search for "${query}"`);
     for (; i < total; i++) {
       // 検索中断命令を受け付けるためのinterval
       await new Promise((resolve) => requestAnimationFrame(resolve));
@@ -82,13 +82,12 @@ async function* incrementalSearch(
       yield result;
     }
   } finally {
-    logger.timeEnd(`search for "${query}"`);
-    if (i + 1 < total) {
-      logger.debug(
-        `stopped searching for "${query}", ${
-          ((i + 1) / total * 100).toFixed(2)
-        }%`,
-      );
-    }
+    const end = new Date();
+    const ms = end.getTime() - start.getTime();
+    logger.debug(
+      `search ${
+        (i / total * 100).toPrecision(3)
+      }% of the source for "${query}" in ${ms}ms`,
+    );
   }
 }
