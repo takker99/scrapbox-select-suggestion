@@ -82,7 +82,7 @@ export interface AppProps {
   /** 表示する最大候補数 */
   limit: number;
   callback: (operators: Operators) => void;
-  projects: string[];
+  projects: Set<string>;
   mark: Record<string, string | URL>;
   style: string | URL;
   enableSelfProjectOnStart: boolean;

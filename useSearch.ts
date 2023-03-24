@@ -6,18 +6,29 @@ import {
   useState,
 } from "./deps/preact.tsx";
 import { useSource } from "./useSource.ts";
-import { makeCompareAse } from "./sort.ts";
-import { makeFilter, MatchInfo } from "./search.ts";
+import { compareAse } from "./sort.ts";
 import { Candidate } from "./source.ts";
+import { makeFilter, MatchInfo } from "./search.ts";
 import { createDebug } from "./debug.ts";
 
 const logger = createDebug("scrapbox-select-suggestion:useSearch.ts");
 
+export interface Item {
+  title: string;
+  dist: number;
+  projects: string[];
+}
+
+export interface SearchResult {
+  projectScore: Map<string, number>;
+  items: Item[];
+}
+
 /** あいまい検索するhooks */
 export const useSearch = (
-  projects: string[],
+  projects: Iterable<string>,
   query: string,
-): { title: string; projects: string[] }[] => {
+): SearchResult => {
   const source = useSource(projects);
   const [state, dispatch] = useReducer(reducer, {
     type: "query",
@@ -62,12 +73,30 @@ export const useSearch = (
   }, [state]);
 
   // 並べ替え & 加工して返却する
-  const compareAse = useMemo(() => makeCompareAse(projects), [projects]);
-  return useMemo(() =>
-    candidates.sort(compareAse).map((page) => ({
-      title: page.title,
-      projects: page.metadata.map(({ project }) => project),
-    })), [candidates, compareAse]);
+  return useMemo(() => {
+    const projectScore = new Map<string, number>();
+    const items: Item[] = [];
+    for (const page of candidates.sort(compareAse)) {
+      const projects = page.metadata.map(({ project }) => project);
+
+      // score計算
+      // この値で、project絞り込みパネルでの並び順を決める
+      for (const project of projects) {
+        projectScore.set(
+          project,
+          (projectScore.get(project) ?? 0) + 0.5 ** page.dist,
+        );
+      }
+
+      items.push({
+        title: page.title,
+        dist: page.dist,
+        projects,
+      });
+    }
+
+    return { projectScore, items };
+  }, [candidates]);
 };
 
 interface State {

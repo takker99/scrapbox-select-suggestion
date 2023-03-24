@@ -27,7 +27,7 @@ export interface SetupInit {
    *
    * `enableSelfProjectOnStart`を`true`にすると、自動で`scrapbox.Project.name`が追加される
    */
-  projects?: string[];
+  projects?: Iterable<string>;
 
   /** 候補のソース元の識別子に使う文字列もしくはアイコンのURL
    *
@@ -67,21 +67,10 @@ export const setup = (init?: SetupInit): Promise<Operators> => {
     style = "",
     enableSelfProjectOnStart = true,
   } = init ?? {};
-  const projects = (() => {
-    if (!init?.projects || init.projects.length === 0) {
-      return [scrapbox.Project.name];
-    }
-
-    // フラグが立っているときのみ、現在projectを補完対象にする
-    const projects = enableSelfProjectOnStart
-      ? [scrapbox.Project.name, ...init.projects]
-      : init.projects;
-
-    // 重複を省く
-    return projects.filter((project, i) =>
-      !projects.some((p, j) => j < i && p === project)
-    );
-  })();
+  const projects = new Set([
+    ...(enableSelfProjectOnStart ? [scrapbox.Project.name] : []),
+    ...(init?.projects ?? [scrapbox.Project.name]),
+  ]);
 
   setDebugMode(debug);
   return new Promise<Operators>(

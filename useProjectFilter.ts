@@ -23,22 +23,22 @@ interface UseProjectFilterResult {
  * @return 検索対象のprojectsのリスト
  */
 export const useProjectFilter = (
-  projects: string[],
+  projects: Iterable<string>,
   options: useProjectFilterOptions,
 ): UseProjectFilterResult => {
   const [enableProjects, setEnableProjects] = useState(
-    getEnables(projects, options),
+    getEnables([...projects], options),
   );
   const set = useCallback((project: string, flag: boolean) => {
     setFrag(project, flag, projects, options);
-    setEnableProjects(getEnables(projects, options));
+    setEnableProjects(getEnables([...projects], options));
   }, [projects, options.enableSelfProjectOnStart]);
 
   //更新通知を受け取る
   useEffect(() => {
     const listener = (e: StorageEvent) => {
       if (e.key !== key) return;
-      setEnableProjects(getEnables(projects, options));
+      setEnableProjects(getEnables([...projects], options));
     };
     addEventListener("storage", listener);
     return () => removeEventListener("storage", listener);
@@ -91,10 +91,10 @@ const getEnables = (
 const setFrag = (
   project: string,
   flag: boolean,
-  init: string[],
+  init: Iterable<string>,
   options: useProjectFilterOptions,
 ): void => {
-  const old = getEnables(init, options);
+  const old = getEnables([...init], options);
   if (options.enableSelfProjectOnStart && project === scrapbox.Project.name) {
     enableSelfProject = flag;
   }
