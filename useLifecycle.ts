@@ -144,6 +144,7 @@ export const useLifecycle = (): UseLifecycleResult => {
       });
       await insertText(text);
       dispatch({ type: "unlock" });
+      dispatch({ type: "cancel" });
     },
     [],
   );
