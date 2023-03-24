@@ -1,4 +1,10 @@
-import { useEffect, useMemo, useRef, useState } from "./deps/preact.tsx";
+import {
+  useEffect,
+  useMemo,
+  useReducer,
+  useRef,
+  useState,
+} from "./deps/preact.tsx";
 import { useSource } from "./useSource.ts";
 import { makeCompareAse } from "./sort.ts";
 import { makeFilter, MatchInfo } from "./search.ts";
@@ -12,14 +18,17 @@ export const useSearch = (
   projects: string[],
   query: string,
 ): { title: string; projects: string[] }[] => {
-  // 検索
   const source = useSource(projects);
-  const [candidates, setCandidates] = useState<
-    { title: string; projects: string[] }[]
-  >([]);
-  const compareAse = useMemo(() => makeCompareAse(projects), [projects]);
-  const done = useRef<Promise<void>>(Promise.resolve());
+  const [state, dispatch] = useReducer(reducer, {
+    type: "query",
+    source,
+    query,
+  });
+  useEffect(() => dispatch({ source }), [source]);
+  useEffect(() => dispatch({ query }), [query]);
 
+  const [candidates, setCandidates] = useState<(Candidate & MatchInfo)[]>([]);
+  const done = useRef<Promise<void>>(Promise.resolve());
   useEffect(() => {
     let terminate = false;
     done.current = (async () => {
@@ -28,29 +37,54 @@ export const useSearch = (
 
       const stack: (Candidate & MatchInfo)[] = [];
       let timer: number | undefined;
+      let returned = false;
       for await (
-        const candidates of incrementalSearch(query, source, { chunk: 5000 })
+        const candidates of incrementalSearch(state.query, state.source, {
+          chunk: 5000,
+        })
       ) {
         if (terminate) return;
         stack.push(...candidates);
+        // 何も見つかっていないときと、ソースが更新されたときは、途中経過を返さない
+        if (stack.length === 0 || state.type === "source") continue;
         clearTimeout(timer);
         timer = setTimeout(() => {
-          setCandidates(
-            stack.sort(compareAse).map((page) => ({
-              title: page.title,
-              projects: page.metadata.map(({ project }) => project),
-            })),
-          );
+          returned = true;
+          setCandidates(stack);
         }, 500);
       }
-      // 検索結果が0件の場合は、候補を空にする
-      if (stack.length === 0) setCandidates([]);
+      // timerが一度も呼びされなかったとき(=500ms経過する前に検索し終わった場合)は、timerを止めて即座にここで更新する
+      // これは検索結果が0件だった場合と、ソースのみが更新された場合も含む
+      if (returned) return;
+      setCandidates(stack);
     })();
     return () => terminate = true;
-  }, [source, query, compareAse]);
+  }, [state]);
 
-  return candidates;
+  // 並べ替え & 加工して返却する
+  const compareAse = useMemo(() => makeCompareAse(projects), [projects]);
+  return useMemo(() =>
+    candidates.sort(compareAse).map((page) => ({
+      title: page.title,
+      projects: page.metadata.map(({ project }) => project),
+    })), [candidates, compareAse]);
 };
+
+interface State {
+  type: "source" | "query";
+  source: Candidate[];
+  query: string;
+}
+type Action = { source: Candidate[] } | { query: string };
+
+const reducer = (state: State, action: Action): State =>
+  "query" in action
+    ? action.query === state.query
+      ? state
+      : ({ type: "query", source: state.source, ...action })
+    : action.source === state.source
+    ? state
+    : ({ type: "source", query: state.query, ...action });
 
 interface IncrementalSearchOptions {
   /** 一度に検索する候補の最大数
@@ -77,9 +111,7 @@ async function* incrementalSearch(
     for (; i < total; i++) {
       // 検索中断命令を受け付けるためのinterval
       await new Promise((resolve) => requestAnimationFrame(resolve));
-      const result = filter(source.slice(i * chunk, (i + 1) * chunk));
-      if (result.length === 0) continue;
-      yield result;
+      yield filter(source.slice(i * chunk, (i + 1) * chunk));
     }
   } finally {
     const end = new Date();
