@@ -34,7 +34,7 @@ export interface CompletionProps extends
     UseLifecycleResult,
     "confirmAfter" | "cancel" | "freezeUntil"
   >,
-  Omit<CompletionState, "type" | "context"> {
+  Omit<CompletionState, "type"> {
   limit: number;
   enableSelfProjectOnStart: boolean;
   callback: (operators?: Operators) => void;
@@ -56,6 +56,7 @@ export const Completion = (
     position,
     query,
     start,
+    context,
     limit,
     enableSelfProjectOnStart,
     callback,
@@ -71,7 +72,10 @@ export const Completion = (
   });
 
   /** 検索結果 */
-  const candidates = useSearch(projects, query);
+  const candidates = useSearch(
+    projects,
+    context === "input" ? query.slice(1, -1) : query,
+  );
 
   /** 補完候補を挿入する函数
    *
@@ -81,8 +85,8 @@ export const Completion = (
     const text = project ? `[/${project}/${title}]` : `[${title}]`;
     // ユーザーが文字を入力したと補完判定で誤認識されないよう、一旦補完を切ってから編集する
     confirmAfter((prev) =>
-      `${prev.slice(0, start)}${text}${
-        prev.slice(start + [...query].length + 2)
+      `${[...prev].slice(0, start).join("")}${text}${
+        [...prev].slice(start + [...query].length).join("")
       }`
     );
   }, [start, query]);

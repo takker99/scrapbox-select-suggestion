@@ -78,8 +78,8 @@ Deno.test("reducer()", async (t) => {
       ready,
       disabled,
       disabledAuto,
-      inputCompl("code2svg", 29, 6, 30),
-      selectCompl("code2svg", 29, 6, 30),
+      inputCompl("[code2svg]", 29, 6, 30),
+      selectCompl("[code2svg]", 29, 6, 30),
       inputCancel,
       selectCancel,
     ];
@@ -110,8 +110,8 @@ Deno.test("reducer()", async (t) => {
       for (
         const state of [
           ready,
-          inputCompl("code2svg", 29, 6, 30),
-          selectCompl("code2svg", 29, 6, 30),
+          inputCompl("[code2svg]", 29, 6, 30),
+          selectCompl("[code2svg]", 29, 6, 30),
           inputCancel,
           selectCancel,
         ]
@@ -140,11 +140,11 @@ Deno.test("reducer()", async (t) => {
         assertStrictEquals(reducer(state, cancel), state);
       }
       assertEquals(
-        reducer(inputCompl("code2svg", 29, 6, 30), cancel),
+        reducer(inputCompl("[code2svg]", 29, 6, 30), cancel),
         inputCancel,
       );
       assertEquals(
-        reducer(selectCompl("code2svg", 29, 6, 30), cancel),
+        reducer(selectCompl("[code2svg]", 29, 6, 30), cancel),
         selectCancel,
       );
     },
@@ -154,8 +154,8 @@ Deno.test("reducer()", async (t) => {
     await t.step(
       "リンク内にカーソルがある状態で文字入力すると補完に移行する",
       () => {
-        const query = "code2svg";
-        for (let char = 30; char < 30 + [...query].length; char++) {
+        const query = "[code2svg]";
+        for (let char = 30; char < 29 + [...query].length; char++) {
           for (
             const state of [
               ready,
@@ -225,10 +225,10 @@ Deno.test("reducer()", async (t) => {
       () => {
         assertEquals(
           reducer(
-            inputCompl("code2svg", 29, 6, 30),
+            inputCompl("[code2svg]", 29, 6, 30),
             cursorEvent({ line: 6, char: 31 }, emptyRange),
           ),
-          inputCompl("code2svg", 29, 6, 31),
+          inputCompl("[code2svg]", 29, 6, 31),
         );
       },
     );
@@ -238,7 +238,7 @@ Deno.test("reducer()", async (t) => {
       () => {
         assertEquals(
           reducer(
-            inputCompl("code2svg", 29, 6, 30),
+            inputCompl("[code2svg]", 29, 6, 30),
             cursorEvent({ line: 6, char: 29 }, emptyRange),
           ),
           ready,
@@ -384,7 +384,7 @@ Deno.test("reducer()", async (t) => {
           for (
             const state of [
               ready,
-              inputCompl("code2svg", 29, line, 1),
+              inputCompl("[code2svg]", 29, line, 1),
               selectCompl("code2svg", 29, line, 1),
             ]
           ) {
@@ -412,7 +412,7 @@ Deno.test("reducer()", async (t) => {
   });
 
   await t.step("input completion + X →", () => {
-    const completion = inputCompl("code2svg", 29, 6, 30);
+    const completion = inputCompl("[code2svg]", 29, 6, 30);
     assertEquals(reducer(completion, cancel), inputCancel);
   });
 

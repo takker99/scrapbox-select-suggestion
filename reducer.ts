@@ -143,7 +143,7 @@ export const reducer = (state: State, action: Action): State => {
     return {
       type: "completion",
       context: "input",
-      query: link.whole.slice(1, -1),
+      query: link.whole,
       start: link.start,
       position: action.position,
     };
