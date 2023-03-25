@@ -12,6 +12,7 @@ import {
 import {
   insertText,
   Line,
+  Position,
   Scrapbox,
   takeCursor,
   takeSelection,
@@ -38,7 +39,7 @@ export interface UseLifecycleResult {
 
   /** 現在行を書き換えて、補完を終了する */
   confirmAfter: (
-    updator: (prev: string) => string | Promise<string>,
+    updator: (prev: string, position: Position) => [string, Position],
   ) => Promise<void>;
 }
 
@@ -133,9 +134,7 @@ export const useLifecycle = (): UseLifecycleResult => {
       const { cursor, selection } = takeStores();
       const line = cursor.getPosition().line;
       const prev = lines[line].text;
-      const text = await Promise.resolve(
-        updator(prev),
-      );
+      const [text, position] = updator(prev, cursor.getPosition());
 
       // 上書き
       selection.setRange({
@@ -143,6 +142,7 @@ export const useLifecycle = (): UseLifecycleResult => {
         end: { line, char: [...prev].length },
       });
       await insertText(text);
+      cursor.setPosition(position);
       dispatch({ type: "unlock" });
       dispatch({ type: "cancel" });
     },
