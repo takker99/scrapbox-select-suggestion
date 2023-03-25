@@ -19,6 +19,7 @@ import {
 import { SelectInit, useSelect } from "./useSelect.ts";
 import { usePosition } from "./usePosition.ts";
 import { useSearch } from "./useSearch.ts";
+import { Candidate } from "./source.ts";
 import { useProjectFilter } from "./useProjectFilter.ts";
 import { useOS } from "./useOS.ts";
 import { UseLifecycleResult } from "./useLifecycle.ts";
@@ -37,6 +38,7 @@ export interface CompletionProps extends
   callback: (operators?: Operators) => void;
   mark: Record<string, string | URL>;
   projects: Set<string>;
+  source: Candidate[];
 }
 
 export interface Operators {
@@ -58,6 +60,7 @@ export const Completion = (
     enableSelfProjectOnStart,
     callback,
     projects,
+    source,
     mark,
     confirmAfter,
     cancel,
@@ -70,8 +73,8 @@ export const Completion = (
 
   /** 検索結果 */
   const { projectScore, items } = useSearch(
-    projects,
     context === "input" ? query.slice(1, -1) : query,
+    source,
   );
 
   /** 補完候補を挿入する函数
