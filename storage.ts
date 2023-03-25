@@ -169,21 +169,17 @@ export const load = async (
 ): Promise<Source[]> => {
   const list: Source[] = [];
 
-  const tag = `read links of ${projects.length} projects`;
-  logger.time(tag);
+  const start = new Date();
   {
     const tx = (await open()).transaction("source", "readonly");
     await Promise.all(projects.map(async (project) => {
       const source = await tx.store.get(project);
-      if (!source) {
-        list.push({ project, links: [] });
-      } else {
-        list.push(source);
-      }
+      list.push(source ?? { project, links: [] });
     }));
     await tx.done;
   }
-  logger.timeEnd(tag);
+  const ms = new Date().getTime() - start.getTime();
+  logger.debug(`Read links of ${projects.length} projects in ${ms}ms`);
 
   return list;
 };
