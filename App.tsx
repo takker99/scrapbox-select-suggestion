@@ -13,6 +13,7 @@ import {
   useState,
 } from "./deps/preact.tsx";
 import { Completion, Operators as OperatorsBase } from "./Completion.tsx";
+import { useSource } from "./useSource.ts";
 import { UserCSS } from "./UserCSS.tsx";
 import { SelectInit } from "./useSelect.ts";
 import { CSS } from "./CSS.tsx";
@@ -113,6 +114,9 @@ export const App = (props: AppProps) => {
     [callback],
   );
 
+  // 補完ソースを先読みする
+  const source = useSource(options.projects);
+
   return (
     <>
       <CSS />
@@ -121,6 +125,7 @@ export const App = (props: AppProps) => {
         (
           <Completion
             callback={setOperators}
+            source={source}
             {...state}
             {...ops}
             {...options}

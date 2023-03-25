@@ -5,7 +5,6 @@ import {
   useRef,
   useState,
 } from "./deps/preact.tsx";
-import { useSource } from "./useSource.ts";
 import { compareAse } from "./sort.ts";
 import { Candidate } from "./source.ts";
 import { makeFilter, MatchInfo } from "./search.ts";
@@ -26,10 +25,9 @@ export interface SearchResult {
 
 /** あいまい検索するhooks */
 export const useSearch = (
-  projects: Iterable<string>,
   query: string,
+  source: Candidate[],
 ): SearchResult => {
-  const source = useSource(projects);
   const [state, dispatch] = useReducer(reducer, {
     type: "query",
     source,
