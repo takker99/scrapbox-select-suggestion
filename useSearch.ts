@@ -45,27 +45,50 @@ export const useSearch = (
       await done.current;
 
       const stack: (Candidate & MatchInfo)[] = [];
+      const iterator = incrementalSearch(state.query, state.source, {
+        chunk: 5000,
+      });
+
+      // ソース更新をトリガーにした再検索は、すべて検索し終わってから返す
+      if (state.type === "source") {
+        for await (const candidates of iterator) {
+          stack.push(...candidates);
+        }
+        setCandidates(stack);
+        return;
+      }
+
       let timer: number | undefined;
       let returned = false;
-      for await (
-        const candidates of incrementalSearch(state.query, state.source, {
-          chunk: 5000,
-        })
-      ) {
-        if (terminate) return;
+      for await (const candidates of iterator) {
+        if (terminate) {
+          clearTimeout(timer);
+          return;
+        }
         stack.push(...candidates);
-        // 何も見つかっていないときと、ソースが更新されたときは、途中経過を返さない
-        if (stack.length === 0 || state.type === "source") continue;
-        clearTimeout(timer);
-        timer = setTimeout(() => {
+        // 以下のときは途中経過を返さない
+        // - まだ何も見つかっていない時
+        // - 新しく見つかったものがない時
+        if (
+          stack.length === 0 || candidates.length === 0
+        ) continue;
+        // 初回のみ遅延させずに返す
+        if (!returned) {
+          setCandidates([...stack]);
           returned = true;
-          setCandidates(stack);
+        }
+        // 500msごとに返却する
+        timer ??= setTimeout(() => {
+          setCandidates([...stack]);
+          timer = undefined;
         }, 500);
       }
-      // timerが一度も呼びされなかったとき(=500ms経過する前に検索し終わった場合)は、timerを止めて即座にここで更新する
-      // これは検索結果が0件だった場合と、ソースのみが更新された場合も含む
-      if (returned) return;
-      setCandidates(stack);
+      // 最低一度は返却する
+      // また、timerが終了していなかった場合は、それを止めて代わりにここで実行する
+      if (timer !== undefined || !returned) {
+        clearTimeout(timer);
+        setCandidates([...stack]);
+      }
     })();
     return () => terminate = true;
   }, [state]);
