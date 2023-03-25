@@ -75,6 +75,12 @@ img {
   color: var(--select-suggest-information-text-color, #aaa);
   font-size: 80%;
   font-style: italic;
+}
+.progress[style] {
+  padding: unset;
+  border: unset;
+  height: 0.5px;
+  transition: background 0.1s;
 }`}
   </style>
 );
