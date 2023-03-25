@@ -40,11 +40,8 @@ export const useSearch = (
   useEffect(() => dispatch({ source }), [source]);
   useEffect(() => dispatch({ query }), [query]);
 
-  const [[candidates, progress], setResult] = useState<
-    [(Candidate & MatchInfo)[], number]
-  >(
-    [[], 0],
-  );
+  const [progress, setProgress] = useState(0);
+  const [candidates, setCandidates] = useState<(Candidate & MatchInfo)[]>([]);
   const done = useRef<Promise<void>>(Promise.resolve());
   useEffect(() => {
     let terminate = false;
@@ -62,7 +59,8 @@ export const useSearch = (
         for await (const [candidates] of iterator) {
           stack.push(...candidates);
         }
-        setResult([stack, 1.0]);
+        setProgress(1.0);
+        setCandidates(stack);
         return;
       }
       let timer: number | undefined;
@@ -77,20 +75,20 @@ export const useSearch = (
         progress = p;
 
         // 進捗率を更新する
-        setResult(([prev]) => [prev, progress]);
+        setProgress(progress);
 
         // 見つからなければ更新しない
         if (candidates.length === 0) continue;
         // 初回は即座に結果を返す
         if (!returned) {
-          setResult([[...stack], progress]);
+          setCandidates([...stack]);
           returned = true;
           continue;
         }
 
         // 500msごとに返却する
         timer ??= setTimeout(() => {
-          setResult([[...stack], progress]);
+          setCandidates([...stack]);
           timer = undefined;
         }, 500);
       }
@@ -98,7 +96,7 @@ export const useSearch = (
       // また、timerが終了していなかった場合は、それを止めて代わりにここで実行する
       if (timer !== undefined || !returned) {
         clearTimeout(timer);
-        setResult([[...stack], progress]);
+        setCandidates([...stack]);
       }
     })();
     return () => terminate = true;
