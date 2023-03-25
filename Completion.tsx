@@ -84,11 +84,15 @@ export const Completion = (
   const confirm = useCallback((title: string, project?: string) => {
     const text = project ? `[/${project}/${title}]` : `[${title}]`;
     // ユーザーが文字を入力したと補完判定で誤認識されないよう、一旦補完を切ってから編集する
-    confirmAfter((prev) =>
+    confirmAfter((
+      prev,
+      { line },
+    ) => [
       `${[...prev].slice(0, start).join("")}${text}${
         [...prev].slice(start + [...query].length).join("")
-      }`
-    );
+      }`,
+      { line, char: start + [...text].length },
+    ]);
   }, [start, query]);
 
   // 表示する候補のみ、UI用データを作る
