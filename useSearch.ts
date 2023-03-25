@@ -19,8 +19,12 @@ export interface Item {
 }
 
 export interface SearchResult {
+  /** 各projectの並び順を決める値 */
   projectScore: Map<string, number>;
+  /** 検索結果 */
   items: Item[];
+  /** 検索の進捗率 */
+  progress: number;
 }
 
 /** あいまい検索するhooks */
@@ -36,7 +40,11 @@ export const useSearch = (
   useEffect(() => dispatch({ source }), [source]);
   useEffect(() => dispatch({ query }), [query]);
 
-  const [candidates, setCandidates] = useState<(Candidate & MatchInfo)[]>([]);
+  const [[candidates, progress], setResult] = useState<
+    [(Candidate & MatchInfo)[], number]
+  >(
+    [[], 0],
+  );
   const done = useRef<Promise<void>>(Promise.resolve());
   useEffect(() => {
     let terminate = false;
@@ -51,35 +59,38 @@ export const useSearch = (
 
       // ソース更新をトリガーにした再検索は、すべて検索し終わってから返す
       if (state.type === "source") {
-        for await (const candidates of iterator) {
+        for await (const [candidates] of iterator) {
           stack.push(...candidates);
         }
-        setCandidates(stack);
+        setResult([stack, 1.0]);
         return;
       }
-
       let timer: number | undefined;
       let returned = false;
-      for await (const candidates of iterator) {
+      let progress = 0;
+      for await (const [candidates, p] of iterator) {
         if (terminate) {
           clearTimeout(timer);
           return;
         }
         stack.push(...candidates);
-        // 以下のときは途中経過を返さない
-        // - まだ何も見つかっていない時
-        // - 新しく見つかったものがない時
-        if (
-          stack.length === 0 || candidates.length === 0
-        ) continue;
-        // 初回のみ遅延させずに返す
+        progress = p;
+
+        // 進捗率を更新する
+        setResult(([prev]) => [prev, progress]);
+
+        // 見つからなければ更新しない
+        if (candidates.length === 0) continue;
+        // 初回は即座に結果を返す
         if (!returned) {
-          setCandidates([...stack]);
+          setResult([[...stack], progress]);
           returned = true;
+          continue;
         }
+
         // 500msごとに返却する
         timer ??= setTimeout(() => {
-          setCandidates([...stack]);
+          setResult([[...stack], progress]);
           timer = undefined;
         }, 500);
       }
@@ -87,14 +98,14 @@ export const useSearch = (
       // また、timerが終了していなかった場合は、それを止めて代わりにここで実行する
       if (timer !== undefined || !returned) {
         clearTimeout(timer);
-        setCandidates([...stack]);
+        setResult([[...stack], progress]);
       }
     })();
     return () => terminate = true;
   }, [state]);
 
   // 並べ替え & 加工して返却する
-  return useMemo(() => {
+  const [projectScore, items] = useMemo(() => {
     const projectScore = new Map<string, number>();
     const items: Item[] = [];
     for (const page of candidates.sort(compareAse)) {
@@ -116,8 +127,10 @@ export const useSearch = (
       });
     }
 
-    return { projectScore, items };
+    return [projectScore, items];
   }, [candidates]);
+
+  return { projectScore, items, progress };
 };
 
 interface State {
@@ -149,7 +162,7 @@ async function* incrementalSearch(
   query: string,
   source: Candidate[],
   options?: IncrementalSearchOptions,
-): AsyncGenerator<(Candidate & MatchInfo)[], void, unknown> {
+): AsyncGenerator<[(Candidate & MatchInfo)[], number], void, unknown> {
   const filter = makeFilter<Candidate>(query);
   if (!filter) return;
 
@@ -161,7 +174,7 @@ async function* incrementalSearch(
     for (; i < total; i++) {
       // 検索中断命令を受け付けるためのinterval
       await new Promise((resolve) => requestAnimationFrame(resolve));
-      yield filter(source.slice(i * chunk, (i + 1) * chunk));
+      yield [filter(source.slice(i * chunk, (i + 1) * chunk)), (i + 1) / total];
     }
   } finally {
     const end = new Date();

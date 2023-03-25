@@ -72,7 +72,7 @@ export const Completion = (
   });
 
   /** 検索結果 */
-  const { projectScore, items } = useSearch(
+  const { projectScore, items, progress } = useSearch(
     context === "input" ? query.slice(1, -1) : query,
     source,
   );
@@ -235,6 +235,12 @@ export const Completion = (
             {`${items.length - limit} more links`}
           </div>
         )}
+        <div
+          className="progress"
+          style={`background:  linear-gradient(to right, var(--select-suggest-border-color, #eee) ${
+            (progress * 100).toPrecision(3)
+          }%, transparent ${(progress * 100).toPrecision(3)}%)`}
+        />
       </div>
     </>
   );
