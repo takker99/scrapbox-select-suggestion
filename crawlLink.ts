@@ -31,13 +31,19 @@ export function* crawlLink(line: Line): Generator<Link, void, unknown> {
           char += [...node.unit.whole].length;
           break;
         case "indent":
+        case "quote":
           char += [...node.unit.tag].length;
           yield* crawl(node.children);
           break;
-        case "quote":
         case "deco":
-        case "strong":
+          char += [...node.unit.deco].length + 2;
           yield* crawl(node.children);
+          char++;
+          break;
+        case "strong":
+          char += 2;
+          yield* crawl(node.children);
+          char += 2;
           break;
         default:
           char += [...node.unit.whole].length;
