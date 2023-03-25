@@ -53,17 +53,24 @@ export const useSource = (
     update_();
 
     let timer: number | undefined;
+    const updatedProjects = new Set<string>();
     // 更新通知を受け取る
     // 10秒待ってから更新する
-    const cleanup = listenUpdate([...projects], () => {
+    const cleanup = listenUpdate([...projects], ({ project }) => {
+      updatedProjects.add(project);
       clearTimeout(timer);
-      timer = setTimeout(update_, 10000);
+      timer = setTimeout(() => {
+        logger.debug(`Detect ${updatedProjects.size} projects' update`);
+        update_();
+        updatedProjects.clear();
+      }, 10000);
     });
 
     // 定期的に更新する
     const callback = async () => {
       const result = await checkUpdate([...projects], 600);
       if (result.length === 0 || terminate) return;
+      logger.debug(`Detect ${result.length} projects' update`);
       update_();
     };
     callback();
