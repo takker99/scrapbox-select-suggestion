@@ -2,7 +2,9 @@ import { crawlLink } from "./crawlLink.ts";
 import { Line } from "./deps/scrapbox.ts";
 import { assertEquals } from "./deps/testing.ts";
 import line from "./sample-line1.json" assert { type: "json" };
+import line2 from "./sample-line2.json" assert { type: "json" };
 import lines from "./sample-lines1.json" assert { type: "json" };
+import lines2 from "./sample-lines2.json" assert { type: "json" };
 
 Deno.test("crawlLink()", async (t) => {
   {
@@ -11,6 +13,18 @@ Deno.test("crawlLink()", async (t) => {
         { start: 0, whole: "[選択範囲]" },
         { start: 14, whole: "[リンク]" },
         { start: 24, whole: "[リンクの入力補完]" },
+      ]);
+    });
+  }
+  {
+    await t.step(line2.text, () => {
+      assertEquals([...crawlLink(line2)], [
+        { start: 6, whole: "[リンク]" },
+        { start: 23, whole: "[リンク]" },
+        { start: 34, whole: "[リンク]" },
+        { start: 53, whole: "[リンク]" },
+        { start: 71, whole: "[リンク]" },
+        { start: 93, whole: "[テスト]" },
       ]);
     });
   }
@@ -53,6 +67,23 @@ Deno.test("crawlLink()", async (t) => {
     await t.step(lines[6].text, () => {
       assertEquals([...crawlLink(lines[6] as Line)], [
         { start: 29, whole: "[code2svg]" },
+      ]);
+    });
+  }
+  {
+    await t.step(lines2[90].text, () => {
+      assertEquals([...crawlLink(lines2[90] as Line)], [
+        { start: 3, whole: "[リンク]" },
+      ]);
+    });
+    await t.step(lines2[98].text, () => {
+      assertEquals([...crawlLink(lines2[98] as Line)], [
+        { start: 6, whole: "[リンク]" },
+      ]);
+    });
+    await t.step(lines2[116].text, () => {
+      assertEquals([...crawlLink(lines2[116] as Line)], [
+        { start: 5, whole: "[ネタバレ防止記法]" },
       ]);
     });
   }
