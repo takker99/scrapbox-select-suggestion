@@ -57,6 +57,7 @@ export const useSearch = (
       // ソース更新をトリガーにした再検索は、すべて検索し終わってから返す
       if (state.type === "source") {
         for await (const [candidates] of iterator) {
+          if (terminate) return;
           stack.push(...candidates);
         }
         setProgress(1.0);
