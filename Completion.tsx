@@ -175,7 +175,7 @@ export const Completion = (
             }),
         }]
         : []
-    ), [projectScore, enableProjects, mark]);
+    ), [projects, projectScore, enableProjects, mark]);
 
   const { ref, top, left, right } = usePosition({
     line: position.line,
