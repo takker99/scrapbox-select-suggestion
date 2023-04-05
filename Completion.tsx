@@ -7,6 +7,7 @@
 import {
   Fragment,
   h,
+  Ref,
   useCallback,
   useEffect,
   useMemo,
@@ -18,9 +19,12 @@ import {
 } from "./Candidate.tsx";
 import { SelectInit, useSelect } from "./useSelect.ts";
 import { usePosition } from "./usePosition.ts";
-import { useSearch } from "./useSearch.ts";
+import { SearchResult, useSearch } from "./useSearch.ts";
 import { Candidate } from "./source.ts";
-import { useProjectFilter } from "./useProjectFilter.ts";
+import {
+  useProjectFilter,
+  UseProjectFilterResult,
+} from "./useProjectFilter.ts";
 import { useOS } from "./useOS.ts";
 import { UseLifecycleResult } from "./useLifecycle.ts";
 import { CompletionState } from "./reducer.ts";
@@ -67,16 +71,105 @@ export const Completion = (
     freezeUntil,
   }: CompletionProps,
 ) => {
-  const { projects: enableProjects, set } = useProjectFilter(projects, {
-    enableSelfProjectOnStart,
-  });
-
   /** 検索結果 */
   const { projectScore, items, progress } = useSearch(
     context === "input" ? query.slice(1, -1) : query,
     source,
   );
 
+  const { projects: enableProjects, set } = useProjectFilter(projects, {
+    enableSelfProjectOnStart,
+  });
+
+  const { ref, top, left, right } = usePosition({
+    line: position.line,
+    char: start,
+  });
+  const os = useOS();
+
+  return (
+    <>
+      <SourceFilter
+        itemCount={items.length}
+        {...{
+          enableProjects,
+          projects,
+          projectScore,
+          freezeUntil,
+          mark,
+          top,
+          right,
+          set,
+          os,
+        }}
+      />
+      <ItemList
+        divRef={ref}
+        {...{
+          start,
+          confirmAfter,
+          cancel,
+          query,
+          enableProjects,
+          projects,
+          items,
+          top,
+          left,
+          progress,
+          callback,
+          limit,
+          mark,
+          os,
+        }}
+      />
+    </>
+  );
+};
+
+interface ItemListProps extends
+  Pick<
+    CompletionProps & SearchResult & h.JSX.CSSProperties,
+    | "start"
+    | "confirmAfter"
+    | "cancel"
+    | "query"
+    | "items"
+    | "progress"
+    | "callback"
+    | "limit"
+    | "mark"
+    | "top"
+    | "left"
+  > {
+  /** <div />にアクセスするためのref object
+   *
+   * `ref`だと干渉するので、名前を変えた
+   */
+  divRef: Ref<HTMLDivElement>;
+  enableProjects: string[];
+  projects: Set<string>;
+  os: string;
+}
+
+const ItemList = (
+  {
+    start,
+    divRef,
+    confirmAfter,
+    cancel,
+    query,
+    enableProjects,
+    projects,
+    items,
+    top,
+    left,
+    progress,
+    callback,
+    limit,
+    mark,
+    os,
+  }: ItemListProps,
+) => {
   /** 補完候補を挿入する函数
    *
    * 起動している補完の種類に応じて挙動を変える
@@ -95,6 +188,15 @@ export const Completion = (
     ]);
   }, [start, query]);
 
+  /** 補完ソースに外部projectが含まれているかどうか
+   *
+   * 含まれている場合は<Mark />を表示する
+   */
+  const isExternalProjectMode = useMemo(
+    () => projects.size > 1 || !projects.has(scrapbox.Project.name),
+    [projects],
+  );
+
   // 表示する候補のみ、UI用データを作る
   const candidatesProps = useMemo<Omit<CandidateProps, "selected">[]>(() => {
     // 絞り込みをかけながら変換する
@@ -111,10 +213,9 @@ export const Completion = (
           enableProjects.includes(project)
             ? [{
               name: project,
-              mark: project === scrapbox.Project.name && projects.size < 2
-                ? ""
-                : detectURL(mark[project] ?? "", import.meta.url) ||
-                  project[0],
+              mark: isExternalProjectMode
+                ? detectURL(mark[project] ?? "", import.meta.url) || project[0]
+                : "",
               confirm: () => confirm(item.title, project),
             }]
             : []
@@ -124,7 +225,7 @@ export const Completion = (
     }
 
     return result;
-  }, [enableProjects, projects.size, items, limit, mark, confirm]);
+  }, [enableProjects, isExternalProjectMode, items, limit, mark, confirm]);
 
   // 候補選択
   const { selectedIndex, next, prev, selectLast, selectFirst } = useSelect(
@@ -156,6 +257,79 @@ export const Completion = (
     confirmSelected,
   ]);
 
+  /** 補完windowのスタイル */
+  const style = useMemo<h.JSX.CSSProperties>(
+    () =>
+      // undefinedとnullをまとめて判定したいので、厳密比較!==は使わない
+      candidatesProps.length > 0 && top != null &&
+        left != null
+        ? { top, left }
+        : { display: "none" },
+    [candidatesProps.length, top, left],
+  );
+
+  return (
+    <div
+      ref={divRef}
+      className="container candidates"
+      data-os={os}
+      style={style}
+    >
+      {candidatesProps.map((props, i) => (
+        <CandidateComponent
+          key={props.title}
+          {...props}
+          selected={selectedIndex === i}
+        />
+      ))}
+      {items.length > limit && (
+        <div className="counter">
+          {`${items.length - limit} more links`}
+        </div>
+      )}
+      <div
+        className="progress"
+        style={`background:  linear-gradient(to right, var(--select-suggest-border-color, #eee) ${
+          (progress * 100).toPrecision(3)
+        }%, transparent ${(progress * 100).toPrecision(3)}%)`}
+      />
+    </div>
+  );
+};
+
+interface SourceFilterProps extends
+  Pick<
+    & CompletionProps
+    & SearchResult
+    & h.JSX.CSSProperties
+    & UseProjectFilterResult,
+    | "mark"
+    | "top"
+    | "right"
+    | "set"
+    | "projectScore"
+    | "freezeUntil"
+  > {
+  enableProjects: string[];
+  projects: Set<string>;
+  os: string;
+  itemCount: number;
+}
+
+const SourceFilter = (
+  {
+    enableProjects,
+    projects,
+    projectScore,
+    mark,
+    itemCount,
+    top,
+    right,
+    set,
+    os,
+    freezeUntil,
+  }: SourceFilterProps,
+) => {
   // projectの絞り込み
   const projectProps = useMemo(() =>
     // 予め設定されたprojectsから、検索で見つかったもののみ表示する
@@ -177,76 +351,31 @@ export const Completion = (
         : []
     ), [projects, projectScore, enableProjects, mark]);
 
-  const { ref, top, left, right } = usePosition({
-    line: position.line,
-    char: start,
-  });
-
-  /** 補完windowのスタイル */
-  const listStyle = useMemo<h.JSX.CSSProperties>(
-    () =>
-      // undefinedとnullをまとめて判定したいので、厳密比較!==は使わない
-      candidatesProps.length > 0 && top != null &&
-        left != null
-        ? { top, left }
-        : { display: "none" },
-    [candidatesProps.length, top, left],
-  );
-
   /** project絞り込みパネルのスタイル
    *
    * projectが一つしか指定されていなければ表示しない
    *
    * 非表示の検索候補があれば表示し続ける
    */
-  const projectFilterStyle = useMemo<h.JSX.CSSProperties>(
+  const style = useMemo<h.JSX.CSSProperties>(
     () =>
       // undefinedとnullをまとめて判定したいので、厳密比較!==は使わない
-      items.length > 0 && top != null &&
+      itemCount > 0 && top != null &&
         right != null &&
         projects.size > 1
         ? { top, right }
         : { display: "none" },
-    [top, right, items.length, projects.size],
+    [top, right, itemCount, projects.size],
   );
 
-  const os = useOS();
-
   return (
-    <>
-      <div
-        className="container projects"
-        data-os={os}
-        style={projectFilterStyle}
-      >
-        {projectProps.map((props) => <Mark {...props} />)}
-      </div>
-      <div
-        ref={ref}
-        className="container candidates"
-        data-os={os}
-        style={listStyle}
-      >
-        {candidatesProps.map((props, i) => (
-          <CandidateComponent
-            key={props.title}
-            {...props}
-            selected={selectedIndex === i}
-          />
-        ))}
-        {items.length > limit && (
-          <div className="counter">
-            {`${items.length - limit} more links`}
-          </div>
-        )}
-        <div
-          className="progress"
-          style={`background:  linear-gradient(to right, var(--select-suggest-border-color, #eee) ${
-            (progress * 100).toPrecision(3)
-          }%, transparent ${(progress * 100).toPrecision(3)}%)`}
-        />
-      </div>
-    </>
+    <div
+      className="container projects"
+      data-os={os}
+      style={style}
+    >
+      {projectProps.map((props) => <Mark {...props} />)}
+    </div>
   );
 };
 
