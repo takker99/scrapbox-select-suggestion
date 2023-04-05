@@ -104,9 +104,9 @@ export const Completion = (
         }}
       />
       <ItemList
+        divRef={ref}
         {...{
           start,
-          ref,
           confirmAfter,
           cancel,
           query,
@@ -141,7 +141,11 @@ interface ItemListProps extends
     | "top"
     | "left"
   > {
-  ref: Ref<HTMLDivElement>;
+  /** <div />にアクセスするためのref object
+   *
+   * `ref`だと干渉するので、名前を変えた
+   */
+  divRef: Ref<HTMLDivElement>;
   enableProjects: string[];
   projects: Set<string>;
   os: string;
@@ -150,7 +154,7 @@ interface ItemListProps extends
 const ItemList = (
   {
     start,
-    ref,
+    divRef,
     confirmAfter,
     cancel,
     query,
@@ -189,7 +193,7 @@ const ItemList = (
    * 含まれている場合は<Mark />を表示する
    */
   const isExternalProjectMode = useMemo(
-    () => projects.size > 1 && !projects.has(scrapbox.Project.name),
+    () => projects.size > 1 || !projects.has(scrapbox.Project.name),
     [projects],
   );
 
@@ -266,7 +270,7 @@ const ItemList = (
 
   return (
     <div
-      ref={ref}
+      ref={divRef}
       className="container candidates"
       data-os={os}
       style={style}
