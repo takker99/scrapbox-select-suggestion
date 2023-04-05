@@ -4,12 +4,12 @@ declare const scrapbox: Scrapbox;
 
 const key = "enableProjectsOnSuggestion";
 
-interface useProjectFilterOptions {
+export interface useProjectFilterOptions {
   /** scriptを実行しているprojectのソースを、設定に関わらず無条件で有効にするかどうか */
   enableSelfProjectOnStart: boolean;
 }
 
-interface UseProjectFilterResult {
+export interface UseProjectFilterResult {
   /** 検索対象のprojectsのリスト */
   projects: string[];
 
