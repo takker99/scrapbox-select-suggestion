@@ -4,6 +4,6 @@ export interface Candidate {
   updated: number;
   metadata: {
     project: string;
-    hasIcon: boolean;
+    image?: string;
   }[];
 }

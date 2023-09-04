@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useState } from "./deps/preact.tsx";
-import { checkUpdate, listenUpdate, load, Source } from "./storage.ts";
+import { check, decode, load, Source, subscribe } from "./deps/storage.ts";
 import { createDebug } from "./debug.ts";
 import { Candidate } from "./source.ts";
+import { toTitleLc } from "./deps/scrapbox.ts";
 
 const logger = createDebug("scrapbox-select-suggestion:useSource.ts");
 
@@ -17,12 +18,14 @@ export const useSource = (
 
       const result = new Map<string, Omit<Candidate, "titleLc">>();
       for (const { project, links } of sources) {
-        for (const [title, titleLc, hasIcon, , , updated] of links) {
+        for (const compressedLink of links) {
+          const { title, updated, image } = decode(compressedLink);
+          const titleLc = toTitleLc(title);
           const candidate = result.get(titleLc);
           result.set(titleLc, {
             title: candidate?.title ?? title,
             updated: Math.max(candidate?.updated ?? 0, updated),
-            metadata: [...(candidate?.metadata ?? []), { project, hasIcon }],
+            metadata: [...(candidate?.metadata ?? []), { project, image }],
           });
         }
       }
@@ -56,8 +59,10 @@ export const useSource = (
     const updatedProjects = new Set<string>();
     // 更新通知を受け取る
     // 10秒待ってから更新する
-    const cleanup = listenUpdate([...projects], ({ project }) => {
-      updatedProjects.add(project);
+    const cleanup = subscribe([...projects], ({ projects }) => {
+      for (const project of projects) {
+        updatedProjects.add(project);
+      }
       clearTimeout(timer);
       timer = setTimeout(() => {
         logger.debug(`Detect ${updatedProjects.size} projects' update`);
@@ -68,7 +73,7 @@ export const useSource = (
 
     // 定期的に更新する
     const callback = async () => {
-      const result = await checkUpdate([...projects], 600);
+      const result = await check([...projects], 600);
       if (result.length === 0 || terminate) return;
       logger.debug(`Detect ${result.length} projects' update`);
       update_();
