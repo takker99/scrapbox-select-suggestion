@@ -6,6 +6,7 @@ import { App, Operators } from "./App.tsx";
 import { Scrapbox } from "./deps/scrapbox.ts";
 export type { Operators, SelectInit };
 import { setDebugMode } from "./debug.ts";
+import { setDebugMode as setStorageDebugMode } from "./deps/storage.ts";
 declare const scrapbox: Scrapbox;
 
 export interface SetupInit {
@@ -73,6 +74,7 @@ export const setup = (init?: SetupInit): Promise<Operators> => {
   ]);
 
   setDebugMode(debug);
+  setStorageDebugMode(debug);
   return new Promise<Operators>(
     (resolve) =>
       render(
