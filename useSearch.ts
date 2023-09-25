@@ -64,14 +64,12 @@ export const useSearch = (
       }
       let timer: number | undefined;
       let returned = false;
-      let progress = 0;
-      for await (const [candidates, p] of iterator) {
+      for await (const [candidates, progress] of iterator) {
         if (terminate) {
           clearTimeout(timer);
           return;
         }
         stack.push(...candidates);
-        progress = p;
 
         // 進捗率を更新する
         setProgress(progress);
