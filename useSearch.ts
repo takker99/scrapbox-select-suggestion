@@ -7,10 +7,8 @@ import {
 } from "./deps/preact.tsx";
 import { compareAse } from "./sort.ts";
 import { Candidate } from "./source.ts";
-import { makeFilter, MatchInfo } from "./search.ts";
-import { createDebug } from "./debug.ts";
-
-const logger = createDebug("scrapbox-select-suggestion:useSearch.ts");
+import { MatchInfo } from "./search.ts";
+import { cancelableSearch } from "./cancelableSearch.ts";
 
 export interface Item {
   title: string;
@@ -50,7 +48,7 @@ export const useSearch = (
       await done.current;
 
       const stack: (Candidate & MatchInfo)[] = [];
-      const iterator = incrementalSearch(state.query, state.source, {
+      const iterator = cancelableSearch(state.query, state.source, {
         chunk: 5000,
       });
 
@@ -66,14 +64,12 @@ export const useSearch = (
       }
       let timer: number | undefined;
       let returned = false;
-      let progress = 0;
-      for await (const [candidates, p] of iterator) {
+      for await (const [candidates, progress] of iterator) {
         if (terminate) {
           clearTimeout(timer);
           return;
         }
         stack.push(...candidates);
-        progress = p;
 
         // 進捗率を更新する
         setProgress(progress);
@@ -147,41 +143,3 @@ const reducer = (state: State, action: Action): State =>
     : action.source === state.source
     ? state
     : ({ type: "source", query: state.query, ...action });
-
-interface IncrementalSearchOptions {
-  /** 一度に検索する候補の最大数
-   *
-   * @default 1000
-   */
-  chunk?: number;
-}
-
-/** 中断可能な検索 */
-async function* incrementalSearch(
-  query: string,
-  source: Candidate[],
-  options?: IncrementalSearchOptions,
-): AsyncGenerator<[(Candidate & MatchInfo)[], number], void, unknown> {
-  const filter = makeFilter<Candidate>(query);
-  if (!filter) return;
-
-  const chunk = options?.chunk ?? 1000;
-  const total = Math.floor(source.length / chunk) + 1;
-  let i = 0;
-  const start = new Date();
-  try {
-    for (; i < total; i++) {
-      // 検索中断命令を受け付けるためのinterval
-      await new Promise((resolve) => requestAnimationFrame(resolve));
-      yield [filter(source.slice(i * chunk, (i + 1) * chunk)), (i + 1) / total];
-    }
-  } finally {
-    const end = new Date();
-    const ms = end.getTime() - start.getTime();
-    logger.debug(
-      `search ${
-        (i / total * 100).toPrecision(3)
-      }% of the source for "${query}" in ${ms}ms`,
-    );
-  }
-}
