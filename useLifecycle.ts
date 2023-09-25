@@ -143,6 +143,7 @@ export const useLifecycle = (): UseLifecycleResult => {
       });
       await insertText(text);
       cursor.setPosition(position);
+      cursor.focus();
       dispatch({ type: "unlock" });
       dispatch({ type: "cancel" });
     },
