@@ -1,10 +1,10 @@
 import { crawlLink } from "./crawlLink.ts";
 import { Line } from "./deps/scrapbox.ts";
 import { assertEquals } from "./deps/testing.ts";
-import line from "./sample-line1.json" assert { type: "json" };
-import line2 from "./sample-line2.json" assert { type: "json" };
-import lines from "./sample-lines1.json" assert { type: "json" };
-import lines2 from "./sample-lines2.json" assert { type: "json" };
+import line from "./sample-line1.json" with { type: "json" };
+import line2 from "./sample-line2.json" with { type: "json" };
+import lines from "./sample-lines1.json" with { type: "json" };
+import lines2 from "./sample-lines2.json" with { type: "json" };
 
 Deno.test("crawlLink()", async (t) => {
   {
