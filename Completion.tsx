@@ -228,15 +228,19 @@ const ItemList = (
   }, [enableProjects, isExternalProjectMode, items, limit, mark, confirm]);
 
   // 候補選択
-  const { selectedIndex, next, prev, selectLast, selectFirst } = useSelect(
-    candidatesProps.length,
+  const { selectedId, next, prev, selectLast, selectFirst } = useSelect(
+    candidatesProps,
+    selector,
   );
   const confirmSelected = useCallback(
     () =>
-      selectedIndex === -1
+      selectedId === null
         ? false
-        : (candidatesProps.at(selectedIndex)?.confirm?.(), true),
-    [selectedIndex, candidatesProps],
+        : (candidatesProps.find((candidate) =>
+          selector(candidate) === selectedId
+        )?.confirm?.(),
+          true),
+    [selectedId, candidatesProps],
   );
   useEffect(() =>
     callback(
@@ -275,11 +279,11 @@ const ItemList = (
       data-os={os}
       style={style}
     >
-      {candidatesProps.map((props, i) => (
+      {candidatesProps.map((props) => (
         <CandidateComponent
           key={props.title}
           {...props}
-          selected={selectedIndex === i}
+          selected={selectedId === props.title}
         />
       ))}
       {items.length > limit && (
@@ -399,3 +403,5 @@ const Mark = (
       : `[${props.mark}]`}
   </div>
 );
+
+const selector = <T extends { title: string }>(item: T): string => item.title;

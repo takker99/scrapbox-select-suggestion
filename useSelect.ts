@@ -1,12 +1,8 @@
-import { useCallback, useEffect, useState } from "./deps/preact.tsx";
+import { useCallback, useState } from "./deps/preact.tsx";
 
 /** useSelectの戻り値 */
 export interface UseSelectResult {
-  /** 選択している候補の要素番号
-   *
-   * 未選択のときは`-1`になる
-   */
-  selectedIndex: number;
+  selectedId: string | null;
   next: (init?: SelectInit) => void;
   prev: (init?: SelectInit) => void;
   selectFirst: () => void;
@@ -24,30 +20,56 @@ export interface SelectInit {
 }
 
 /** 選択状態を切り替えるhook */
-export const useSelect = (itemCount: number): UseSelectResult => {
-  const [index, setIndex] = useState(-1);
-  // リストの長さが変わったら、選択をリセットする
-  useEffect(() => setIndex(-1), [itemCount]);
+export const useSelect = <T>(
+  items: T[],
+  selector: (item: T) => string,
+): UseSelectResult => {
+  const [selectedId, setSelectedId] = useState<string | null>(null);
 
   const next = useCallback((init?: SelectInit) =>
-    setIndex(
-      (old) =>
-        init?.cyclic ? (old + 1) % itemCount : Math.min(old + 1, itemCount),
-    ), [itemCount]);
+    setSelectedId(
+      (prev) => {
+        if (items.length === 0) return null;
+        if (prev === null) return selector(items[0]);
+        const index = items.findIndex((item) => selector(item) === prev);
+        return selector(
+          init?.cyclic
+            ? items[(index + 1) % items.length]
+            : items.at(index + 1) ?? items[0],
+        );
+      },
+    ), [items, selector]);
   const prev = useCallback((init?: SelectInit) =>
-    setIndex(
-      (old) =>
-        old < 0
-          ? itemCount - 1
-          : init?.cyclic
-          ? (old + itemCount - 1) % itemCount
-          : Math.max(old - 1, 0),
-    ), [itemCount]);
-  const selectFirst = useCallback(() => setIndex(0), []);
-  const selectLast = useCallback(() => setIndex(itemCount - 1), [itemCount]);
+    setSelectedId(
+      (prev) => {
+        if (items.length === 0) return null;
+        if (prev === null) return selector(items[items.length - 1]);
+        const index = items.findIndex((item) => selector(item) === prev);
+        if (index < 0) return selector(items[items.length - 1]);
+        return selector(
+          init?.cyclic
+            ? items[(index - 1 + items.length) % items.length]
+            : items.at(index - 1) ?? items[items.length - 1],
+        );
+      },
+    ), [items, selector]);
+  const selectFirst = useCallback(
+    () => setSelectedId(items.length === 0 ? null : selector(items[0])),
+    [items, selector],
+  );
+  const selectLast = useCallback(
+    () =>
+      setSelectedId(
+        items.length === 0 ? null : selector(items[items.length - 1]),
+      ),
+    [
+      items,
+      selector,
+    ],
+  );
 
   return {
-    selectedIndex: index,
+    selectedId,
     next,
     prev,
     selectFirst,
