@@ -3,6 +3,7 @@ import { check, decode, load, Source, subscribe } from "./deps/storage.ts";
 import { createDebug } from "./deps/debug.ts";
 import { Candidate } from "./source.ts";
 import { toTitleLc } from "./deps/scrapbox.ts";
+import { debounce } from "./deps/async.ts";
 
 const logger = createDebug("scrapbox-select-suggestion:useSource.ts");
 
@@ -36,6 +37,7 @@ export const useSource = (
 
       const ms = new Date().getTime() - start.getTime();
       logger.debug(`Compiled ${candidates.length} source in ${ms}ms`);
+      logger.debug("Detect changes!");
 
       setCandidates(candidates);
     },
@@ -53,37 +55,29 @@ export const useSource = (
       update(sources);
     };
 
+    // 初期化
     update_();
 
-    let timer: number | undefined;
-    const updatedProjects = new Set<string>();
+    const debounced = debounce((projects: string[]) => {
+      logger.debug(`Detect ${projects.length} projects' update:`, projects);
+      update_();
+    }, 10000);
+
     // 更新通知を受け取る
     // 10秒待ってから更新する
-    const cleanup = subscribe([...projects], ({ projects }) => {
-      for (const project of projects) {
-        updatedProjects.add(project);
-      }
-      clearTimeout(timer);
-      timer = setTimeout(() => {
-        logger.debug(`Detect ${updatedProjects.size} projects' update`);
-        update_();
-        updatedProjects.clear();
-      }, 10000);
-    });
+    const cleanup = subscribe(
+      [...projects],
+      ({ projects }) => debounced(projects),
+    );
 
     // 定期的に更新する
-    const callback = async () => {
-      const result = await check([...projects], 600);
-      if (result.length === 0 || terminate) return;
-      logger.debug(`Detect ${result.length} projects' update`);
-      update_();
-    };
+    const callback = () => check([...projects], 600);
     callback();
     const intervalTimer = setInterval(callback, 600 * 1000);
 
     return () => {
       terminate = true;
-      clearTimeout(timer);
+      debounced.clear();
       clearInterval(intervalTimer);
       cleanup();
     };
