@@ -11,6 +11,7 @@ import { UserCSS } from "./UserCSS.tsx";
 import { SelectInit } from "./useSelect.ts";
 import { CSS } from "./CSS.tsx";
 import { useLifecycle } from "./useLifecycle.ts";
+import { useSearch } from "./useSearch.ts";
 import { useExports } from "./useExports.ts";
 
 /** 外部開放用API */
@@ -84,7 +85,16 @@ export interface AppProps {
 }
 
 export const App = (props: AppProps) => {
+  const source = useSource(props.projects);
+  const [searchResult, { update, search }] = useSearch(source);
   const { state, setEnable, ...ops } = useLifecycle();
+
+  update(source);
+  search(
+    state.type === "completion"
+      ? state.context === "input" ? state.query.slice(1, -1) : state.query
+      : "",
+  );
 
   // API提供
   const [operators, setOperators] = useState<OperatorsBase | undefined>();
@@ -95,18 +105,15 @@ export const App = (props: AppProps) => {
     ...((state.type !== "completion") || !operators ? opInit : operators),
   });
 
-  // 補完ソースを先読みする
-  const source = useSource(options.projects);
-
   return (
     <>
       <CSS />
       <UserCSS style={style} />
-      {state.type === "completion" &&
+      {state.type === "completion" && searchResult &&
         (
           <Completion
             callback={setOperators}
-            source={source}
+            {...searchResult}
             {...state}
             {...ops}
             {...options}

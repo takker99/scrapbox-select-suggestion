@@ -6,6 +6,7 @@
 
 import {
   Fragment,
+  FunctionComponent,
   h,
   Ref,
   useCallback,
@@ -19,8 +20,7 @@ import {
 } from "./Candidate.tsx";
 import { SelectInit, useSelect } from "./useSelect.ts";
 import { usePosition } from "./usePosition.ts";
-import { SearchResult, useSearch } from "./useSearch.ts";
-import { Candidate } from "./source.ts";
+import { SearchResult } from "./useSearch.ts";
 import {
   useProjectFilter,
   UseProjectFilterResult,
@@ -37,13 +37,13 @@ export interface CompletionProps extends
     UseLifecycleResult,
     "confirmAfter" | "cancel" | "freezeUntil"
   >,
-  Omit<CompletionState, "type"> {
+  Omit<CompletionState, "type">,
+  SearchResult {
   limit: number;
   enableSelfProjectOnStart: boolean;
   callback: (operators?: Operators) => void;
   mark: Record<string, string | URL>;
   projects: Set<string>;
-  source: Candidate[];
 }
 
 export interface Operators {
@@ -55,29 +55,15 @@ export interface Operators {
   cancel: () => boolean;
 }
 
-export const Completion = (
+export const Completion: FunctionComponent<CompletionProps> = (
   {
     position,
-    query,
     start,
-    context,
-    limit,
     enableSelfProjectOnStart,
-    callback,
     projects,
-    source,
-    mark,
-    confirmAfter,
-    cancel,
-    freezeUntil,
-  }: CompletionProps,
+    ...props
+  },
 ) => {
-  /** 検索結果 */
-  const { projectScore, items, progress } = useSearch(
-    context === "input" ? query.slice(1, -1) : query,
-    source,
-  );
-
   const { projects: enableProjects, set } = useProjectFilter(projects, {
     enableSelfProjectOnStart,
   });
@@ -91,37 +77,28 @@ export const Completion = (
   return (
     <>
       <SourceFilter
-        itemCount={items.length}
+        itemCount={props.items.length}
         {...{
           enableProjects,
           projects,
-          projectScore,
-          freezeUntil,
-          mark,
           top,
           right,
           set,
           os,
         }}
+        {...props}
       />
       <ItemList
         divRef={ref}
         {...{
           start,
-          confirmAfter,
-          cancel,
-          query,
           enableProjects,
           projects,
-          items,
           top,
           left,
-          progress,
-          callback,
-          limit,
-          mark,
           os,
         }}
+        {...props}
       />
     </>
   );
@@ -255,6 +232,7 @@ const ItemList = (
       } as const,
     ), [
     callback,
+    candidatesProps.length,
     next,
     prev,
     selectFirst,
