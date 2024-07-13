@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "./deps/preact.tsx";
 import { check, decode, load, Source, subscribe } from "./deps/storage.ts";
-import { createDebug } from "./debug.ts";
+import { createDebug } from "./deps/debug.ts";
 import { Candidate } from "./source.ts";
 import { toTitleLc } from "./deps/scrapbox.ts";
 
