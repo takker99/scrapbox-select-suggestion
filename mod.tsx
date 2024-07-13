@@ -55,7 +55,9 @@ export interface SetupInit {
  * @param init 初期設定
  * @return このUserScriptの操作函数で解決されるPromise
  */
-export const setup = (init?: SetupInit): Promise<Operators> => {
+export const setup = (
+  init?: SetupInit,
+): Promise<Operators | Record<keyof Operators, undefined>> => {
   const app = document.createElement("div");
   app.dataset.userscriptName = "scrapbox-select-suggestion";
   const shadowRoot = app.attachShadow({ mode: "open" });
@@ -75,7 +77,7 @@ export const setup = (init?: SetupInit): Promise<Operators> => {
 
   setDebugMode(debug);
   setStorageDebugMode(debug);
-  return new Promise<Operators>(
+  return new Promise(
     (resolve) =>
       render(
         <App

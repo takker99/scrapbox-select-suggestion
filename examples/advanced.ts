@@ -1,31 +1,34 @@
-import { setup } from "../mod.tsx";
+import { setup, SetupInit } from "../mod.tsx";
+import { addTextInputEventListener } from "../deps/scrapbox.ts";
 
-const ops = await setup();
+export const launch = async (init?: SetupInit) => {
+  const ops = await setup(init);
 
-document.getElementById("text-input")!.addEventListener("keydown", (e) => {
-  if (e.ctrlKey || e.metaKey || e.altKey) return;
+  addTextInputEventListener("keydown", (e) => {
+    if (e.ctrlKey || e.metaKey || e.altKey) return;
 
-  switch (e.key) {
-    case "Tab": {
-      const executed = e.shiftKey
-        ? ops.selectPrev({ cyclic: true })
-        : ops.selectNext({ cyclic: true });
-      if (!executed) return;
-      break;
+    switch (e.key) {
+      case "Tab": {
+        const executed = e.shiftKey
+          ? ops.selectPrev?.({ cyclic: true })
+          : ops.selectNext?.({ cyclic: true });
+        if (!executed) return;
+        break;
+      }
+      case "Enter": {
+        if (e.shiftKey) return;
+        if (!ops.confirm?.()) return;
+        break;
+      }
+      case "Escape": {
+        if (e.shiftKey) return;
+        if (!ops.cancel?.()) return;
+        break;
+      }
+      default:
+        return;
     }
-    case "Enter": {
-      if (e.shiftKey) return;
-      if (!ops.confirm()) return;
-      break;
-    }
-    case "Escape": {
-      if (e.shiftKey) return;
-      if (!ops.cancel()) return;
-      break;
-    }
-    default:
-      return;
-  }
-  e.preventDefault();
-  e.stopPropagation();
-});
+    e.preventDefault();
+    e.stopPropagation();
+  });
+};

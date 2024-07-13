@@ -4,20 +4,14 @@
 /** @jsx h */
 /** @jsxFrag Fragment */
 
-import {
-  Fragment,
-  h,
-  useCallback,
-  useEffect,
-  useRef,
-  useState,
-} from "./deps/preact.tsx";
+import { Fragment, h, useCallback, useState } from "./deps/preact.tsx";
 import { Completion, Operators as OperatorsBase } from "./Completion.tsx";
 import { useSource } from "./useSource.ts";
 import { UserCSS } from "./UserCSS.tsx";
 import { SelectInit } from "./useSelect.ts";
 import { CSS } from "./CSS.tsx";
 import { useLifecycle } from "./useLifecycle.ts";
+import { useExports } from "./useExports.ts";
 
 /** 外部開放用API */
 export interface Operators {
@@ -82,7 +76,7 @@ export const opInit: OperatorsBase = {
 export interface AppProps {
   /** 表示する最大候補数 */
   limit: number;
-  callback: (operators: Operators) => void;
+  callback: (operators: Operators | Record<keyof Operators, undefined>) => void;
   projects: Set<string>;
   mark: Record<string, string | URL>;
   style: string | URL;
@@ -93,26 +87,13 @@ export const App = (props: AppProps) => {
   const { state, setEnable, ...ops } = useLifecycle();
 
   // API提供
-
-  const enable = useCallback(() => setEnable(true), []);
-  const disable = useCallback(() => setEnable(false), []);
-
-  // ...でopInitが破壊されないようにする
-  const exportRef = useRef<Operators>({ ...opInit, enable, disable });
   const [operators, setOperators] = useState<OperatorsBase | undefined>();
-  useEffect(() => {
-    // currentの参照を壊さずに更新する
-    Object.assign(
-      exportRef.current,
-      (state.type !== "completion") || !operators ? opInit : operators,
-    );
-  }, [state.type, operators]);
-
   const { callback, style, ...options } = props;
-  useEffect(
-    () => callback(exportRef.current),
-    [callback],
-  );
+  useExports(callback, {
+    enable: useCallback(() => setEnable(true), []),
+    disable: useCallback(() => setEnable(false), []),
+    ...((state.type !== "completion") || !operators ? opInit : operators),
+  });
 
   // 補完ソースを先読みする
   const source = useSource(options.projects);
