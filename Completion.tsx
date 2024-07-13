@@ -378,7 +378,7 @@ const SourceFilter = (
       data-os={os}
       style={style}
     >
-      {projectProps.map((props) => <Mark {...props} />)}
+      {projectProps.map((props) => <Mark key={props.name} {...props} />)}
     </div>
   );
 };
