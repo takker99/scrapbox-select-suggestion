@@ -29,6 +29,7 @@ import { useOS } from "./useOS.ts";
 import { UseLifecycleResult } from "./useLifecycle.ts";
 import { CompletionState } from "./reducer.ts";
 import { detectURL } from "./detectURL.ts";
+import { Progress } from "./Progress.tsx";
 declare const scrapbox: Scrapbox;
 
 export interface CompletionProps extends
@@ -291,12 +292,7 @@ const ItemList = (
           {`${items.length - limit} more links`}
         </div>
       )}
-      <div
-        className="progress"
-        style={`background:  linear-gradient(to right, var(--select-suggest-border-color, #eee) ${
-          (progress * 100).toPrecision(3)
-        }%, transparent ${(progress * 100).toPrecision(3)}%)`}
-      />
+      <Progress progress={progress} />
     </div>
   );
 };
