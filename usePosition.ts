@@ -34,7 +34,7 @@ export const usePosition = (
       // 右端から位置合わせしたいときに使う
       right: `${(parentRect.right - (rect?.left ?? 0))}px`,
     };
-  }, [ref.current, pos.line, pos.char]);
+  }, [pos.line, pos.char]);
 
   return { ref, ...style };
 };
