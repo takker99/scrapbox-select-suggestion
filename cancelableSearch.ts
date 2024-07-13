@@ -1,5 +1,5 @@
 import { Candidate, makeFilter, MatchInfo } from "./search.ts";
-import { createDebug } from "./debug.ts";
+import { createDebug } from "./deps/debug.ts";
 
 const logger = createDebug("scrapbox-select-suggestion:cancelableSearch.ts");
 

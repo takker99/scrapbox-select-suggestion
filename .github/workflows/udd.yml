@@ -12,11 +12,12 @@ jobs:
       - uses: actions/checkout@v2
       - uses: denoland/setup-deno@v1
         with:
-          deno-version: 1.25.4
+          deno-version: "v1"
       - name: Update dependencies
         run: >
           deno run --allow-net --allow-read --allow-write=deps/
-          --allow-run=deno https://deno.land/x/udd@0.7.2/main.ts deps/*.ts
+          --allow-run=deno https://deno.land/x/udd@0.8.2/main.ts deps/*.ts
+          --test "deno test --allow-read"
       - name: Check fmt
         run: deno fmt --check
       - name: Run lint
