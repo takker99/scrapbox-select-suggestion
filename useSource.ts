@@ -3,7 +3,6 @@ import { check, decode, load, Source, subscribe } from "./deps/storage.ts";
 import { createDebug } from "./deps/debug.ts";
 import { Candidate } from "./source.ts";
 import { toTitleLc } from "./deps/scrapbox.ts";
-import { debounce } from "./deps/async.ts";
 
 const logger = createDebug("scrapbox-select-suggestion:useSource.ts");
 
@@ -58,16 +57,13 @@ export const useSource = (
     // 初期化
     update_();
 
-    const debounced = debounce((projects: string[]) => {
-      logger.debug(`Detect ${projects.length} projects' update:`, projects);
-      update_();
-    }, 10000);
-
     // 更新通知を受け取る
-    // 10秒待ってから更新する
     const cleanup = subscribe(
       [...projects],
-      ({ projects }) => debounced(projects),
+      ({ projects }) => {
+        logger.debug(`Detect ${projects.length} projects' update:`, projects);
+        update_();
+      },
     );
 
     // 定期的に更新する
@@ -77,7 +73,6 @@ export const useSource = (
 
     return () => {
       terminate = true;
-      debounced.clear();
       clearInterval(intervalTimer);
       cleanup();
     };
