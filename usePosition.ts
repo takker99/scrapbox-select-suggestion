@@ -1,28 +1,22 @@
 /// <reference no-default-lib="true" />
 /// <reference lib="esnext" />
 /// <reference lib="dom" />
-import { h, Ref, useMemo, useRef } from "./deps/preact.tsx";
+import { h, useMemo, useState } from "./deps/preact.tsx";
 import { getCharDOM, Position } from "./deps/scrapbox.ts";
 
 /** 補完リストの表示位置を計算するhook */
 export const usePosition = (
   pos: Position,
 ): Pick<h.JSX.CSSProperties, "top" | "left" | "right"> & {
-  ref: Ref<HTMLDivElement>;
+  updateStandardElement: (element: Element | null) => void;
 } => {
-  const ref = useRef<HTMLDivElement>(null); // 座標計算用
+  const [standardElement, updateStandardElement] = useState<Element | null>(
+    null,
+  );
 
   const style = useMemo<Pick<h.JSX.CSSProperties, "top" | "left">>(() => {
-    if (!ref.current) return {};
-
-    // 座標を取得する
-    const root = ref.current.parentNode;
-    if (!(root instanceof ShadowRoot)) {
-      throw Error(`The parent of "div.container" must be ShadowRoot`);
-    }
-
     /** 基準座標 */
-    const parentRect = root.host?.parentElement?.getBoundingClientRect?.();
+    const parentRect = standardElement?.getBoundingClientRect?.();
     /** 合わせたいDOMの座標 */
     const char = getCharDOM(pos.line, pos.char);
     const rect = char?.getBoundingClientRect?.();
@@ -34,7 +28,7 @@ export const usePosition = (
       // 右端から位置合わせしたいときに使う
       right: `${(parentRect.right - (rect?.left ?? 0))}px`,
     };
-  }, [pos.line, pos.char]);
+  }, [standardElement, pos.line, pos.char]);
 
-  return { ref, ...style };
+  return { updateStandardElement, ...style };
 };

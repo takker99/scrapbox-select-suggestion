@@ -10,6 +10,7 @@ export {
   type FunctionComponent,
   h,
   type Ref,
+  type RefCallback,
   render,
   toChildArray,
 } from "https://esm.sh/preact@10.22.1";
