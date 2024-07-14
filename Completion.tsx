@@ -8,7 +8,7 @@ import {
   Fragment,
   FunctionComponent,
   h,
-  Ref,
+  RefCallback,
   useCallback,
   useEffect,
   useMemo,
@@ -68,7 +68,7 @@ export const Completion: FunctionComponent<CompletionProps> = (
     enableSelfProjectOnStart,
   });
 
-  const { ref, top, left, right } = usePosition({
+  const { updateStandardElement, top, left, right } = usePosition({
     line: position.line,
     char: start,
   });
@@ -89,8 +89,8 @@ export const Completion: FunctionComponent<CompletionProps> = (
         {...props}
       />
       <ItemList
-        divRef={ref}
         {...{
+          updateStandardElement,
           start,
           enableProjects,
           projects,
@@ -119,11 +119,7 @@ interface ItemListProps extends
     | "top"
     | "left"
   > {
-  /** <div />にアクセスするためのref object
-   *
-   * `ref`だと干渉するので、名前を変えた
-   */
-  divRef: Ref<HTMLDivElement>;
+  updateStandardElement: (element: Element | null) => void;
   enableProjects: string[];
   projects: Set<string>;
   os: string;
@@ -132,7 +128,7 @@ interface ItemListProps extends
 const ItemList = (
   {
     start,
-    divRef,
+    updateStandardElement,
     confirmAfter,
     cancel,
     query,
@@ -251,9 +247,31 @@ const ItemList = (
     [candidatesProps.length, top, left],
   );
 
+  const ref: RefCallback<HTMLDivElement> = useCallback((element) => {
+    if (!element) {
+      updateStandardElement(element);
+      return;
+    }
+
+    // 次のようなDOM構造を期待している:
+    //
+    // <div data-userscript-name="scrapbox-select-suggestion"> ← root.host
+    //  #shadow-root (open) ← root
+    //    <div class="container" /> ← element
+    // </div >
+
+    const root = element.parentNode;
+    if (!(root instanceof ShadowRoot)) {
+      throw Error(`The parent of "div.container" must be ShadowRoot`);
+    }
+
+    // `<div />`がroot要素になることはないので、`root.host.parentElement`は`null`にならないはず
+    updateStandardElement(root.host.parentElement);
+  }, [updateStandardElement]);
+
   return (
     <div
-      ref={divRef}
+      ref={ref}
       className="container candidates"
       data-os={os}
       style={style}
