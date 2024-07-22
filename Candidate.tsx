@@ -4,6 +4,7 @@
 /** @jsx h */
 /** @jsxFrag Fragment */
 
+import { ConfirmInit } from "./Completion.tsx";
 import { Fragment, h, useCallback } from "./deps/preact.tsx";
 import { encodeTitleURI } from "./deps/scrapbox.ts";
 
@@ -12,9 +13,9 @@ export interface CandidateProps {
   projects: {
     name: string;
     mark: string | URL;
-    confirm: () => void;
+    confirm: (init?: ConfirmInit) => void;
   }[];
-  confirm: () => void;
+  confirm: (init?: ConfirmInit) => void;
   selected: boolean;
 }
 

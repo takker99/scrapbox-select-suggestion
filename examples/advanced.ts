@@ -5,10 +5,12 @@ export const launch = async (init?: SetupInit) => {
   const ops = await setup(init);
 
   addTextInputEventListener("keydown", (e) => {
-    if (e.ctrlKey || e.metaKey || e.altKey) return;
+    if (e.metaKey || e.altKey) return;
 
     switch (e.key) {
       case "Tab": {
+        if (e.ctrlKey) return;
+        if (e.altKey) return;
         const executed = e.shiftKey
           ? ops.selectPrev?.({ cyclic: true })
           : ops.selectNext?.({ cyclic: true });
@@ -17,11 +19,22 @@ export const launch = async (init?: SetupInit) => {
       }
       case "Enter": {
         if (e.shiftKey) return;
+        if (e.ctrlKey) return;
+        if (e.altKey) return;
         if (!ops.confirm?.()) return;
+        break;
+      }
+      case "i": {
+        if (e.shiftKey) return;
+        if (!e.ctrlKey) return;
+        if (e.altKey) return;
+        if (!ops.confirm?.({ icon: true })) return;
         break;
       }
       case "Escape": {
         if (e.shiftKey) return;
+        if (e.ctrlKey) return;
+        if (e.altKey) return;
         if (!ops.cancel?.()) return;
         break;
       }
