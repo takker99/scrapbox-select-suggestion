@@ -41,18 +41,54 @@ export interface CompletionProps extends
   SearchResult {
   limit: number;
   enableSelfProjectOnStart: boolean;
-  callback: (operators?: Operators) => void;
+  callback: (operators?: OperatorBase) => void;
   mark: Record<string, string | URL>;
   projects: Set<string>;
 }
 
-export interface Operators {
+export interface OperatorBase {
+  /** 次候補を選択する
+   *
+   * @return 補完候補がなければ`false`
+   */
   selectNext: (init?: SelectInit) => boolean;
+
+  /** 前候補を選択する
+   *
+   * @return 補完候補がなければ`false`
+   */
   selectPrev: (init?: SelectInit) => boolean;
+
+  /** 最初の候補を選択する
+   *
+   * @return 補完候補がなければ`false`
+   */
   selectFirst: () => boolean;
+
+  /** 最後の候補を選択する
+   *
+   * @return 補完候補がなければ`false`
+   */
   selectLast: () => boolean;
-  confirm: () => boolean;
+
+  /** 現在選択している候補で補完を実行する
+   *
+   * @return 補完を実行しなかったら`false`
+   */
+  confirm: (init?: ConfirmInit) => boolean;
+
+  /** 一時的に補完を中断する
+   *
+   * 一旦補完条件から抜けるまで補完を実行しない
+   *
+   * @return 補完が開始されていなければ`false`
+   */
   cancel: () => boolean;
+}
+
+export interface ConfirmInit {
+  /** アイコン入力するとき`true` */
+  icon?: boolean;
 }
 
 export const Completion: FunctionComponent<CompletionProps> = (
@@ -148,19 +184,25 @@ const ItemList = (
    *
    * 起動している補完の種類に応じて挙動を変える
    */
-  const confirm = useCallback((title: string, project?: string) => {
-    const text = project ? `[/${project}/${title}]` : `[${title}]`;
-    // ユーザーが文字を入力したと補完判定で誤認識されないよう、一旦補完を切ってから編集する
-    confirmAfter((
-      prev,
-      { line },
-    ) => [
-      `${[...prev].slice(0, start).join("")}${text}${
-        [...prev].slice(start + [...query].length).join("")
-      }`,
-      { line, char: start + [...text].length },
-    ]);
-  }, [start, query]);
+  const confirm = useCallback(
+    (title: string, project?: string, init?: ConfirmInit) => {
+      const text = `[${project ? `/${project}/${title}` : title}${
+        init?.icon ? ".icon" : ""
+      }]`;
+
+      // ユーザーが文字を入力したと補完判定で誤認識されないよう、一旦補完を切ってから編集する
+      confirmAfter((
+        prev,
+        { line },
+      ) => [
+        `${[...prev].slice(0, start).join("")}${text}${
+          [...prev].slice(start + [...query].length).join("")
+        }`,
+        { line, char: start + [...text].length },
+      ]);
+    },
+    [start, query],
+  );
 
   /** 補完ソースに外部projectが含まれているかどうか
    *
@@ -190,11 +232,11 @@ const ItemList = (
               mark: isExternalProjectMode
                 ? detectURL(mark[project] ?? "", import.meta.url) || project[0]
                 : "",
-              confirm: () => confirm(item.title, project),
+              confirm: (init) => confirm(item.title, project, init),
             }]
             : []
         ),
-        confirm: () => confirm(item.title),
+        confirm: (init) => confirm(item.title, undefined, init),
       });
     }
 
@@ -207,12 +249,12 @@ const ItemList = (
     selector,
   );
   const confirmSelected = useCallback(
-    () =>
+    (init?: ConfirmInit) =>
       selectedId === null
         ? false
         : (candidatesProps.find((candidate) =>
           selector(candidate) === selectedId
-        )?.confirm?.(),
+        )?.confirm?.(init),
           true),
     [selectedId, candidatesProps],
   );
