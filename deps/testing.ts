@@ -1,2 +1,2 @@
-export * from "https://deno.land/std@0.224.0/assert/mod.ts";
-export * from "https://deno.land/std@0.224.0/testing/snapshot.ts";
+export * from "jsr:@std/assert@1";
+export * from "jsr:@std/testing@1/snapshot";

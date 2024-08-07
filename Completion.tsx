@@ -1,33 +1,26 @@
-/// <reference no-default-lib="true" />
-/// <reference lib="esnext" />
-/// <reference lib="dom" />
-/** @jsx h */
-/** @jsxFrag Fragment */
-
 import {
-  Fragment,
-  FunctionComponent,
+  type FunctionComponent,
   h,
-  RefCallback,
+  type RefCallback,
   useCallback,
   useEffect,
   useMemo,
 } from "./deps/preact.tsx";
-import { Scrapbox, textInput } from "./deps/scrapbox.ts";
+import { type Scrapbox, textInput } from "./deps/scrapbox.ts";
 import {
   Candidate as CandidateComponent,
-  CandidateProps,
+  type CandidateProps,
 } from "./Candidate.tsx";
-import { SelectInit, useSelect } from "./useSelect.ts";
+import { type SelectInit, useSelect } from "./useSelect.ts";
 import { usePosition } from "./usePosition.ts";
-import { SearchResult } from "./useSearch.ts";
+import type { SearchResult } from "./useSearch.ts";
 import {
   useProjectFilter,
-  UseProjectFilterResult,
+  type UseProjectFilterResult,
 } from "./useProjectFilter.ts";
 import { useOS } from "./useOS.ts";
-import { UseLifecycleResult } from "./useLifecycle.ts";
-import { CompletionState } from "./reducer.ts";
+import type { UseLifecycleResult } from "./useLifecycle.ts";
+import type { CompletionState } from "./reducer.ts";
 import { detectURL } from "./detectURL.ts";
 import { Progress } from "./Progress.tsx";
 declare const scrapbox: Scrapbox;

@@ -1,5 +1,6 @@
-export * from "https://raw.githubusercontent.com/takker99/scrapbox-storage/0.1.5/mod.ts";
+export * from "jsr:@takker/cosense-storage@0.1";
 
-import { deleteDB } from "https://raw.githubusercontent.com/takker99/scrapbox-storage/0.1.5/deps/idb.ts";
+import { deleteDB } from "npm:idb@8";
+
 // 旧ver.で使っていたDBを削除する
 deleteDB("userscript-links").catch((e) => console.error(e));

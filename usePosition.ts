@@ -1,6 +1,3 @@
-/// <reference no-default-lib="true" />
-/// <reference lib="esnext" />
-/// <reference lib="dom" />
 import { h, useMemo, useState } from "./deps/preact.tsx";
 import { getCharDOM, Position } from "./deps/scrapbox.ts";
 

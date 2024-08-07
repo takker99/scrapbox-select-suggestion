@@ -1,8 +1,4 @@
-/// <reference no-default-lib="true" />
-/// <reference lib="esnext" />
-/// <reference lib="dom" />
-/** @jsx h */
-import { FunctionComponent, h } from "./deps/preact.tsx";
+import { FunctionComponent } from "./deps/preact.tsx";
 
 export const Progress: FunctionComponent<{ progress: number }> = (
   { progress },

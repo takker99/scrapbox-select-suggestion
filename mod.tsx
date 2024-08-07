@@ -1,12 +1,9 @@
-/** @jsx h */
-
-import { h, render } from "./deps/preact.tsx";
+import { render } from "./deps/preact.tsx";
 import { SelectInit } from "./useSelect.ts";
 import { App, Operators } from "./App.tsx";
 import { Scrapbox } from "./deps/scrapbox.ts";
 export type { Operators, SelectInit };
 import { setDebugMode } from "./deps/debug.ts";
-import { setDebugMode as setStorageDebugMode } from "./deps/storage.ts";
 declare const scrapbox: Scrapbox;
 
 export interface SetupInit {
@@ -76,7 +73,6 @@ export const setup = (
   ]);
 
   setDebugMode(debug);
-  setStorageDebugMode(debug);
   return new Promise(
     (resolve) =>
       render(
