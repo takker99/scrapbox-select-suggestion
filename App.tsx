@@ -1,11 +1,5 @@
-/// <reference no-default-lib="true" />
-/// <reference lib="esnext" />
-/// <reference lib="dom" />
-/** @jsx h */
-/** @jsxFrag Fragment */
-
-import { Fragment, h, useCallback, useState } from "./deps/preact.tsx";
-import { Completion, OperatorBase } from "./Completion.tsx";
+import { useCallback, useState } from "./deps/preact.tsx";
+import { Completion, type OperatorBase } from "./Completion.tsx";
 import { useSource } from "./useSource.ts";
 import { UserCSS } from "./UserCSS.tsx";
 import { CSS } from "./CSS.tsx";

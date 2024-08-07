@@ -1,14 +1,14 @@
-export * from "https://raw.githubusercontent.com/takker99/scrapbox-userscript-std/0.27.1/browser/dom/mod.ts";
-export * from "https://raw.githubusercontent.com/takker99/scrapbox-userscript-std/0.27.1/title.ts";
+export * from "jsr:@cosense/std@0.28/browser/dom";
+export * from "jsr:@cosense/std@0.28/title";
 export type {
   Candidate,
   Line,
   Node,
   Scrapbox,
-} from "https://raw.githubusercontent.com/scrapbox-jp/types/0.9.0/userscript.ts";
+} from "jsr:@cosense/types@0.10/userscript";
 export type {
   NotFoundError,
   NotLoggedInError,
   NotMemberError,
   Project,
-} from "https://raw.githubusercontent.com/scrapbox-jp/types/0.9.0/rest.ts";
+} from "jsr:@cosense/types@0.10/rest";

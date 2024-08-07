@@ -1,11 +1,5 @@
-/// <reference no-default-lib="true" />
-/// <reference lib="esnext" />
-/// <reference lib="dom" />
-/** @jsx h */
-/** @jsxFrag Fragment */
-
 import { ConfirmInit } from "./Completion.tsx";
-import { Fragment, h, useCallback } from "./deps/preact.tsx";
+import { h, useCallback } from "./deps/preact.tsx";
 import { encodeTitleURI } from "./deps/scrapbox.ts";
 
 export interface CandidateProps {
