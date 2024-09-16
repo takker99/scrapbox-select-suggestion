@@ -1,5 +1,5 @@
-export * from "jsr:@cosense/std@0.28/browser/dom";
-export * from "jsr:@cosense/std@0.28/title";
+export * from "jsr:@cosense/std@0.29/browser/dom";
+export * from "jsr:@cosense/std@0.29/title";
 export type {
   Candidate,
   Line,
