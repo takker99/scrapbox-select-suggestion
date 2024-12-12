@@ -9,3 +9,4 @@ export {
   toChildArray,
 } from "npm:preact@10";
 export * from "npm:preact@10/hooks";
+export { useSyncExternalStore } from "npm:preact@10/compat";

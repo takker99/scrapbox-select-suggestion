@@ -1,230 +1,127 @@
 {
-  "version": "3",
-  "packages": {
-    "specifiers": {
-      "jsr:@core/unknownutil@^3.18.1": "jsr:@core/unknownutil@3.18.1",
-      "jsr:@cosense/std@0.28": "jsr:@cosense/std@0.28.1",
-      "jsr:@cosense/std@^0.28.1": "jsr:@cosense/std@0.28.1",
-      "jsr:@cosense/types": "jsr:@cosense/types@0.10.1",
-      "jsr:@cosense/types@0.10": "jsr:@cosense/types@0.10.1",
-      "jsr:@std/assert@1": "jsr:@std/assert@1.0.2",
-      "jsr:@std/assert@^1.0.2": "jsr:@std/assert@1.0.2",
-      "jsr:@std/async@1": "jsr:@std/async@1.0.1",
-      "jsr:@std/fs@^1.0.1": "jsr:@std/fs@1.0.1",
-      "jsr:@std/internal@^1.0.1": "jsr:@std/internal@1.0.1",
-      "jsr:@std/path@^1.0.2": "jsr:@std/path@1.0.2",
-      "jsr:@std/testing@1": "jsr:@std/testing@1.0.0",
-      "jsr:@takker/cosense-storage@0.1": "jsr:@takker/cosense-storage@0.1.6",
-      "jsr:@takker/debug-js@0.1": "jsr:@takker/debug-js@0.1.2",
-      "npm:i": "npm:i@0.3.7",
-      "npm:idb": "npm:idb@8.0.0",
-      "npm:idb@8": "npm:idb@8.0.0",
-      "npm:option-t@49": "npm:option-t@49.1.0",
-      "npm:option-t@^49.1.0": "npm:option-t@49.1.0",
-      "npm:preact@1": "npm:preact@1.5.2",
-      "npm:preact@10": "npm:preact@10.23.1"
+  "version": "4",
+  "specifiers": {
+    "jsr:@core/unknownutil@4": "4.3.0",
+    "jsr:@cosense/std@0.28": "0.28.4",
+    "jsr:@cosense/std@0.29": "0.29.2",
+    "jsr:@cosense/types@0.10": "0.10.1",
+    "jsr:@std/assert@1": "1.0.9",
+    "jsr:@std/assert@^1.0.8": "1.0.9",
+    "jsr:@std/async@1": "1.0.9",
+    "jsr:@std/encoding@1": "1.0.5",
+    "jsr:@std/fs@^1.0.5": "1.0.6",
+    "jsr:@std/internal@^1.0.5": "1.0.5",
+    "jsr:@std/path@^1.0.8": "1.0.8",
+    "jsr:@std/testing@1": "1.0.5",
+    "jsr:@takker/cosense-storage@0.3": "0.3.1",
+    "jsr:@takker/debug-js@0.1": "0.1.2",
+    "jsr:@takker/md5@0.1": "0.1.0",
+    "npm:date-fns@4": "4.1.0",
+    "npm:idb@8": "8.0.0",
+    "npm:option-t@50": "50.0.1",
+    "npm:option-t@^49.1.0": "49.3.0",
+    "npm:option-t@^50.0.1": "50.0.1",
+    "npm:preact@10": "10.25.1"
+  },
+  "jsr": {
+    "@core/unknownutil@4.3.0": {
+      "integrity": "538a3687ffa81028e91d148818047df219663d0da671d906cecd165581ae55cc"
     },
-    "jsr": {
-      "@core/unknownutil@3.18.1": {
-        "integrity": "6aaa108b623ff971d062dd345da7ca03b97f61ae3d29c8677bff14fec11f0d76"
-      },
-      "@cosense/std@0.28.1": {
-        "integrity": "aded52434e416ca6baaf38ff728b12e5d479ed3669a577eaad253d1dd8e8c439",
-        "dependencies": [
-          "jsr:@core/unknownutil@^3.18.1",
-          "jsr:@cosense/types@0.10",
-          "jsr:@std/async@1",
-          "npm:option-t@^49.1.0"
-        ]
-      },
-      "@cosense/types@0.10.1": {
-        "integrity": "13d2488a02c7b0b035a265bc3299affbdab1ea5b607516379685965cd37b2058"
-      },
-      "@std/assert@1.0.2": {
-        "integrity": "ccacec332958126deaceb5c63ff8b4eaf9f5ed0eac9feccf124110435e59e49c",
-        "dependencies": [
-          "jsr:@std/internal@^1.0.1"
-        ]
-      },
-      "@std/async@1.0.1": {
-        "integrity": "3c7f6324a8a1b47ca657e5a349b511c9a6c2c0729e9d66b223c9ecaac0753ecb"
-      },
-      "@std/fs@1.0.1": {
-        "integrity": "d6914ca2c21abe591f733b31dbe6331e446815e513e2451b3b9e472daddfefcb",
-        "dependencies": [
-          "jsr:@std/path@^1.0.2"
-        ]
-      },
-      "@std/internal@1.0.1": {
-        "integrity": "6f8c7544d06a11dd256c8d6ba54b11ed870aac6c5aeafff499892662c57673e6"
-      },
-      "@std/path@1.0.2": {
-        "integrity": "a452174603f8c620bd278a380c596437a9eef50c891c64b85812f735245d9ec7"
-      },
-      "@std/testing@1.0.0": {
-        "integrity": "27cfc06392c69c2acffe54e6d0bcb5f961cf193f519255372bd4fff1481bfef8",
-        "dependencies": [
-          "jsr:@std/assert@^1.0.2",
-          "jsr:@std/fs@^1.0.1",
-          "jsr:@std/internal@^1.0.1",
-          "jsr:@std/path@^1.0.2"
-        ]
-      },
-      "@takker/cosense-storage@0.1.6": {
-        "integrity": "a9e3ec5de067e4d1ba95bd2e9fa4cf22a317623ceb91bdb327d560750bacc1fa",
-        "dependencies": [
-          "jsr:@cosense/std@^0.28.1",
-          "jsr:@cosense/types@0.10",
-          "jsr:@takker/debug-js@0.1",
-          "npm:idb@8",
-          "npm:option-t@49"
-        ]
-      },
-      "@takker/debug-js@0.1.2": {
-        "integrity": "e40584f3705bec776fb469b46fc084a28e967e3a89b20df492ec4f641ecc4af0"
-      }
+    "@cosense/std@0.28.4": {
+      "integrity": "1563399d4cd26c12866c471221f402fddd896cae389c141260d06d6bc1ea8cf1",
+      "dependencies": [
+        "jsr:@core/unknownutil",
+        "jsr:@cosense/types",
+        "jsr:@std/async",
+        "jsr:@std/encoding",
+        "jsr:@takker/md5",
+        "npm:option-t@^49.1.0"
+      ]
     },
-    "npm": {
-      "i@0.3.7": {
-        "integrity": "sha512-FYz4wlXgkQwIPqhzC5TdNMLSE5+GS1IIDJZY/1ZiEPCT2S3COUVZeT5OW4BmW4r5LHLQuOosSwsvnroG9GR59Q==",
-        "dependencies": {}
-      },
-      "idb@8.0.0": {
-        "integrity": "sha512-l//qvlAKGmQO31Qn7xdzagVPPaHTxXx199MhrAFuVBTPqydcPYBWjkrbv4Y0ktB+GmWOiwHl237UUOrLmQxLvw==",
-        "dependencies": {}
-      },
-      "option-t@49.1.0": {
-        "integrity": "sha512-K5o4+D8rSE1VcmfwrieRZWyShPxX27NEGuZPT11S4CbvjE73YUDR/sanKAYnhVRj6Hn1mKcjfhjhbOCD2ef3qg==",
-        "dependencies": {}
-      },
-      "preact@1.5.2": {
-        "integrity": "sha512-rr51jTetDhFD8xDZlC//OHPksSjeWrwpH61HWy309rpnPapN6WenTo//F54u7Diips8jaf8xCjlyKK8wXNrq4w==",
-        "dependencies": {}
-      },
-      "preact@10.23.1": {
-        "integrity": "sha512-O5UdRsNh4vdZaTieWe3XOgSpdMAmkIYBCT3VhQDlKrzyCm8lUYsk0fmVEvoQQifoOjFRTaHZO69ylrzTW2BH+A==",
-        "dependencies": {}
-      }
+    "@cosense/std@0.29.2": {
+      "integrity": "668d473666b38cf8320394dfb96d31625b3856716f591671687d245af211f3d4",
+      "dependencies": [
+        "jsr:@core/unknownutil",
+        "jsr:@cosense/types",
+        "jsr:@std/encoding",
+        "jsr:@takker/md5",
+        "npm:option-t@50"
+      ]
+    },
+    "@cosense/types@0.10.1": {
+      "integrity": "13d2488a02c7b0b035a265bc3299affbdab1ea5b607516379685965cd37b2058"
+    },
+    "@std/assert@1.0.9": {
+      "integrity": "a9f0c611a869cc791b26f523eec54c7e187aab7932c2c8e8bea0622d13680dcd",
+      "dependencies": [
+        "jsr:@std/internal"
+      ]
+    },
+    "@std/async@1.0.9": {
+      "integrity": "c6472fd0623b3f3daae023cdf7ca5535e1b721dfbf376562c0c12b3fb4867f91"
+    },
+    "@std/encoding@1.0.5": {
+      "integrity": "ecf363d4fc25bd85bd915ff6733a7e79b67e0e7806334af15f4645c569fefc04"
+    },
+    "@std/fs@1.0.6": {
+      "integrity": "42b56e1e41b75583a21d5a37f6a6a27de9f510bcd36c0c85791d685ca0b85fa2",
+      "dependencies": [
+        "jsr:@std/path"
+      ]
+    },
+    "@std/internal@1.0.5": {
+      "integrity": "54a546004f769c1ac9e025abd15a76b6671ddc9687e2313b67376125650dc7ba"
+    },
+    "@std/path@1.0.8": {
+      "integrity": "548fa456bb6a04d3c1a1e7477986b6cffbce95102d0bb447c67c4ee70e0364be"
+    },
+    "@std/testing@1.0.5": {
+      "integrity": "6e693cbec94c81a1ad3df668685c7ba8e20742bb10305bc7137faa5cf16d2ec4",
+      "dependencies": [
+        "jsr:@std/assert@^1.0.8",
+        "jsr:@std/fs",
+        "jsr:@std/internal",
+        "jsr:@std/path"
+      ]
+    },
+    "@takker/cosense-storage@0.3.1": {
+      "integrity": "731bff9f944150af414feb301a5f933bc186430ca46d97d969f15bd35f070de9",
+      "dependencies": [
+        "jsr:@cosense/std@0.29",
+        "jsr:@cosense/types",
+        "jsr:@takker/debug-js",
+        "npm:date-fns",
+        "npm:idb",
+        "npm:option-t@^50.0.1"
+      ]
+    },
+    "@takker/debug-js@0.1.2": {
+      "integrity": "e40584f3705bec776fb469b46fc084a28e967e3a89b20df492ec4f641ecc4af0"
+    },
+    "@takker/md5@0.1.0": {
+      "integrity": "4c423d8247aadf7bcb1eb83c727bf28c05c21906e916517395d00aa157b6eae0"
     }
   },
-  "remote": {
-    "https://deno.land/std@0.160.0/encoding/hex.ts": "4cc5324417cbb4ac9b828453d35aed45b9cc29506fad658f1f138d981ae33795",
-    "https://deno.land/std@0.160.0/hash/md5.ts#=": "5df247e8d9e0abeb555ed8ff39d39c0c3240f52847bfb72e363ad582a102527c",
-    "https://deno.land/std@0.224.0/assert/_constants.ts": "a271e8ef5a573f1df8e822a6eb9d09df064ad66a4390f21b3e31f820a38e0975",
-    "https://deno.land/std@0.224.0/assert/assert.ts": "09d30564c09de846855b7b071e62b5974b001bb72a4b797958fe0660e7849834",
-    "https://deno.land/std@0.224.0/assert/assert_equals.ts": "3bbca947d85b9d374a108687b1a8ba3785a7850436b5a8930d81f34a32cb8c74",
-    "https://deno.land/std@0.224.0/assert/assertion_error.ts": "ba8752bd27ebc51f723702fac2f54d3e94447598f54264a6653d6413738a8917",
-    "https://deno.land/std@0.224.0/assert/equal.ts": "bddf07bb5fc718e10bb72d5dc2c36c1ce5a8bdd3b647069b6319e07af181ac47",
-    "https://deno.land/std@0.224.0/fmt/colors.ts": "508563c0659dd7198ba4bbf87e97f654af3c34eb56ba790260f252ad8012e1c5",
-    "https://deno.land/std@0.224.0/fs/_get_file_info_type.ts": "da7bec18a7661dba360a1db475b826b18977582ce6fc9b25f3d4ee0403fe8cbd",
-    "https://deno.land/std@0.224.0/fs/_to_path_string.ts": "29bfc9c6c112254961d75cbf6ba814d6de5349767818eb93090cecfa9665591e",
-    "https://deno.land/std@0.224.0/fs/ensure_dir.ts": "51a6279016c65d2985f8803c848e2888e206d1b510686a509fa7cc34ce59d29f",
-    "https://deno.land/std@0.224.0/fs/ensure_file.ts": "67608cf550529f3d4aa1f8b6b36bf817bdc40b14487bf8f60e61cbf68f507cf3",
-    "https://deno.land/std@0.224.0/internal/diff.ts": "6234a4b493ebe65dc67a18a0eb97ef683626a1166a1906232ce186ae9f65f4e6",
-    "https://deno.land/std@0.224.0/internal/format.ts": "0a98ee226fd3d43450245b1844b47003419d34d210fa989900861c79820d21c2",
-    "https://deno.land/std@0.224.0/internal/mod.ts": "534125398c8e7426183e12dc255bb635d94e06d0f93c60a297723abe69d3b22e",
-    "https://deno.land/std@0.224.0/path/_common/assert_path.ts": "dbdd757a465b690b2cc72fc5fb7698c51507dec6bfafce4ca500c46b76ff7bd8",
-    "https://deno.land/std@0.224.0/path/_common/constants.ts": "dc5f8057159f4b48cd304eb3027e42f1148cf4df1fb4240774d3492b5d12ac0c",
-    "https://deno.land/std@0.224.0/path/_common/dirname.ts": "684df4aa71a04bbcc346c692c8485594fc8a90b9408dfbc26ff32cf3e0c98cc8",
-    "https://deno.land/std@0.224.0/path/_common/from_file_url.ts": "d672bdeebc11bf80e99bf266f886c70963107bdd31134c4e249eef51133ceccf",
-    "https://deno.land/std@0.224.0/path/_common/normalize_string.ts": "33edef773c2a8e242761f731adeb2bd6d683e9c69e4e3d0092985bede74f4ac3",
-    "https://deno.land/std@0.224.0/path/_common/strip_trailing_separators.ts": "7024a93447efcdcfeaa9339a98fa63ef9d53de363f1fbe9858970f1bba02655a",
-    "https://deno.land/std@0.224.0/path/_common/to_file_url.ts": "7f76adbc83ece1bba173e6e98a27c647712cab773d3f8cbe0398b74afc817883",
-    "https://deno.land/std@0.224.0/path/_interface.ts": "8dfeb930ca4a772c458a8c7bbe1e33216fe91c253411338ad80c5b6fa93ddba0",
-    "https://deno.land/std@0.224.0/path/_os.ts": "8fb9b90fb6b753bd8c77cfd8a33c2ff6c5f5bc185f50de8ca4ac6a05710b2c15",
-    "https://deno.land/std@0.224.0/path/dirname.ts": "85bd955bf31d62c9aafdd7ff561c4b5fb587d11a9a5a45e2b01aedffa4238a7c",
-    "https://deno.land/std@0.224.0/path/from_file_url.ts": "911833ae4fd10a1c84f6271f36151ab785955849117dc48c6e43b929504ee069",
-    "https://deno.land/std@0.224.0/path/parse.ts": "77ad91dcb235a66c6f504df83087ce2a5471e67d79c402014f6e847389108d5a",
-    "https://deno.land/std@0.224.0/path/posix/_util.ts": "1e3937da30f080bfc99fe45d7ed23c47dd8585c5e473b2d771380d3a6937cf9d",
-    "https://deno.land/std@0.224.0/path/posix/dirname.ts": "76cd348ffe92345711409f88d4d8561d8645353ac215c8e9c80140069bf42f00",
-    "https://deno.land/std@0.224.0/path/posix/from_file_url.ts": "951aee3a2c46fd0ed488899d024c6352b59154c70552e90885ed0c2ab699bc40",
-    "https://deno.land/std@0.224.0/path/posix/is_absolute.ts": "cebe561ad0ae294f0ce0365a1879dcfca8abd872821519b4fcc8d8967f888ede",
-    "https://deno.land/std@0.224.0/path/posix/parse.ts": "09dfad0cae530f93627202f28c1befa78ea6e751f92f478ca2cc3b56be2cbb6a",
-    "https://deno.land/std@0.224.0/path/posix/resolve.ts": "08b699cfeee10cb6857ccab38fa4b2ec703b0ea33e8e69964f29d02a2d5257cf",
-    "https://deno.land/std@0.224.0/path/posix/to_file_url.ts": "7aa752ba66a35049e0e4a4be5a0a31ac6b645257d2e031142abb1854de250aaf",
-    "https://deno.land/std@0.224.0/path/resolve.ts": "a6f977bdb4272e79d8d0ed4333e3d71367cc3926acf15ac271f1d059c8494d8d",
-    "https://deno.land/std@0.224.0/path/to_file_url.ts": "88f049b769bce411e2d2db5bd9e6fd9a185a5fbd6b9f5ad8f52bef517c4ece1b",
-    "https://deno.land/std@0.224.0/path/windows/_util.ts": "d5f47363e5293fced22c984550d5e70e98e266cc3f31769e1710511803d04808",
-    "https://deno.land/std@0.224.0/path/windows/dirname.ts": "33e421be5a5558a1346a48e74c330b8e560be7424ed7684ea03c12c21b627bc9",
-    "https://deno.land/std@0.224.0/path/windows/from_file_url.ts": "ced2d587b6dff18f963f269d745c4a599cf82b0c4007356bd957cb4cb52efc01",
-    "https://deno.land/std@0.224.0/path/windows/is_absolute.ts": "4a8f6853f8598cf91a835f41abed42112cebab09478b072e4beb00ec81f8ca8a",
-    "https://deno.land/std@0.224.0/path/windows/parse.ts": "08804327b0484d18ab4d6781742bf374976de662f8642e62a67e93346e759707",
-    "https://deno.land/std@0.224.0/path/windows/resolve.ts": "8dae1dadfed9d46ff46cc337c9525c0c7d959fb400a6308f34595c45bdca1972",
-    "https://deno.land/std@0.224.0/path/windows/to_file_url.ts": "40e560ee4854fe5a3d4d12976cef2f4e8914125c81b11f1108e127934ced502e",
-    "https://deno.land/std@0.224.0/testing/snapshot.ts": "35ca1c8e8bfb98d7b7e794f1b7be8d992483fcff572540e41396f22a5bddb944",
-    "https://esm.sh/idb@8.0.0": "0f5407254d35a984b9877292ddca151c8e52f0d3dc474787519e912314914f92",
-    "https://esm.sh/preact@10.22.1/hooks": "391c9f21c7d5f1a5725d96ba54bc903c0855c3c3727b54d6691fa9f8fa1ba488",
-    "https://esm.sh/stable/preact@10.22.1/denonext/hooks.js": "5c79b37c4b13be590576ba53bd4093beb6e95c10ee475cddf5af5051a6e040fa",
-    "https://esm.sh/stable/preact@10.22.1/denonext/preact.mjs": "516caa8df1109e0b82becdb053e7d956802ee2f3e3fa7f6925291e4d4a527706",
-    "https://esm.sh/v135/idb@8.0.0/denonext/idb.mjs": "5b2cfa5774e594cc321cf6d57e18aa7bc02b7573cae0f582145a0cde98613ef4",
-    "https://raw.githubusercontent.com/scrapbox-jp/types/0.9.0/base.ts": "63bd526c652edbdd43aa86b119828b87828b25dfbb997ce521437cc6fc40fbcb",
-    "https://raw.githubusercontent.com/scrapbox-jp/types/0.9.0/baseStore.ts": "b05ed2f2de45d187afc8f9fbb4767b209929cc6924f67d1d6f252eb3bb64c32f",
-    "https://raw.githubusercontent.com/scrapbox-jp/types/0.9.0/blocks.ts": "d37c6bb33b600ece0bfeb5b63246300c567bdf38e559adf01e1d26c967f8999f",
-    "https://raw.githubusercontent.com/scrapbox-jp/types/0.9.0/change.ts": "9b4d9af65a9d5aa024aa84acb62128da8db3c8892f3a0256ca89fde84ab50485",
-    "https://raw.githubusercontent.com/scrapbox-jp/types/0.9.0/commit.ts": "0c576ba285c69d13ee653d9ffb01bf30df8243f3f718ef34f821be10c3cbe0e2",
-    "https://raw.githubusercontent.com/scrapbox-jp/types/0.9.0/deps/events.ts": "ee8d76b320f2dfa4b128dfd288665a9be938b1b91e92c7fe3cca7cd1a7d0b712",
-    "https://raw.githubusercontent.com/scrapbox-jp/types/0.9.0/deps/react.ts": "615586e4241cfa13f2c17c019c0775be981067558b7611aadb422102fb72c27b",
-    "https://raw.githubusercontent.com/scrapbox-jp/types/0.9.0/error.ts": "d48e7ded2683f47a778a0793e1a142baae75582ccbe9bb1c8e115787a6bcc33e",
-    "https://raw.githubusercontent.com/scrapbox-jp/types/0.9.0/eventName.ts": "c5c9074c379290250ef4f19abe510c43cfbd08a6704b5857c8a7c054b0a2e7cc",
-    "https://raw.githubusercontent.com/scrapbox-jp/types/0.9.0/layout.ts": "11cc0e9e80e56ae5fdc09d5a057ca052e7bf829b15b2fd9bb7e59a549c476a30",
-    "https://raw.githubusercontent.com/scrapbox-jp/types/0.9.0/node/anchor.ts": "3d040039a8d69d401bc41e7ff995083e9ebadbbf263680ee16a7712a8e21b56e",
-    "https://raw.githubusercontent.com/scrapbox-jp/types/0.9.0/node/audio.ts": "81ae28b140b50034b0186ed0465e9b41d902a7370786b4641700b0690d1d6f26",
-    "https://raw.githubusercontent.com/scrapbox-jp/types/0.9.0/node/audioLink.ts": "2038dc326e9037140100d2b3d4346b027d52a47ecbf6ab24e4e02d1e65f3d253",
-    "https://raw.githubusercontent.com/scrapbox-jp/types/0.9.0/node/blank.ts": "356af0417b138e4a71eea1683759a56a26b8263df28a385458cbe51b02986856",
-    "https://raw.githubusercontent.com/scrapbox-jp/types/0.9.0/node/code.ts": "f20ab3c7bffb283f41190565aa5a8bc80ea93f752f74d1e471fc5a0c93c23800",
-    "https://raw.githubusercontent.com/scrapbox-jp/types/0.9.0/node/decoration.ts": "c88db9edabaec8ec13678bb63e81df678fb6e3a79a7c41b5831ac2bdc7ab5534",
-    "https://raw.githubusercontent.com/scrapbox-jp/types/0.9.0/node/formula.ts": "38f6a2fe4ed2fafc1db491f21f0aeb8a6d554f016f6cca9d27926520d7039f69",
-    "https://raw.githubusercontent.com/scrapbox-jp/types/0.9.0/node/googleMap.ts": "6f76fc80ed68254264428272e46e3f45b9c17bcd0254b9c755246f9d3546a09a",
-    "https://raw.githubusercontent.com/scrapbox-jp/types/0.9.0/node/gyazo.ts": "e3f1028ed72fe58dc24ac2a6d2d5ba04357bf349feea5b3f839577f2b37895e0",
-    "https://raw.githubusercontent.com/scrapbox-jp/types/0.9.0/node/gyazoLink.ts": "291d201a78593785b8fa8dc26a0ca7e0f3de32f66a1d5564fb145748accd52b8",
-    "https://raw.githubusercontent.com/scrapbox-jp/types/0.9.0/node/hashTag.ts": "8681d33efa0ed2c11dec79b0de54e2ecae1eee1dba0500727210d5795d46bdca",
-    "https://raw.githubusercontent.com/scrapbox-jp/types/0.9.0/node/icon.ts": "2de232a72a8697d3a53e441e85c412f680c6828ea34859ffeffec61c42ef8bc7",
-    "https://raw.githubusercontent.com/scrapbox-jp/types/0.9.0/node/image.ts": "8d74736ab40d73f7de0227dc9e084723d3b1a11e419808db45af4c64e75ef166",
-    "https://raw.githubusercontent.com/scrapbox-jp/types/0.9.0/node/imageLink.ts": "ce0c51de550b95fda1e43eba6779b62e2ec1b088e77c67014cb39d610f6c8d5e",
-    "https://raw.githubusercontent.com/scrapbox-jp/types/0.9.0/node/indent.ts": "8713c29f254e3d0f9a580eb9e67cb755e4984c9ca5a9d57759e4adbdeb113b94",
-    "https://raw.githubusercontent.com/scrapbox-jp/types/0.9.0/node/link.ts": "8941e9ba0aad88e6e70331f9a2242938cf5023aa42a4c0ea7cbb0f536471696a",
-    "https://raw.githubusercontent.com/scrapbox-jp/types/0.9.0/node/node.ts": "21eddbc8ffb7d9e9c4cbeb2ddb3cc00272aef2cf8276a35433b52c5c6c377ec8",
-    "https://raw.githubusercontent.com/scrapbox-jp/types/0.9.0/node/plainText.ts": "1c6cf1bb4f11c950176ed7f2a0703a4b0f84ca3adc9e99dcbe5fc07185989c5a",
-    "https://raw.githubusercontent.com/scrapbox-jp/types/0.9.0/node/quote.ts": "6c7a219b7325cf9ed757a5924d9f1d3731b19ed526705499f2c5561ebd7c8410",
-    "https://raw.githubusercontent.com/scrapbox-jp/types/0.9.0/node/spotify.ts": "db7fda4ad020c411291dda9fb134e0f993063637fc3ada11c393806e7c537789",
-    "https://raw.githubusercontent.com/scrapbox-jp/types/0.9.0/node/strong.ts": "28e243dfb5928a628b72225eb2e39ae0c0b0d088f4ceac1ce2288582f4b73797",
-    "https://raw.githubusercontent.com/scrapbox-jp/types/0.9.0/node/unit.ts": "c5b9e5528c1b6da08794e2ebf61e25c0c2bf04f2a45682d16fd802a4c50e895a",
-    "https://raw.githubusercontent.com/scrapbox-jp/types/0.9.0/node/url.ts": "ee63873dbce3e8edb547f0e44e8400cb875c00edb548ca6abf40d72a9f11b714",
-    "https://raw.githubusercontent.com/scrapbox-jp/types/0.9.0/node/urlLink.ts": "410b062607137f75603b3d19585a0ac5605e0721f306840c872c0ea6c4e8ed9b",
-    "https://raw.githubusercontent.com/scrapbox-jp/types/0.9.0/node/video.ts": "d35692e25001533636d7a3f8bc133718794c3f5ecd6f49768f9da9d52f1ed833",
-    "https://raw.githubusercontent.com/scrapbox-jp/types/0.9.0/node/vimeo.ts": "43f97bb9312817c1503edeec08f056c9ebb407b8746e071a9ce161b2d4bc0525",
-    "https://raw.githubusercontent.com/scrapbox-jp/types/0.9.0/node/youtube.ts": "8c7b9bfe15e0a2d17ae79a272d770effded2a78d75ab9c585c4bbc2a04c26978",
-    "https://raw.githubusercontent.com/scrapbox-jp/types/0.9.0/pageMenu.ts": "97c843bb61c6e535011cbbf73099d68ed3cceb72fdfcc222db69ce32fc6b3b34",
-    "https://raw.githubusercontent.com/scrapbox-jp/types/0.9.0/response.ts": "abed5a47197cd1b13386017b15d98e4f85a73d25a1d678fd131af7ef4c6093f8",
-    "https://raw.githubusercontent.com/scrapbox-jp/types/0.9.0/rest.ts": "4620da5f7c9cddf5a40241b842184df57d1162fa0f549f93c0722f9275f12533",
-    "https://raw.githubusercontent.com/scrapbox-jp/types/0.9.0/scrapbox.ts": "18c9bf3d47a5a9ede8d0de982dc233ef80251cbe294719f964a1041689b2e9bd",
-    "https://raw.githubusercontent.com/scrapbox-jp/types/0.9.0/userscript.ts": "c25143a34f1a1ec5c7430fc95735b4fefa18a16be41b44d3bf3050b64ed89d1d",
-    "https://raw.githubusercontent.com/takker99/scrapbox-storage/0.1.5/deps/idb.ts": "db85f2c1f32cdd77c67db77589066250652eaf84eb4a9e6ad8e74a61dbbbe8d4",
-    "https://raw.githubusercontent.com/takker99/scrapbox-userscript-std/0.27.1/browser/websocket/_codeBlock.ts": "3ba85da229d2891f43860432cdcc1670530145c18c4c0f63ff7aac25790984ca",
-    "https://raw.githubusercontent.com/takker99/scrapbox-userscript-std/0.27.1/browser/websocket/pull.ts": "ec0661bd2c1fa4d1e171524ad76609d2974d0d140b54964b1eac335420402b55",
-    "https://raw.githubusercontent.com/takker99/scrapbox-userscript-std/0.27.1/deps/hash.ts": "465b49ec7c132debc358b737c2bea43a375ce37e6d886d2fbc34fd3cc73b6c03",
-    "https://raw.githubusercontent.com/takker99/scrapbox-userscript-std/0.27.1/deps/scrapbox-rest.ts": "9b9111910fbbae8757a1e0527d49fb91f4711673d145083310fbe6297913b3cf",
-    "https://raw.githubusercontent.com/takker99/scrapbox-userscript-std/0.27.1/is.ts": "e31370f6f916baa2ed9343d12b721e301f5a32623cd92e1cee7be814bde33912",
-    "https://raw.githubusercontent.com/takker99/scrapbox-userscript-std/0.27.1/rest/auth.ts": "8111669ad60196aeb2ac8ebc5bf318422efdb816229731acaa5ae860495c3fde",
-    "https://raw.githubusercontent.com/takker99/scrapbox-userscript-std/0.27.1/rest/error.ts": "d0114f14b8f344e5dcefa0c6f04e1268b0109dc2b4cd4cf19ac1c33ab182d1cb",
-    "https://raw.githubusercontent.com/takker99/scrapbox-userscript-std/0.27.1/rest/getCachedAt.ts": "d75e379507cf05e0efe79b8fc39b4ef6240eb52bea7af91829f3e0bf90091099",
-    "https://raw.githubusercontent.com/takker99/scrapbox-userscript-std/0.27.1/rest/getCodeBlock.ts": "54e24f816f3c1719d0259e1fe63982d8c370e80ee88f889dff09108bdec75b4d",
-    "https://raw.githubusercontent.com/takker99/scrapbox-userscript-std/0.27.1/rest/getCodeBlocks.ts": "38679837f045a8eb41f1e04242892349082e1fb9a0a542bf95d147b3c71fccef",
-    "https://raw.githubusercontent.com/takker99/scrapbox-userscript-std/0.27.1/rest/getGyazoToken.ts": "716a333f538649c42bad185f102bca2aa7355c38dba982660cd046073195ff52",
-    "https://raw.githubusercontent.com/takker99/scrapbox-userscript-std/0.27.1/rest/getTweetInfo.ts": "a3d7f64bbe026facd3ff22ec61849d9cfb0159600f68e87bb87a94a806b1b7c6",
-    "https://raw.githubusercontent.com/takker99/scrapbox-userscript-std/0.27.1/rest/getWebPageTitle.ts": "473b9539be6ca5eea0f5c83dc634e94af4e71ef44ddc9febac449c50cf12f912",
-    "https://raw.githubusercontent.com/takker99/scrapbox-userscript-std/0.27.1/rest/link.ts": "e287a81ec1c1e6e0b7f3b68168ad45554574e10076ca5efc5ddfc5c0ea7776e8",
-    "https://raw.githubusercontent.com/takker99/scrapbox-userscript-std/0.27.1/rest/mod.ts": "caf91725b0ba3a58d36b39238f6cddfd07135d0986d8d864c11f4df20fee589b",
-    "https://raw.githubusercontent.com/takker99/scrapbox-userscript-std/0.27.1/rest/page-data.ts": "e123fc4d7699b43182c4e732b9fc9db379346bfe3b9ba04a9facca3ddcde8754",
-    "https://raw.githubusercontent.com/takker99/scrapbox-userscript-std/0.27.1/rest/pages.ts": "70ae84f7b90b4f8f7d50b6fac8665beac0a609302f47249a7ee22afa373fd91e",
-    "https://raw.githubusercontent.com/takker99/scrapbox-userscript-std/0.27.1/rest/profile.ts": "17391e2a9b8b5804b8bb50f8298a211c206b13be5a2f2010c7c87b37f28c7b86",
-    "https://raw.githubusercontent.com/takker99/scrapbox-userscript-std/0.27.1/rest/project.ts": "77c6e89075f48a7b6a7aa1525f0b38bcfe8c83642ba0a978a041e573bfb69f15",
-    "https://raw.githubusercontent.com/takker99/scrapbox-userscript-std/0.27.1/rest/replaceLinks.ts": "a61dd6f8b7371530e298c82c2e0bcf0dacc9d19a3645729a8106a760001e1767",
-    "https://raw.githubusercontent.com/takker99/scrapbox-userscript-std/0.27.1/rest/search.ts": "e72910706842428b88e96902e6fba13574f48482ad6ed9395a58b6e89e30c42c",
-    "https://raw.githubusercontent.com/takker99/scrapbox-userscript-std/0.27.1/rest/snapshot.ts": "652f48f4471c74c0e8e19a556c2c46129d41f4cef898b6e83888f0a972715707",
-    "https://raw.githubusercontent.com/takker99/scrapbox-userscript-std/0.27.1/rest/table.ts": "b2222b986228bf9415f30454fc92b566a730d4fc148a43bfd3e2b11c603d2106",
-    "https://raw.githubusercontent.com/takker99/scrapbox-userscript-std/0.27.1/rest/uploadToGCS.ts": "8cdaf9b800d891fb0c91f24759c56e4535e0941c99b583ec246056ed0431e559",
-    "https://raw.githubusercontent.com/takker99/scrapbox-userscript-std/0.27.1/rest/util.ts": "2d74bef54f5145f40ba486105efc7db36875465701a310c3793eec86a90eeb7a",
-    "https://raw.githubusercontent.com/takker99/scrapbox-userscript-std/0.27.1/title.ts": "d04d19c2c5a5c957a926d0ed8d25dbd8d18b704f9bf8c20680617e314e39b0d0"
+  "npm": {
+    "date-fns@4.1.0": {
+      "integrity": "sha512-Ukq0owbQXxa/U3EGtsdVBkR1w7KOQ5gIBqdH2hkvknzZPYvBxb/aa6E8L7tmjFtkwZBu3UXBbjIgPo/Ez4xaNg=="
+    },
+    "idb@8.0.0": {
+      "integrity": "sha512-l//qvlAKGmQO31Qn7xdzagVPPaHTxXx199MhrAFuVBTPqydcPYBWjkrbv4Y0ktB+GmWOiwHl237UUOrLmQxLvw=="
+    },
+    "option-t@49.3.0": {
+      "integrity": "sha512-MQFSbqNnjEzQahREx7r1tESmK2UctFK+zmwmnHpBHROJvoRGM9tDMWi53B6ePyFJyAiggRRV9cuXedkpLBeC8w=="
+    },
+    "option-t@50.0.1": {
+      "integrity": "sha512-QZkAjLrO0fY8DICD0tXJtjnsd7wGjgDDyPOvRf+bmIZAwAt98V0TiQ2JqN9gElAxHw2Dz376lPrZtvimcBGAbA=="
+    },
+    "preact@10.25.1": {
+      "integrity": "sha512-frxeZV2vhQSohQwJ7FvlqC40ze89+8friponWUFeVEkaCfhC6Eu4V0iND5C9CXz8JLndV07QRDeXzH1+Anz5Og=="
+    }
+  },
+  "workspace": {
+    "dependencies": [
+      "npm:preact@10"
+    ]
   }
 }

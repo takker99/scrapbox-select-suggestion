@@ -1,7 +1,8 @@
 {
   "tasks": {
     "check": "deno check --remote **/*.ts **/*.tsx",
-    "fix": "deno fmt && deno lint --fix && deno check --remote **/*.ts **/*.tsx && deno test"
+    "fix": "deno fmt && deno lint --fix && deno check **/*.ts **/*.tsx && deno test --doc --parallel --shuffle",
+    "coverage": "deno test --doc --parallel --shuffle --coverage && deno coverage --html"
   },
   "compilerOptions": {
     "lib": [
@@ -12,5 +13,9 @@
     ],
     "jsx": "react-jsx",
     "jsxImportSource": "npm:preact@10"
-  }
+  },
+  "exclude": [
+    "docs/",
+    "coverage/"
+  ]
 }

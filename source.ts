@@ -2,8 +2,6 @@ export interface Candidate {
   title: string;
   titleLc: string;
   updated: number;
-  metadata: {
-    project: string;
-    image?: string;
-  }[];
+  linked: number;
+  metadata: Map<string, { image?: string }>;
 }
