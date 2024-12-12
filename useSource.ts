@@ -1,5 +1,5 @@
-import { useCallback, useEffect, useState } from "./deps/preact.tsx";
-import { check, decode, load, Source, subscribe } from "./deps/storage.ts";
+import { useMemo, useSyncExternalStore } from "./deps/preact.tsx";
+import { check, Diff, Link, load, subscribe } from "./deps/storage.ts";
 import { createDebug } from "./deps/debug.ts";
 import { Candidate } from "./source.ts";
 import { toTitleLc } from "./deps/scrapbox.ts";
@@ -9,74 +9,139 @@ const logger = createDebug("scrapbox-select-suggestion:useSource.ts");
 /** 補完ソースを提供するhook */
 export const useSource = (
   projects: Iterable<string>,
-): Candidate[] => {
-  const [candidates, setCandidates] = useState<Candidate[]>([]);
+): Candidate[] =>
+  useSyncExternalStore(
+    ...useMemo(() => {
+      let candidates: Candidate[] = [];
 
-  const update = useCallback(
-    (sources: Source[]) => {
-      const start = new Date();
+      const listen = (flush: () => void) => {
+        let store = load(projects).then((links) => {
+          const map = makeCandidate(links);
+          candidates = [...map.values()];
+          flush();
+          return map;
+        });
 
-      const result = new Map<string, Omit<Candidate, "titleLc">>();
-      for (const { project, links } of sources) {
-        for (const compressedLink of links) {
-          const { title, updated, image } = decode(compressedLink);
-          const titleLc = toTitleLc(title);
-          const candidate = result.get(titleLc);
-          result.set(titleLc, {
-            title: candidate?.title ?? title,
-            updated: Math.max(candidate?.updated ?? 0, updated),
-            metadata: [...(candidate?.metadata ?? []), { project, image }],
-          });
-        }
-      }
-      const candidates = [...result.entries()].map(([titleLc, data]) => ({
-        titleLc,
-        ...data,
-      }));
+        check(projects, 600);
 
-      const ms = new Date().getTime() - start.getTime();
-      logger.debug(`Compiled ${candidates.length} source in ${ms}ms`);
-      logger.debug("Detect changes!");
+        return subscribe(
+          projects,
+          ({ diff }) =>
+            store = store.then((map) => {
+              logger.debug(
+                `Update: +${diff.added?.size ?? 0} pages, ~${
+                  diff.updated?.size ?? 0
+                } pages, -${diff.deleted?.size ?? 0} pages`,
+              );
+              map = applyDiff(map, diff);
+              candidates = [...map.values()];
+              flush();
+              return map;
+            }),
+        );
+      };
+      const getSnapshot = () => candidates;
 
-      setCandidates(candidates);
-    },
-    [],
+      return [listen, getSnapshot] as const;
+    }, [projects]),
   );
 
-  // 初期化及び更新設定
-  useEffect(() => {
-    let terminate = false;
+const makeCandidate = (links: Iterable<Link>): Map<string, Candidate> => {
+  const result = new Map<string, Candidate>();
+  for (const link of links) {
+    addLink(result, link);
+  }
+  return result;
+};
 
-    const update_ = async () => {
-      const sources = await load([...projects]);
-      if (terminate) return;
+const applyDiff = (candidates: Map<string, Candidate>, diff: Diff) => {
+  const result = new Map(candidates);
+  if (diff.added) {
+    for (const [, link] of diff.added) {
+      addLink(result, link);
+    }
+  }
+  if (diff.updated) {
+    for (const [, [before, after]] of diff.updated) {
+      deleteLink(result, before);
+      addLink(result, after);
+    }
+  }
+  if (diff.deleted) {
+    for (const [, link] of diff.deleted) {
+      deleteLink(result, link);
+    }
+  }
+  return result;
+};
 
-      update(sources);
-    };
+const addLink = (candidates: Map<string, Candidate>, link: Link) => {
+  const titleLc = toTitleLc(link.title);
+  const candidate = candidates.get(titleLc);
+  if ((candidate?.updated ?? 0) > link.updated) return;
 
-    // 初期化
-    update_();
-
-    // 更新通知を受け取る
-    const cleanup = subscribe(
-      [...projects],
-      ({ projects }) => {
-        logger.debug(`Detect ${projects.length} projects' update:`, projects);
-        update_();
-      },
+  const metadata = candidate?.metadata ??
+    new Map<string, { image?: string }>();
+  metadata.set(link.project, { image: link.image });
+  candidates.set(titleLc, {
+    title: link.title,
+    titleLc,
+    updated: link.updated,
+    linked: candidate?.linked ?? 0,
+    metadata,
+  });
+  for (const link_ of link.links) {
+    const linkLc = toTitleLc(link_);
+    const candidate = candidates.get(linkLc);
+    const metadata = candidate?.metadata ??
+      new Map<string, { image?: string }>();
+    metadata.set(
+      link.project,
+      metadata.get(link.project) ?? { image: link.image },
     );
+    candidates.set(linkLc, {
+      title: candidate?.title ?? link_,
+      titleLc: linkLc,
+      updated: candidate?.updated ?? 0,
+      linked: (candidate?.linked ?? 0) + 1,
+      metadata,
+    });
+  }
+};
+const deleteLink = (candidates: Map<string, Candidate>, link: Link) => {
+  const titleLc = toTitleLc(link.title);
+  const candidate = candidates.get(titleLc);
+  if (!candidate || (candidate.updated ?? 0) > link.updated) return;
 
-    // 定期的に更新する
-    const callback = () => check([...projects], 600);
-    callback();
-    const intervalTimer = setInterval(callback, 600 * 1000);
-
-    return () => {
-      terminate = true;
-      clearInterval(intervalTimer);
-      cleanup();
-    };
-  }, [projects]);
-
-  return candidates;
+  const metadata = candidate.metadata;
+  metadata.delete(link.project);
+  if (metadata.size <= 0) {
+    candidates.delete(titleLc);
+  } else {
+    candidates.set(titleLc, {
+      title: candidate.title,
+      titleLc,
+      updated: link.updated,
+      linked: candidate.linked,
+      metadata,
+    });
+  }
+  for (const link_ of link.links) {
+    const linkLc = toTitleLc(link_);
+    const candidate = candidates.get(linkLc);
+    if (!candidate) continue;
+    const metadata = candidate.metadata;
+    metadata.delete(link.project);
+    if (metadata.size <= 0) {
+      candidates.delete(linkLc);
+    } else {
+      candidates.set(linkLc, {
+        title: candidate.title,
+        titleLc: linkLc,
+        updated: link.updated,
+        linked: candidate.linked - 1,
+        metadata,
+      });
+    }
+  }
 };

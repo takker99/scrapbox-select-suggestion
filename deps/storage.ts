@@ -1,4 +1,4 @@
-export * from "jsr:@takker/cosense-storage@0.1";
+export * from "jsr:@takker/cosense-storage@0.3";
 
 import { deleteDB } from "npm:idb@8";
 
