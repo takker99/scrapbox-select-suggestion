@@ -145,7 +145,7 @@ const sortAndScoring = (
   const projectScore = new Map<string, number>();
   const items: Item[] = [];
   for (const page of candidates.sort(compareAse)) {
-    const projects = page.metadata.map(({ project }) => project);
+    const projects = [...page.metadata.keys()];
 
     // score計算
     // この値で、project絞り込みパネルでの並び順を決める
