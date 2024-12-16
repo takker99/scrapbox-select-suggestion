@@ -1,3 +1,5 @@
+/** @jsxRuntime automatic */
+/** @jsxImportSource npm:preact@10 */
 import { ConfirmInit } from "./Completion.tsx";
 import { h, useCallback } from "./deps/preact.tsx";
 import { encodeTitleURI } from "./deps/scrapbox.ts";

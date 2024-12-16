@@ -1,3 +1,5 @@
+/** @jsxRuntime automatic */
+/** @jsxImportSource npm:preact@10 */
 import { FunctionComponent } from "./deps/preact.tsx";
 
 export const Progress: FunctionComponent<{ progress: number }> = (
