@@ -5,7 +5,6 @@ import {
   isSearching,
 } from "./search-state.ts";
 import { Candidate } from "./source.ts";
-import { MatchInfo } from "./search.ts";
 import { Searcher, SearchingState } from "./search-state.ts";
 import { assertEquals } from "./deps/testing.ts";
 import { assertStrictEquals } from "./deps/testing.ts";
@@ -184,50 +183,37 @@ Deno.test("search-state tests", async (t) => {
     });
   });
 
-  await t.step("should handle progress action", () => {
-    const initialState: SearchingState = {
-      source: [],
-      query: "test",
-      job: { done: Promise.resolve(), abort: () => Promise.resolve() },
-      progress: 0,
-      candidates: [],
+  await t.step("should handle progress action", async (t) => {
+    const action: Action = {
+      progress: 50,
+      candidates: [{
+        title: "test",
+        titleLc: "test",
+        updated: 1600000000,
+        linked: 1,
+        metadata: new Map([["project", {}]]),
+        dist: 0,
+        matches: [],
+      }],
     };
-    const reducer = createReducer(mockSearcher);
-    const state = initialState;
-    const action: Action = { progress: 50 };
+    await t.step("idle", () => {
+      const initialState: IdleState = { source: [] };
+      assertStrictEquals(reducer(initialState, action), initialState);
+    });
+    await t.step("searching", () => {
+      const initialState: SearchingState = {
+        source: [],
+        query: "test",
+        job: { done: Promise.resolve(), abort: () => Promise.resolve() },
+        progress: 0,
+        candidates: [],
+      };
 
-    const newState = reducer(state, action) as SearchingState;
-
-    assertEquals(newState.progress, 50);
-    assertEquals(newState.query, "test");
-    assertEquals(isSearching(newState), true);
-  });
-
-  await t.step("should handle candidates action", () => {
-    const initialState: SearchingState = {
-      source: [],
-      query: "test",
-      job: { done: Promise.resolve(), abort: () => Promise.resolve() },
-      progress: 0,
-      candidates: [],
-    };
-    const reducer = createReducer(mockSearcher);
-    const state = initialState;
-    const newCandidates: (Candidate & MatchInfo)[] = [{
-      title: "test",
-      titleLc: "test",
-      updated: 1600000000,
-      linked: 1,
-      metadata: new Map([["project", {}]]),
-      dist: 0,
-      matches: [],
-    }];
-    const action: Action = { progress: 100, candidates: newCandidates };
-
-    const newState = reducer(state, action) as SearchingState;
-
-    assertEquals(newState.progress, 100);
-    assertEquals(newState.candidates, newCandidates);
-    assertEquals(isSearching(newState), true);
+      const newState = reducer(initialState, action) as SearchingState;
+      assertEquals(newState.progress, 50);
+      assertEquals(newState.query, "test");
+      assertStrictEquals(newState.candidates, action.candidates);
+      assertEquals(isSearching(newState), true);
+    });
   });
 });
