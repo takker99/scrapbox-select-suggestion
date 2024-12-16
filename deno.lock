@@ -21,7 +21,7 @@
     "npm:option-t@50": "50.0.1",
     "npm:option-t@^49.1.0": "49.3.0",
     "npm:option-t@^50.0.1": "50.0.1",
-    "npm:preact@10": "10.25.1"
+    "npm:preact@10": "10.25.2"
   },
   "jsr": {
     "@core/unknownutil@4.3.0": {
@@ -115,13 +115,8 @@
     "option-t@50.0.1": {
       "integrity": "sha512-QZkAjLrO0fY8DICD0tXJtjnsd7wGjgDDyPOvRf+bmIZAwAt98V0TiQ2JqN9gElAxHw2Dz376lPrZtvimcBGAbA=="
     },
-    "preact@10.25.1": {
-      "integrity": "sha512-frxeZV2vhQSohQwJ7FvlqC40ze89+8friponWUFeVEkaCfhC6Eu4V0iND5C9CXz8JLndV07QRDeXzH1+Anz5Og=="
+    "preact@10.25.2": {
+      "integrity": "sha512-GEts1EH3oMnqdOIeXhlbBSddZ9nrINd070WBOiPO2ous1orrKGUM4SMDbwyjSWD1iMS2dBvaDjAa5qUhz3TXqw=="
     }
-  },
-  "workspace": {
-    "dependencies": [
-      "npm:preact@10"
-    ]
   }
 }

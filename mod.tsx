@@ -1,3 +1,5 @@
+/** @jsxRuntime automatic */
+/** @jsxImportSource npm:preact@10 */
 import { render } from "./deps/preact.tsx";
 import { SelectInit } from "./useSelect.ts";
 import { App, Operators } from "./App.tsx";

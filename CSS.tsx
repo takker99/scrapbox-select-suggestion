@@ -1,3 +1,5 @@
+/** @jsxRuntime automatic */
+/** @jsxImportSource npm:preact@10 */
 export const CSS = () => (
   <style>
     {`.container {

@@ -1,3 +1,5 @@
+/** @jsxRuntime automatic */
+/** @jsxImportSource npm:preact@10 */
 import { useCallback, useState } from "./deps/preact.tsx";
 import { Completion, type OperatorBase } from "./Completion.tsx";
 import { useSource } from "./useSource.ts";
