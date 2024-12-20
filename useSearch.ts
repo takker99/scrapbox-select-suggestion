@@ -3,9 +3,14 @@ import { compareAse } from "./sort.ts";
 import { Candidate } from "./source.ts";
 import { MatchInfo } from "./search.ts";
 import { cancelableSearch } from "./cancelableSearch.ts";
-import { debounce } from "./deps/async.ts";
+import { throttle } from "./deps/throttle.ts";
 import { createDebug } from "./deps/debug.ts";
-import { createReducer, isSearching, Searcher } from "./search-state.ts";
+import {
+  Action,
+  createReducer,
+  isSearching,
+  Searcher,
+} from "./search-state.ts";
 
 const logger = createDebug("scrapbox-select-suggestion:useSearch.ts");
 
@@ -65,14 +70,17 @@ export const useSearch = (
             dispatch({ progress: 1.0, candidates: stack });
             return;
           }
-          const debouncedDispatch = debounce(dispatch, 500);
-          let returned = false;
+          const throttledDispatch = throttle<[Action], void>(
+            (value, state) => {
+              if (state === "discarded") return;
+              if (aborted) return;
+              dispatch(value);
+            },
+            { interval: 500, maxQueued: 0 },
+          );
           let stack: (Candidate & MatchInfo)[] = [];
           for await (const [candidates, progress] of iterator) {
-            if (aborted) {
-              debouncedDispatch.clear();
-              return;
-            }
+            if (aborted) return;
             // 非破壊的にstackに追加することで、`reducer`内での`===`比較が効くようにする
             stack = [...stack, ...candidates];
 
@@ -83,18 +91,11 @@ export const useSearch = (
             if (candidates.length === 0) continue;
 
             // 500msごとに返却する
-            debouncedDispatch({ progress, candidates: stack });
-
-            // 初回は即座に結果を返す
-            if (!returned) {
-              debouncedDispatch.flush();
-              returned = true;
-            }
+            throttledDispatch({ progress, candidates: stack });
           }
           // 最低一度は返却する
           // また、timerが終了していなかった場合は、それを止めて代わりにここで実行する
-          debouncedDispatch({ progress: 1.0, candidates: stack });
-          debouncedDispatch.flush();
+          throttledDispatch({ progress: 1.0, candidates: stack });
         },
         abort: () => aborted = true,
       };
