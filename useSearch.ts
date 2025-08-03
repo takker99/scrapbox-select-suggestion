@@ -3,6 +3,7 @@ import { compareAse } from "./sort.ts";
 import { Candidate } from "./source.ts";
 import { MatchInfo } from "./search.ts";
 import { cancelableSearch } from "./cancelableSearch.ts";
+import { cancelableSearchWorker } from "./cancelableSearchWorker.ts";
 import { throttle } from "./deps/throttle.ts";
 import { createDebug } from "./deps/debug.ts";
 import {
@@ -13,6 +14,9 @@ import {
 } from "./search-state.ts";
 
 const logger = createDebug("scrapbox-select-suggestion:useSearch.ts");
+
+// Feature detection for Web Worker support
+const supportsWorkers = typeof Worker !== 'undefined';
 
 export interface Item {
   title: string;
@@ -54,7 +58,10 @@ export const useSearch = (
       executedBySourceUpdate,
     ) => {
       let aborted = false;
-      const iterator = cancelableSearch(query, source, {
+      
+      // Use Web Worker if supported, otherwise fall back to improved main thread implementation
+      const searchFunction = supportsWorkers ? cancelableSearchWorker : cancelableSearch;
+      const iterator = searchFunction(query, source, {
         chunk: 5000,
       });
 

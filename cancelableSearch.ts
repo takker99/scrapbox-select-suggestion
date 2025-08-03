@@ -26,9 +26,16 @@ export async function* cancelableSearch<Item extends Candidate>(
   const start = new Date();
   try {
     for (; i < total; i++) {
-      // 検索中断命令を受け付けるためのinterval
-      await new Promise((resolve) => requestAnimationFrame(resolve));
-      yield [filter(source.slice(i * chunk, (i + 1) * chunk)), (i + 1) / total];
+      // Better yielding: use setTimeout instead of requestAnimationFrame
+      // and yield more frequently for better responsiveness
+      if (i % 1 === 0) { // Yield on every iteration for better responsiveness
+        await new Promise((resolve) => setTimeout(resolve, 0));
+      }
+      
+      const chunkData = source.slice(i * chunk, (i + 1) * chunk);
+      const results = filter(chunkData);
+      
+      yield [results, (i + 1) / total];
     }
   } finally {
     const end = new Date();
