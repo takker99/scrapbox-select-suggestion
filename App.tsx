@@ -39,11 +39,12 @@ export interface AppProps {
   mark: Record<string, string | URL>;
   style: string | URL;
   enableSelfProjectOnStart: boolean;
+  workerUrl?: string;
 }
 
 export const App = (props: AppProps) => {
   const source = useSource(props.projects);
-  const [searchResult, { update, search }] = useSearch(source);
+  const [searchResult, { update, search }] = useSearch(source, { workerUrl: props.workerUrl });
   const { state, setEnable, ...ops } = useLifecycle();
 
   update(source);

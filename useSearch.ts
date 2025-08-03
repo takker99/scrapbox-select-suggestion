@@ -43,9 +43,19 @@ export interface SearchAction {
   update: (source: Candidate[]) => void;
 }
 
+export interface UseSearchOptions {
+  /** WebWorkerのスクリプトURL
+   * 
+   * bundleされたworkerファイルのURLを指定する
+   * 指定されない場合は従来のrequestAnimationFrameを使用する
+   */
+  workerUrl?: string;
+}
+
 /** あいまい検索するhooks */
 export const useSearch = (
   initialSource: Candidate[],
+  options?: UseSearchOptions,
 ): [SearchResult | undefined, SearchAction] => {
   const executeSearch: Searcher = useCallback(
     (
@@ -56,6 +66,7 @@ export const useSearch = (
       let aborted = false;
       const iterator = cancelableSearch(query, source, {
         chunk: 5000,
+        workerUrl: options?.workerUrl,
       });
 
       return {
@@ -100,7 +111,7 @@ export const useSearch = (
         abort: () => aborted = true,
       };
     },
-    [],
+    [options?.workerUrl],
   );
   const [useSearchState, dispatch] = useReducer(
     useMemo(() => createReducer(executeSearch), [executeSearch]),

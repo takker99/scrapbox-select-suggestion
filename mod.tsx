@@ -47,6 +47,13 @@ export interface SetupInit {
    * @default true (ソースに含める)
    */
   enableSelfProjectOnStart?: boolean;
+
+  /** WebWorkerのスクリプトURL
+   *
+   * bundleされたworkerファイルのURLを指定する
+   * 指定されない場合は従来のrequestAnimationFrameを使用する
+   */
+  workerUrl?: string;
 }
 
 /** scrapbox-select-suggestionを起動する
@@ -68,6 +75,7 @@ export const setup = (
     mark = {},
     style = "",
     enableSelfProjectOnStart = true,
+    workerUrl,
   } = init ?? {};
   const projects = new Set([
     ...(enableSelfProjectOnStart ? [scrapbox.Project.name] : []),
@@ -85,6 +93,7 @@ export const setup = (
           style={style}
           callback={resolve}
           enableSelfProjectOnStart={enableSelfProjectOnStart}
+          workerUrl={workerUrl}
         />,
         shadowRoot,
       ),
