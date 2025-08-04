@@ -1,15 +1,16 @@
+import { delay } from "./deps/async.ts";
 import { Candidate, makeFilter, MatchInfo } from "./search.ts";
 
-export interface SearchRequest {
+export interface SearchRequest<Item extends Candidate> {
   id: string;
   query: string;
-  source: Candidate[];
+  source: Item[];
   chunk: number;
 }
 
-export interface SearchProgress {
+export interface SearchProgress<Item extends Candidate> {
   id: string;
-  candidates: (Candidate & MatchInfo)[];
+  candidates: (Item & MatchInfo)[];
   progress: number;
   completed: boolean;
 }
@@ -24,7 +25,11 @@ const activeSearches = new Map<string, boolean>();
 
 self.addEventListener(
   "message",
-  (event: MessageEvent<SearchRequest | { type: "cancel"; id: string }>) => {
+  (
+    event: MessageEvent<
+      SearchRequest<Candidate> | { type: "cancel"; id: string }
+    >,
+  ) => {
     const message = event.data;
 
     if ("type" in message && message.type === "cancel") {
@@ -34,7 +39,7 @@ self.addEventListener(
     }
 
     // Type guard: message is SearchRequest at this point
-    const searchRequest = message as SearchRequest;
+    const searchRequest = message as SearchRequest<Candidate>;
     const { id, query, source, chunk } = searchRequest;
 
     // Mark search as active
@@ -52,16 +57,16 @@ self.addEventListener(
   },
 );
 
-async function performSearch(
+const performSearch = async <Item extends Candidate>(
   id: string,
   query: string,
-  source: Candidate[],
+  source: Item[],
   chunk: number,
-): Promise<void> {
-  const filter = makeFilter<Candidate>(query);
+): Promise<void> => {
+  const filter = makeFilter<Item>(query);
   if (!filter) {
     // No filter needed, send empty result
-    const result: SearchProgress = {
+    const result: SearchProgress<Item> = {
       id,
       candidates: [],
       progress: 1.0,
@@ -72,7 +77,7 @@ async function performSearch(
   }
 
   const total = Math.ceil(source.length / chunk);
-  let allCandidates: (Candidate & MatchInfo)[] = [];
+  let allCandidates: (Item & MatchInfo)[] = [];
 
   for (let i = 0; i < total; i++) {
     // Check if search was cancelled
@@ -91,7 +96,7 @@ async function performSearch(
     const progress = (i + 1) / total;
     const completed = i === total - 1;
 
-    const result: SearchProgress = {
+    const result: SearchProgress<Item> = {
       id,
       candidates: allCandidates,
       progress,
@@ -101,11 +106,9 @@ async function performSearch(
     self.postMessage(result);
 
     // Yield control to prevent blocking the worker thread
-    if (!completed) {
-      await new Promise((resolve) => setTimeout(resolve, 0));
-    }
+    if (!completed) await delay(0);
   }
 
   // Clean up
   activeSearches.delete(id);
-}
+};

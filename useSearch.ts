@@ -1,16 +1,11 @@
-import { useCallback, useMemo, useReducer } from "./deps/preact.tsx";
+import { useCallback, useEffect, useMemo, useReducer } from "./deps/preact.tsx";
 import { compareAse } from "./sort.ts";
 import { Candidate } from "./source.ts";
 import { MatchInfo } from "./search.ts";
-import { cancelableSearch } from "./cancelableSearch.ts";
+import { makeCancelableSearch } from "./cancelableSearch.ts";
 import { throttle } from "./deps/throttle.ts";
 import { createDebug } from "./deps/debug.ts";
-import {
-  Action,
-  createReducer,
-  isSearching,
-  Searcher,
-} from "./search-state.ts";
+import { Action, createReducer, isSearching } from "./search-state.ts";
 
 const logger = createDebug("scrapbox-select-suggestion:useSearch.ts");
 
@@ -56,68 +51,75 @@ export const useSearch = (
   initialSource: Candidate[],
   options: UseSearchOptions,
 ): [SearchResult | undefined, SearchAction] => {
-  const executeSearch: Searcher = useCallback(
-    (
-      query,
-      source,
-      executedBySourceUpdate,
-    ) => {
-      let aborted = false;
-      const iterator = cancelableSearch(query, source, {
-        chunk: 5000,
-        workerUrl: options.workerUrl,
-      });
+  const search = useMemo(
+    () => makeCancelableSearch<Candidate>(options.workerUrl),
+    [
+      options.workerUrl,
+    ],
+  );
+  useEffect(() => () => {
+    using _ = search;
+  }, [search]);
 
-      return {
-        run: async () => {
-          // ソース更新をトリガーにした再検索は、すべて検索し終わってから返す
-          if (executedBySourceUpdate) {
-            const stack: (Candidate & MatchInfo)[] = [];
-            for await (const [candidates] of iterator) {
-              if (aborted) return;
-              stack.push(...candidates);
+  const reducer = useCallback(
+    createReducer(
+      (
+        query,
+        source,
+        executedBySourceUpdate,
+      ) => {
+        let aborted = false;
+        const iterator = search(query, source, 1000000);
+
+        return {
+          run: async () => {
+            // ソース更新をトリガーにした再検索は、すべて検索し終わってから返す
+            if (executedBySourceUpdate) {
+              const stack: (Candidate & MatchInfo)[] = [];
+              for await (const [candidates] of iterator) {
+                if (aborted) return;
+                stack.push(...candidates);
+              }
+              dispatch({ progress: 1.0, candidates: stack });
+              return;
             }
-            dispatch({ progress: 1.0, candidates: stack });
-            return;
-          }
-          const throttledDispatch = throttle<[Action], void>(
-            (value, state) => {
-              if (state === "discarded") return;
+            const throttledDispatch = throttle<[Action], void>(
+              (value, state) => {
+                if (state === "discarded") return;
+                if (aborted) return;
+                dispatch(value);
+              },
+              { interval: 500, maxQueued: 0 },
+            );
+            let stack: (Candidate & MatchInfo)[] = [];
+            for await (const [candidates, progress] of iterator) {
               if (aborted) return;
-              dispatch(value);
-            },
-            { interval: 500, maxQueued: 0 },
-          );
-          let stack: (Candidate & MatchInfo)[] = [];
-          for await (const [candidates, progress] of iterator) {
-            if (aborted) return;
-            // 非破壊的にstackに追加することで、`reducer`内での`===`比較が効くようにする
-            stack = [...stack, ...candidates];
+              // 非破壊的にstackに追加することで、`reducer`内での`===`比較が効くようにする
+              stack = [...stack, ...candidates];
 
-            // 進捗率を更新する
-            dispatch({ progress });
+              // 進捗率を更新する
+              dispatch({ progress });
 
-            // 見つからなければ更新しない
-            if (candidates.length === 0) continue;
+              // 見つからなければ更新しない
+              if (candidates.length === 0) continue;
 
-            // 500msごとに返却する
-            throttledDispatch({ progress, candidates: stack });
-          }
-          // 最低一度は返却する
-          // また、timerが終了していなかった場合は、それを止めて代わりにここで実行する
-          throttledDispatch({ progress: 1.0, candidates: stack });
-        },
-        abort: () => aborted = true,
-      };
-    },
+              // 500msごとに返却する
+              throttledDispatch({ progress, candidates: stack });
+            }
+            // 最低一度は返却する
+            // また、timerが終了していなかった場合は、それを止めて代わりにここで実行する
+            throttledDispatch({ progress: 1.0, candidates: stack });
+          },
+          abort: () => aborted = true,
+        };
+      },
+    ),
     [options.workerUrl],
   );
-  const [useSearchState, dispatch] = useReducer(
-    useMemo(() => createReducer(executeSearch), [executeSearch]),
-    {
-      source: initialSource,
-    },
-  );
+
+  const [useSearchState, dispatch] = useReducer(reducer, {
+    source: initialSource,
+  });
 
   return [
     useMemo(

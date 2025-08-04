@@ -8,90 +8,95 @@ import type {
 
 const logger = createDebug("scrapbox-select-suggestion:cancelableSearch.ts");
 
-export interface CancelableSearchOptions {
-  /** 一度に検索する候補の最大数
-   *
-   * @default 1000
-   */
-  chunk?: number;
-
-  /** WebWorkerのスクリプトURL
-   *
-   * bundleされたworkerファイルのURLを指定する
-   */
-  workerUrl: string | URL;
-}
-
 // Generate unique ID for each search operation
 let searchIdCounter = 0;
-function generateSearchId(): string {
-  return `search_${++searchIdCounter}_${Date.now()}`;
+const generateSearchId = (): string =>
+  `search_${++searchIdCounter}_${Date.now()}`;
+
+export interface CancelableSearch<Item extends Candidate> extends Disposable {
+  /** 中断可能な検索を開始する
+   *
+   * @param query 検索クエリ
+   * @param source 検索対象の候補リスト
+   * @param [chunk=1000] 一度に検索する候補の最大数
+   */
+  (
+    query: string,
+    source: Item[],
+    chunk?: number,
+  ): AsyncGenerator<[(Item & MatchInfo)[], number], void, unknown>;
 }
 
 /** 中断可能な検索 */
-export async function* cancelableSearch<Item extends Candidate>(
+export const makeCancelableSearch = <Item extends Candidate>(
+  workerUrl: string | URL,
+): CancelableSearch<Item> => {
+  const worker = new Worker(workerUrl, { type: "module" });
+
+  const search_: CancelableSearch<Item> = async function* (
+    query,
+    source,
+    chunk,
+  ) {
+    return yield* search(query, source, chunk ?? 1000, worker);
+  };
+  search_[Symbol.dispose] = () => worker.terminate();
+
+  return search_;
+};
+
+async function* search<Item extends Candidate>(
   query: string,
   source: Item[],
-  options: CancelableSearchOptions,
+  chunk: number,
+  worker: Worker,
 ): AsyncGenerator<[(Item & MatchInfo)[], number], void, unknown> {
   if (!query.trim()) return;
 
-  const chunk = options.chunk ?? 1000;
-  const workerUrl = options.workerUrl;
-
   const searchId = generateSearchId();
   const start = new Date();
-  let worker: Worker | undefined;
   let completed = false;
   let aborted = false;
 
+  const searchRequest: SearchRequest<Item> = {
+    id: searchId,
+    query,
+    source,
+    chunk,
+  };
+
+  logger.time(`Sending search request for "${query}"`);
+  worker.postMessage(searchRequest);
+  logger.timeEnd(`Sending search request for "${query}"`);
+
   try {
-    worker = new Worker(workerUrl, { type: "module" });
-
-    const searchRequest: SearchRequest = {
-      id: searchId,
-      query,
-      source: source as Candidate[],
-      chunk,
-    };
-
-    worker.postMessage(searchRequest);
-
-    // Set up abortion mechanism
-    const _abortController = {
-      abort: () => {
-        aborted = true;
-        if (worker && !completed) {
-          worker.postMessage({ type: "cancel", id: searchId });
-        }
-      },
-    };
-
     // Listen for results and yield them
     while (!completed && !aborted) {
-      const message = await new Promise<SearchProgress | SearchError>(
+      logger.time(`Waiting for results for search ID: ${searchId}`);
+      const message = await new Promise<SearchProgress<Item> | SearchError>(
         (resolve, reject) => {
           const messageHandler = (
-            event: MessageEvent<SearchProgress | SearchError>,
+            event: MessageEvent<SearchProgress<Item> | SearchError>,
           ) => {
             const data = event.data;
             if (data.id === searchId) {
-              worker!.removeEventListener("message", messageHandler);
-              worker!.removeEventListener("error", errorHandler);
+              worker.removeEventListener("message", messageHandler);
+              worker.removeEventListener("error", errorHandler);
               resolve(data);
             }
           };
 
           const errorHandler = (event: ErrorEvent) => {
-            worker!.removeEventListener("message", messageHandler);
-            worker!.removeEventListener("error", errorHandler);
+            worker.removeEventListener("message", messageHandler);
+            worker.removeEventListener("error", errorHandler);
             reject(new Error(`Worker error: ${event.message}`));
           };
 
-          worker!.addEventListener("message", messageHandler);
-          worker!.addEventListener("error", errorHandler);
+          worker.addEventListener("message", messageHandler);
+          worker.addEventListener("error", errorHandler);
         },
       );
+      logger.timeEnd(`Waiting for results for search ID: ${searchId}`);
 
       if (aborted) break;
 
@@ -106,10 +111,7 @@ export async function* cancelableSearch<Item extends Candidate>(
       yield [candidates, progress];
     }
   } finally {
-    if (worker) {
-      worker.terminate();
-    }
-
+    aborted = true;
     const end = new Date();
     const ms = end.getTime() - start.getTime();
     logger.debug(

@@ -1,7 +1,6 @@
 import { assertEquals } from "./deps/testing.ts";
-import { cancelableSearch } from "./cancelableSearch.ts";
+import { makeCancelableSearch } from "./cancelableSearch.ts";
 import { Candidate } from "./source.ts";
-import { MatchInfo } from "./search.ts";
 
 Deno.test("cancelableSearch with WebWorker", async (t) => {
   const sampleCandidates: Candidate[] = [
@@ -28,49 +27,36 @@ Deno.test("cancelableSearch with WebWorker", async (t) => {
     },
   ];
 
-  await t.step("should handle empty query", async () => {
-    const results: [(Candidate & MatchInfo)[], number][] = [];
+  await t.step("should handle query", async () => {
+    using search = makeCancelableSearch<Candidate>(
+      new URL("./search.worker.ts", import.meta.url),
+    );
 
-    for await (
-      const result of cancelableSearch("", sampleCandidates, {
-        workerUrl: new URL("./search.worker.ts", import.meta.url),
-      })
-    ) {
-      results.push(result);
-    }
+    const results = await Array.fromAsync(search("test", sampleCandidates));
 
-    // Should return no results for empty query
-    assertEquals(results.length, 0);
+    assertEquals(results, [[[
+      { dist: 0, matches: [[0, 3]], ...sampleCandidates[0] },
+      { dist: 0, matches: [[8, 11]], ...sampleCandidates[1] },
+    ], 1]]);
   });
 
-  await t.step("should handle query", async () => {
-    const results: [(Candidate & MatchInfo)[], number][] = [];
+  await t.step("should handle empty query", async () => {
+    using search = makeCancelableSearch<Candidate>(
+      new URL("./search.worker.ts", import.meta.url),
+    );
 
-    for await (
-      const result of cancelableSearch("test", sampleCandidates, {
-        workerUrl: new URL("./search.worker.ts", import.meta.url),
-      })
-    ) {
-      results.push(result);
-    }
-    assertEquals(results, [[[
-      { ...sampleCandidates[0], dist: 0, matches: [[0, 3]] },
-      { ...sampleCandidates[1], dist: 0, matches: [[8, 11]] },
-    ], 1]]);
+    const results = await Array.fromAsync(search("", sampleCandidates));
+
+    // Should return no results for empty query
+    assertEquals(results, []);
   });
 
   await t.step("should throw error for non-existent workerUrl", async () => {
     let threwError = false;
 
     try {
-      const results: [(Candidate & MatchInfo)[], number][] = [];
-      for await (
-        const result of cancelableSearch("test", sampleCandidates, {
-          workerUrl: "non-existent-worker.js",
-        })
-      ) {
-        results.push(result);
-      }
+      using search = makeCancelableSearch<Candidate>("non-existent-worker.js");
+      const _ = await Array.fromAsync(search("test", sampleCandidates));
     } catch (error) {
       threwError = true;
       // Should throw an error instead of falling back
