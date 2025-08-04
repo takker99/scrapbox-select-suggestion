@@ -32,10 +32,8 @@ const ops = await setup({
 
 ### Without WebWorker (No Longer Supported)
 
-```typescript
-// This approach is no longer supported in the current version
-// WebWorker is now required for all search operations
-```
+This approach is no longer supported in the current version. WebWorker is now
+required for all search operations.
 
 ## Building the Worker
 
