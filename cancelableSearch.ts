@@ -22,7 +22,7 @@ export interface CancelableSearch extends Disposable {
    *
    * @param projects 読み込み対象のプロジェクトリスト
    */
-  load(projects: Iterable<string>): Promise<void>;
+  load(projects: Iterable<string>): Promise<number>;
 
   /** 中断可能な検索を開始する
    *
@@ -32,11 +32,7 @@ export interface CancelableSearch extends Disposable {
   search(
     query: string,
     chunk?: number,
-  ): AsyncGenerator<
-    [candidates: (Candidate & MatchInfo)[], progress: number],
-    void,
-    unknown
-  >;
+  ): ReadableStream<[candidates: (Candidate & MatchInfo)[], progress: number]>;
 }
 
 /** 中断可能な検索 */
@@ -48,9 +44,7 @@ export const makeCancelableSearch = (
   return {
     load: (projects) => load(projects, worker),
 
-    async *search(query, chunk) {
-      yield* search(query, chunk ?? 5000, worker);
-    },
+    search: (query, chunk) => search(query, chunk ?? 5000, worker),
 
     [Symbol.dispose]: () => {
       worker.terminate();
@@ -62,126 +56,115 @@ export const makeCancelableSearch = (
 const load = async (
   projects: Iterable<string>,
   worker: Worker,
-): Promise<void> => {
+): Promise<number> => {
   logger.debug("start loading source");
-  const loadId = generateSearchId();
-
-  const loadRequest: LoadRequest = {
-    type: "load",
-    id: loadId,
-    projects: [...projects],
-  };
-
-  logger.time(
-    `Sending load request for projects: ${loadRequest.projects.join(", ")}`,
-  );
-  worker.postMessage(loadRequest);
-  logger.timeEnd(
-    `Sending load request for projects: ${loadRequest.projects.join(", ")}`,
-  );
+  const id = generateSearchId();
 
   // Wait for load completion
-  const message = await new Promise<LoadProgress | WorkerError>(
+  const promise = new Promise<LoadProgress>(
     (resolve, reject) => {
-      const messageHandler = (
-        event: MessageEvent<LoadProgress | WorkerError>,
+      const controller = new AbortController();
+
+      worker.addEventListener("message", (
+        { data }: MessageEvent<LoadProgress | WorkerError>,
       ) => {
-        const data = event.data;
-        if (data.id === loadId) {
-          worker.removeEventListener("message", messageHandler);
-          worker.removeEventListener("error", errorHandler);
-          resolve(data);
+        if (data.id !== id) return;
+        if (data.type === "error") {
+          controller.abort();
+          reject(new Error(data.error));
+          return;
         }
-      };
-
-      const errorHandler = (event: ErrorEvent) => {
-        worker.removeEventListener("message", messageHandler);
-        worker.removeEventListener("error", errorHandler);
-        reject(new Error(`Worker error: ${event.message}`));
-      };
-
-      worker.addEventListener("message", messageHandler);
-      worker.addEventListener("error", errorHandler);
+        controller.abort();
+        resolve(data);
+      }, { signal: controller.signal });
+      worker.addEventListener("error", (event) => {
+        controller.abort();
+        reject(event);
+      }, { signal: controller.signal });
     },
   );
 
-  if (message.type === "error") {
-    throw new Error(message.error);
-  }
+  worker.postMessage(
+    {
+      type: "load",
+      id,
+      projects: [...projects],
+    } satisfies LoadRequest,
+  );
 
-  logger.debug(`Data loaded: ${message.candidateCount} candidates`);
+  return (await promise).candidateCount;
 };
 
-async function* search(
+const search = (
   query: string,
   chunk: number,
   worker: Worker,
-): AsyncGenerator<
-  [candidates: (Candidate & MatchInfo)[], progress: number],
-  void,
-  unknown
-> {
+): ReadableStream<
+  [candidates: (Candidate & MatchInfo)[], progress: number]
+> => {
   logger.debug("start searching: ", query);
-  if (!query.trim()) return;
+  if (!query.trim()) {
+    return new ReadableStream({
+      start(controller) {
+        controller.close();
+      },
+    });
+  }
 
-  const searchId = generateSearchId();
+  const id = generateSearchId();
+  const abortController = new AbortController();
   const start = new Date();
-  let completed = false;
 
-  worker.postMessage(
-    {
-      type: "search",
-      id: searchId,
-      query,
-      chunk,
-    } satisfies SearchRequest,
-  );
-
-  try {
-    // Listen for results and yield them
-    while (!completed) {
-      const message = await new Promise<SearchProgress | WorkerError>(
-        (resolve, reject) => {
-          const messageHandler = (
-            event: MessageEvent<SearchProgress | WorkerError>,
-          ) => {
-            const data = event.data;
-            if (data.id === searchId) {
-              worker.removeEventListener("message", messageHandler);
-              worker.removeEventListener("error", errorHandler);
-              resolve(data);
-            }
-          };
-
-          const errorHandler = (event: ErrorEvent) => {
-            worker.removeEventListener("message", messageHandler);
-            worker.removeEventListener("error", errorHandler);
-            reject(new Error(`Worker error: ${event.message}`));
-          };
-
-          worker.addEventListener("message", messageHandler);
-          worker.addEventListener("error", errorHandler);
-        },
-      );
-
-      if (message.type === "error") {
-        throw new Error(message.error);
-      }
-
-      const progress = message.progress;
-      const candidates = message.candidates as (Candidate & MatchInfo)[];
-      completed = message.completed;
-
-      yield [candidates, progress];
-    }
-  } finally {
-    worker.postMessage(
-      { type: "cancel", id: searchId } satisfies CancelRequest,
-    );
+  const dispose = () => {
+    abortController.abort();
     const end = new Date();
     const ms = end.getTime() - start.getTime();
     logger.debug(
       `WebWorker search completed for "${query}" in ${ms}ms`,
     );
-  }
-}
+  };
+
+  return new ReadableStream({
+    start(controller) {
+      worker.addEventListener("message", (
+        { data }: MessageEvent<SearchProgress | WorkerError>,
+      ) => {
+        if (data.id !== id) return;
+        if (data.type === "error") {
+          controller.error(new Error(data.error));
+          cancel(worker, id);
+          dispose();
+          return;
+        }
+
+        controller.enqueue([data.candidates, data.progress]);
+        if (data.completed) {
+          controller.close();
+          dispose();
+        }
+      }, { signal: abortController.signal });
+      worker.addEventListener("error", (event) => {
+        controller.error(event);
+        cancel(worker, id);
+        dispose();
+      }, { signal: abortController.signal });
+
+      worker.postMessage(
+        {
+          type: "search",
+          id: id,
+          query,
+          chunk,
+        } satisfies SearchRequest,
+      );
+    },
+    cancel() {
+      cancel(worker, id);
+      dispose();
+    },
+  });
+};
+
+const cancel = (worker: Worker, id: string) => {
+  worker.postMessage({ type: "cancel", id } satisfies CancelRequest);
+};

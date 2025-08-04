@@ -69,7 +69,7 @@ export const useSearch = (
 
         return {
           run: async () => {
-            const iterator = search.search(query, 5000);
+            const iterator = search.search(query, 5000) as unknown as AsyncIterableIterator<[candidates: (Candidate & MatchInfo)[], progress: number]>;
 
             const throttledDispatch = throttle<[Action], void>(
               (value, state) => {
