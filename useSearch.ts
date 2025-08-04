@@ -45,7 +45,7 @@ export interface SearchAction {
 
 export interface UseSearchOptions {
   /** WebWorkerのスクリプトURL
-   * 
+   *
    * bundleされたworkerファイルのURLを指定する
    * 指定されない場合は従来のrequestAnimationFrameを使用する
    */

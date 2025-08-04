@@ -62,7 +62,7 @@ export interface MarkProps {
 
 export const Mark = (
   { project, title, mark, confirm }: MarkProps,
-) => (mark === "" ? <></> : (
+) => (mark === "" ? null : (
   <a
     className="mark"
     tabIndex={0}

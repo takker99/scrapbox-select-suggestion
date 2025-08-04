@@ -1,15 +1,19 @@
 # WebWorker Migration Guide
 
-This document describes the migration from `requestAnimationFrame` to WebWorker for search functionality.
+This document describes the migration from `requestAnimationFrame` to WebWorker
+for search functionality.
 
 ## Overview
 
-The search functionality has been enhanced to support WebWorker-based processing to prevent UI freezing during large dataset searches. The system gracefully falls back to the original `requestAnimationFrame` approach when WebWorker is not available or fails.
+The search functionality has been enhanced to support WebWorker-based processing
+to prevent UI freezing during large dataset searches. The system gracefully
+falls back to the original `requestAnimationFrame` approach when WebWorker is
+not available or fails.
 
 ## Key Benefits
 
 - **Non-blocking UI**: Search operations run in a separate thread
-- **Better performance**: More efficient processing for large datasets  
+- **Better performance**: More efficient processing for large datasets
 - **Graceful fallback**: Automatic fallback to original implementation
 - **CSP compliant**: Uses bundled worker files instead of Blob URLs
 
@@ -22,7 +26,7 @@ import { setup } from "./mod.tsx";
 
 // Bundle the worker first: deno task bundle-worker
 const ops = await setup({
-  workerUrl: "https://your-cdn.com/search.worker.bundle.js"
+  workerUrl: "https://your-cdn.com/search.worker.bundle.js",
 });
 ```
 
@@ -71,7 +75,7 @@ interface SearchRequest {
   chunk: number;
 }
 
-// Response format  
+// Response format
 interface SearchProgress {
   id: string;
   candidates: (Candidate & MatchInfo)[];
@@ -138,6 +142,6 @@ Enable debug logging:
 ```typescript
 await setup({
   debug: true,
-  workerUrl: "your-worker-url"
+  workerUrl: "your-worker-url",
 });
 ```

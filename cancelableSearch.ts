@@ -1,6 +1,10 @@
 import { Candidate, makeFilter, MatchInfo } from "./search.ts";
 import { createDebug } from "./deps/debug.ts";
-import type { SearchRequest, SearchProgress, SearchError } from "./search.worker.ts";
+import type {
+  SearchError,
+  SearchProgress,
+  SearchRequest,
+} from "./search.worker.ts";
 
 const logger = createDebug("scrapbox-select-suggestion:cancelableSearch.ts");
 
@@ -10,9 +14,9 @@ export interface CancelableSearchOptions {
    * @default 1000
    */
   chunk?: number;
-  
+
   /** WebWorkerのスクリプトURL
-   * 
+   *
    * bundleされたworkerファイルのURLを指定する
    */
   workerUrl?: string;
@@ -34,7 +38,7 @@ export async function* cancelableSearch<Item extends Candidate>(
 
   const chunk = options?.chunk ?? 1000;
   const workerUrl = options?.workerUrl;
-  
+
   // Fallback to original implementation if no worker URL is provided
   if (!workerUrl) {
     yield* cancelableSearchFallback(query, source, { chunk });
@@ -46,72 +50,78 @@ export async function* cancelableSearch<Item extends Candidate>(
   let worker: Worker | undefined;
   let completed = false;
   let aborted = false;
-  
+
   try {
     worker = new Worker(workerUrl, { type: "module" });
-    
+
     const searchRequest: SearchRequest = {
       id: searchId,
       query,
       source: source as Candidate[],
       chunk,
     };
-    
+
     worker.postMessage(searchRequest);
-    
+
     // Set up abortion mechanism
-    const abortController = {
+    const _abortController = {
       abort: () => {
         aborted = true;
         if (worker && !completed) {
           worker.postMessage({ type: "cancel", id: searchId });
         }
-      }
+      },
     };
-    
+
     // Listen for results and yield them
     while (!completed && !aborted) {
-      const message = await new Promise<SearchProgress | SearchError>((resolve, reject) => {
-        const messageHandler = (event: MessageEvent<SearchProgress | SearchError>) => {
-          const data = event.data;
-          if (data.id === searchId) {
+      const message = await new Promise<SearchProgress | SearchError>(
+        (resolve, reject) => {
+          const messageHandler = (
+            event: MessageEvent<SearchProgress | SearchError>,
+          ) => {
+            const data = event.data;
+            if (data.id === searchId) {
+              worker!.removeEventListener("message", messageHandler);
+              worker!.removeEventListener("error", errorHandler);
+              resolve(data);
+            }
+          };
+
+          const errorHandler = (event: ErrorEvent) => {
             worker!.removeEventListener("message", messageHandler);
             worker!.removeEventListener("error", errorHandler);
-            resolve(data);
-          }
-        };
-        
-        const errorHandler = (event: ErrorEvent) => {
-          worker!.removeEventListener("message", messageHandler);
-          worker!.removeEventListener("error", errorHandler);
-          reject(new Error(`Worker error: ${event.message}`));
-        };
-        
-        worker!.addEventListener("message", messageHandler);
-        worker!.addEventListener("error", errorHandler);
-      });
-      
+            reject(new Error(`Worker error: ${event.message}`));
+          };
+
+          worker!.addEventListener("message", messageHandler);
+          worker!.addEventListener("error", errorHandler);
+        },
+      );
+
       if (aborted) break;
-      
+
       if ("error" in message) {
         throw new Error(message.error);
       }
-      
+
       const progress = message.progress;
       const candidates = message.candidates as (Item & MatchInfo)[];
       completed = message.completed;
-      
+
       yield [candidates, progress];
     }
-    
   } catch (error) {
-    logger.error("WebWorker search failed, falling back to main thread:", error);
+    logger.error(
+      "WebWorker search failed, falling back to main thread:",
+      error,
+    );
     yield* cancelableSearchFallback(query, source, { chunk });
   } finally {
     if (worker) {
       worker.terminate();
     }
-    
+
     const end = new Date();
     const ms = end.getTime() - start.getTime();
     logger.debug(
