@@ -1,6 +1,7 @@
 import { MatchInfo } from "./search.ts";
 import { Candidate } from "./source.ts";
 import { createDebug } from "./deps/debug.ts";
+import { SharedWorker } from "./deps/sharedworker.ts";
 import type {
   CancelRequest,
   LoadProgress,
@@ -39,23 +40,27 @@ export interface CancelableSearch extends Disposable {
 export const makeCancelableSearch = (
   workerUrl: string | URL,
 ): CancelableSearch => {
-  const worker = new Worker(workerUrl, { type: "module" });
+  const worker = new SharedWorker(workerUrl, { type: "module" });
 
   return {
-    load: (projects) => load(projects, worker),
+    load: (projects) => load(projects, worker.port),
 
-    search: (query, chunk) => search(query, chunk ?? 5000, worker),
+    search: (query, chunk) => search(query, chunk ?? 5000, worker.port),
 
     [Symbol.dispose]: () => {
-      worker.terminate();
-      logger.debug("worker terminated.");
+      if (typeof (worker as any).close === 'function') {
+        (worker as any).close();
+      } else {
+        worker.port.close();
+      }
+      logger.debug("shared worker closed.");
     },
   };
 };
 
 const load = async (
   projects: Iterable<string>,
-  worker: Worker,
+  port: MessagePort,
 ): Promise<number> => {
   logger.debug("start loading source");
   const id = generateSearchId();
@@ -65,7 +70,7 @@ const load = async (
     (resolve, reject) => {
       const controller = new AbortController();
 
-      worker.addEventListener("message", (
+      port.addEventListener("message", (
         { data }: MessageEvent<LoadProgress | WorkerError>,
       ) => {
         if (data.id !== id) return;
@@ -77,14 +82,14 @@ const load = async (
         controller.abort();
         resolve(data);
       }, { signal: controller.signal });
-      worker.addEventListener("error", (event) => {
+      port.addEventListener("messageerror", (event) => {
         controller.abort();
         reject(event);
       }, { signal: controller.signal });
     },
   );
 
-  worker.postMessage(
+  port.postMessage(
     {
       type: "load",
       id,
@@ -98,7 +103,7 @@ const load = async (
 const search = (
   query: string,
   chunk: number,
-  worker: Worker,
+  port: MessagePort,
 ): ReadableStream<
   [candidates: (Candidate & MatchInfo)[], progress: number]
 > => {
@@ -120,19 +125,19 @@ const search = (
     const end = new Date();
     const ms = end.getTime() - start.getTime();
     logger.debug(
-      `WebWorker search completed for "${query}" in ${ms}ms`,
+      `SharedWorker search completed for "${query}" in ${ms}ms`,
     );
   };
 
   return new ReadableStream({
     start(controller) {
-      worker.addEventListener("message", (
+      port.addEventListener("message", (
         { data }: MessageEvent<SearchProgress | WorkerError>,
       ) => {
         if (data.id !== id) return;
         if (data.type === "error") {
           controller.error(new Error(data.error));
-          cancel(worker, id);
+          cancel(port, id);
           dispose();
           return;
         }
@@ -143,13 +148,13 @@ const search = (
           dispose();
         }
       }, { signal: abortController.signal });
-      worker.addEventListener("error", (event) => {
+      port.addEventListener("messageerror", (event) => {
         controller.error(event);
-        cancel(worker, id);
+        cancel(port, id);
         dispose();
       }, { signal: abortController.signal });
 
-      worker.postMessage(
+      port.postMessage(
         {
           type: "search",
           id: id,
@@ -159,12 +164,12 @@ const search = (
       );
     },
     cancel() {
-      cancel(worker, id);
+      cancel(port, id);
       dispose();
     },
   });
 };
 
-const cancel = (worker: Worker, id: string) => {
-  worker.postMessage({ type: "cancel", id } satisfies CancelRequest);
+const cancel = (port: MessagePort, id: string) => {
+  port.postMessage({ type: "cancel", id } satisfies CancelRequest);
 };

@@ -56,44 +56,63 @@ let candidates: Candidate[] = [];
 let loadedProjects: string[] = [];
 let unsubscribe = () => {};
 
-self.addEventListener(
-  "message",
-  (event: MessageEvent<WorkerRequest>) => {
-    const message = event.data;
+// Handler function for processing messages
+const handleMessage = (event: MessageEvent<WorkerRequest>, postMessage: (data: WorkerResponse) => void) => {
+  const message = event.data;
 
-    if (message.type === "cancel") {
-      // Mark operation as cancelled
-      sessions.delete(message.id);
-      return;
-    }
+  if (message.type === "cancel") {
+    // Mark operation as cancelled
+    sessions.delete(message.id);
+    return;
+  }
 
-    if (sessions.has(message.id)) {
-      self.postMessage(
-        {
-          type: "error",
-          id: message.id,
-          error: "This id is already in use",
-        } satisfies WorkerResponse,
-      );
-      return;
-    }
+  if (sessions.has(message.id)) {
+    postMessage(
+      {
+        type: "error",
+        id: message.id,
+        error: "This id is already in use",
+      } satisfies WorkerResponse,
+    );
+    return;
+  }
 
-    // Mark operation as active
-    sessions.add(message.id);
+  // Mark operation as active
+  sessions.add(message.id);
 
-    if (message.type === "load") {
-      handleLoadRequest(message);
-      return;
-    }
+  if (message.type === "load") {
+    handleLoadRequest(message, postMessage);
+    return;
+  }
 
-    if (message.type === "search") {
-      handleSearchRequest(message);
-      return;
-    }
-  },
-);
+  if (message.type === "search") {
+    handleSearchRequest(message, postMessage);
+    return;
+  }
+};
 
-const handleLoadRequest = async (request: LoadRequest): Promise<void> => {
+// Check if we're running as a SharedWorker or regular Worker
+declare const SharedWorkerGlobalScope: any;
+
+if (typeof SharedWorkerGlobalScope !== 'undefined' && self instanceof SharedWorkerGlobalScope) {
+  // SharedWorker mode
+  (self as any).addEventListener("connect", (event: MessageEvent) => {
+    const port = event.ports[0];
+    
+    port.addEventListener("message", (event: MessageEvent<WorkerRequest>) => {
+      handleMessage(event, (data) => port.postMessage(data));
+    });
+    
+    port.start();
+  });
+} else {
+  // Regular Worker mode
+  self.addEventListener("message", (event: MessageEvent<WorkerRequest>) => {
+    handleMessage(event, (data) => self.postMessage(data));
+  });
+}
+
+const handleLoadRequest = async (request: LoadRequest, postMessage: (data: WorkerResponse) => void): Promise<void> => {
   const { id, projects } = request;
 
   try {
@@ -126,20 +145,20 @@ const handleLoadRequest = async (request: LoadRequest): Promise<void> => {
       completed: true,
       candidateCount: candidates.length,
     };
-    self.postMessage(response);
+    postMessage(response);
   } catch (error) {
     const errorResponse: WorkerError = {
       type: "error",
       id,
       error: error instanceof Error ? error.message : `${error}`,
     };
-    self.postMessage(errorResponse);
+    postMessage(errorResponse);
   } finally {
     sessions.delete(id);
   }
 };
 
-const handleSearchRequest = async (request: SearchRequest): Promise<void> => {
+const handleSearchRequest = async (request: SearchRequest, postMessage: (data: WorkerResponse) => void): Promise<void> => {
   const { id, query, chunk } = request;
 
   try {
@@ -153,7 +172,7 @@ const handleSearchRequest = async (request: SearchRequest): Promise<void> => {
         progress: 1.0,
         completed: true,
       };
-      self.postMessage(result);
+      postMessage(result);
       return;
     }
 
@@ -178,7 +197,7 @@ const handleSearchRequest = async (request: SearchRequest): Promise<void> => {
       };
 
       logger.debug(`[${id}][${i}/${total}] search result:`, result.candidates);
-      self.postMessage(result);
+      postMessage(result);
 
       // Yield control to prevent blocking the worker thread
       if (!completed) await delay(0);
@@ -189,7 +208,7 @@ const handleSearchRequest = async (request: SearchRequest): Promise<void> => {
       id,
       error: error instanceof Error ? error.message : String(error),
     };
-    self.postMessage(errorResponse);
+    postMessage(errorResponse);
   } finally {
     // Clean up
     sessions.delete(id);
