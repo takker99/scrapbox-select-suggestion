@@ -195,6 +195,7 @@ const handleSearchRequest = async (request: SearchRequest): Promise<void> => {
     sessions.delete(id);
   }
 };
+
 const makeCandidate = (links: Iterable<Link>): Map<string, Candidate> => {
   const result = new Map<string, Candidate>();
   for (const link of links) {
