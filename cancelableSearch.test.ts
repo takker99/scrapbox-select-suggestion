@@ -33,7 +33,7 @@ Deno.test("cancelableSearch with WebWorker", async (t) => {
 
     for await (
       const result of cancelableSearch("", sampleCandidates, {
-        workerUrl: "test-worker.js",
+        workerUrl: new URL("./search.worker.ts", import.meta.url),
       })
     ) {
       results.push(result);
@@ -41,6 +41,22 @@ Deno.test("cancelableSearch with WebWorker", async (t) => {
 
     // Should return no results for empty query
     assertEquals(results.length, 0);
+  });
+
+  await t.step("should handle query", async () => {
+    const results: [(Candidate & MatchInfo)[], number][] = [];
+
+    for await (
+      const result of cancelableSearch("test", sampleCandidates, {
+        workerUrl: new URL("./search.worker.ts", import.meta.url),
+      })
+    ) {
+      results.push(result);
+    }
+    assertEquals(results, [[[
+      { ...sampleCandidates[0], dist: 0, matches: [[0, 3]] },
+      { ...sampleCandidates[1], dist: 0, matches: [[8, 11]] },
+    ], 1]]);
   });
 
   await t.step("should throw error for non-existent workerUrl", async () => {

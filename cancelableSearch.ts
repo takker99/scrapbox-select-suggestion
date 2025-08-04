@@ -19,7 +19,7 @@ export interface CancelableSearchOptions {
    *
    * bundleされたworkerファイルのURLを指定する
    */
-  workerUrl: string;
+  workerUrl: string | URL;
 }
 
 // Generate unique ID for each search operation

@@ -1,8 +1,8 @@
 {
   "tasks": {
-    "check": "deno fmt --check && deno lint && deno check **/*.ts **/*.tsx && deno test --doc --parallel --shuffle",
-    "fix": "deno fmt && deno lint --fix && deno check **/*.ts **/*.tsx && deno test --doc --parallel --shuffle",
-    "coverage": "deno test --doc --parallel --shuffle --coverage && deno coverage --html",
+    "check": "deno fmt --check && deno lint && deno check **/*.ts **/*.tsx && deno test --allow-read=./ --doc --parallel --shuffle",
+    "fix": "deno fmt && deno lint --fix && deno check **/*.ts **/*.tsx && deno test --allow-read=./ --doc --parallel --shuffle",
+    "coverage": "deno test --allow-read=./ --doc --parallel --shuffle --coverage && deno coverage --html",
     "bundle-worker": "deno bundle --minify search.worker.ts -o search.worker.bundle.js"
   },
   "compilerOptions": {
