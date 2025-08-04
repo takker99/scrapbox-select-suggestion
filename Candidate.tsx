@@ -2,7 +2,7 @@
 /** @jsxImportSource npm:preact@10 */
 import { ConfirmInit } from "./Completion.tsx";
 import { h, useCallback } from "./deps/preact.tsx";
-import { encodeTitleURI } from "./deps/scrapbox.ts";
+import { encodeTitleURI } from "./deps/scrapbox-title.ts";
 
 export interface CandidateProps {
   title: string;
@@ -62,7 +62,7 @@ export interface MarkProps {
 
 export const Mark = (
   { project, title, mark, confirm }: MarkProps,
-) => (mark === "" ? <></> : (
+) => (mark === "" ? null : (
   <a
     className="mark"
     tabIndex={0}

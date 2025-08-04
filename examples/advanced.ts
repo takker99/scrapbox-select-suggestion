@@ -1,7 +1,7 @@
 import { setup, SetupInit } from "../mod.tsx";
 import { addTextInputEventListener } from "../deps/scrapbox.ts";
 
-export const launch = async (init?: SetupInit) => {
+export const launch = async (init: SetupInit) => {
   const ops = await setup(init);
 
   addTextInputEventListener("keydown", (e) => {

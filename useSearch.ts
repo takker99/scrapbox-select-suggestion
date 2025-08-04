@@ -1,16 +1,11 @@
-import { useCallback, useMemo, useReducer } from "./deps/preact.tsx";
+import { useCallback, useEffect, useMemo, useReducer } from "./deps/preact.tsx";
 import { compareAse } from "./sort.ts";
 import { Candidate } from "./source.ts";
 import { MatchInfo } from "./search.ts";
-import { cancelableSearch } from "./cancelableSearch.ts";
+import { makeCancelableSearch } from "./cancelableSearch.ts";
 import { throttle } from "./deps/throttle.ts";
 import { createDebug } from "./deps/debug.ts";
-import {
-  Action,
-  createReducer,
-  isSearching,
-  Searcher,
-} from "./search-state.ts";
+import { Action, createReducer, isSearching } from "./search-state.ts";
 
 const logger = createDebug("scrapbox-select-suggestion:useSearch.ts");
 
@@ -34,105 +29,109 @@ export interface SearchAction {
    *
    * @param query 検索クエリ
    */
-  search: (query: string) => void;
+  (query: string): void;
+}
 
-  /** ソースを更新し、再検索する
-   *
-   * @param source 新しいソース
+export interface UseSearchOptions {
+  /**
+   * 初期プロジェクト
    */
-  update: (source: Candidate[]) => void;
+  projects: Iterable<string>;
+
+  /** WebWorkerのスクリプトURL
+   *
+   * bundleされたworkerファイルのURLを指定する
+   */
+  workerUrl: string;
 }
 
 /** あいまい検索するhooks */
 export const useSearch = (
-  initialSource: Candidate[],
-): [SearchResult | undefined, SearchAction] => {
-  const executeSearch: Searcher = useCallback(
-    (
-      query,
-      source,
-      executedBySourceUpdate,
-    ) => {
-      let aborted = false;
-      const iterator = cancelableSearch(query, source, {
-        chunk: 5000,
-      });
-
-      return {
-        run: async () => {
-          // ソース更新をトリガーにした再検索は、すべて検索し終わってから返す
-          if (executedBySourceUpdate) {
-            const stack: (Candidate & MatchInfo)[] = [];
-            for await (const [candidates] of iterator) {
-              if (aborted) return;
-              stack.push(...candidates);
-            }
-            dispatch({ progress: 1.0, candidates: stack });
-            return;
-          }
-          const throttledDispatch = throttle<[Action], void>(
-            (value, state) => {
-              if (state === "discarded") return;
-              if (aborted) return;
-              dispatch(value);
-            },
-            { interval: 500, maxQueued: 0 },
-          );
-          let stack: (Candidate & MatchInfo)[] = [];
-          for await (const [candidates, progress] of iterator) {
-            if (aborted) return;
-            // 非破壊的にstackに追加することで、`reducer`内での`===`比較が効くようにする
-            stack = [...stack, ...candidates];
-
-            // 進捗率を更新する
-            dispatch({ progress });
-
-            // 見つからなければ更新しない
-            if (candidates.length === 0) continue;
-
-            // 500msごとに返却する
-            throttledDispatch({ progress, candidates: stack });
-          }
-          // 最低一度は返却する
-          // また、timerが終了していなかった場合は、それを止めて代わりにここで実行する
-          throttledDispatch({ progress: 1.0, candidates: stack });
-        },
-        abort: () => aborted = true,
-      };
-    },
-    [],
+  query: string,
+  options: UseSearchOptions,
+): SearchResult | undefined => {
+  const search = useMemo(
+    () => makeCancelableSearch(options.workerUrl),
+    [options.workerUrl],
   );
-  const [useSearchState, dispatch] = useReducer(
-    useMemo(() => createReducer(executeSearch), [executeSearch]),
-    {
-      source: initialSource,
-    },
-  );
+  useEffect(() => {
+    search.load(options.projects);
 
-  return [
-    useMemo(
-      (): SearchResult | undefined => {
-        if (!isSearching(useSearchState)) return;
+    return () => {
+      using _ = search;
+    };
+  }, [search, options.projects]);
 
-        // 並べ替え & 加工して返却する
-        const [projectScore, items] = sortAndScoring(useSearchState.candidates);
-        logger.debug("Detect changes", {
-          progress: useSearchState.progress,
-          items,
-        });
+  const reducer = useCallback(
+    createReducer(
+      (query) => {
+        let aborted = false;
+
         return {
-          progress: useSearchState.progress,
-          projectScore,
-          items,
+          run: async () => {
+            const iterator = search.search(
+              query,
+              10000,
+            ) as unknown as AsyncIterableIterator<
+              [candidates: (Candidate & MatchInfo)[], progress: number]
+            >;
+
+            const throttledDispatch = throttle<[Action], void>(
+              (value, state) => {
+                if (state === "discarded") return;
+                if (aborted) return;
+                dispatch(value);
+              },
+              { interval: 500, maxQueued: 0 },
+            );
+
+            let stack: (Candidate & MatchInfo)[] = [];
+            for await (const [candidates, progress] of iterator) {
+              if (aborted) return;
+              // 非破壊的にstackに追加することで、`reducer`内での`===`比較が効くようにする
+              stack = [...stack, ...candidates];
+
+              // 進捗率を更新する
+              dispatch({ progress });
+
+              // 見つからなければ更新しない
+              if (candidates.length === 0) continue;
+
+              // 500msごとに返却する
+              throttledDispatch({ progress, candidates: stack });
+            }
+            // 最低一度は返却する
+            // また、timerが終了していなかった場合は、それを止めて代わりにここで実行する
+            throttledDispatch({ progress: 1.0, candidates: stack });
+          },
+          abort: () => aborted = true,
         };
       },
-      [useSearchState],
     ),
-    {
-      search: useCallback((query: string) => dispatch({ query }), []),
-      update: useCallback((source: Candidate[]) => dispatch({ source }), []),
+    [search],
+  );
+
+  const [useSearchState, dispatch] = useReducer(reducer, { query: "" });
+  useEffect(() => dispatch({ query }), [query]);
+
+  return useMemo(
+    (): SearchResult | undefined => {
+      if (!isSearching(useSearchState)) return;
+
+      // 並べ替え & 加工して返却する
+      const [projectScore, items] = sortAndScoring(useSearchState.candidates);
+      logger.debug("Detect changes", {
+        progress: useSearchState.progress,
+        items,
+      });
+      return {
+        progress: useSearchState.progress,
+        projectScore,
+        items,
+      };
     },
-  ];
+    [useSearchState],
+  );
 };
 
 /** 検索結果を並べ替え、projectごとにスコアリングする
