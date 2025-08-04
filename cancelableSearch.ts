@@ -21,7 +21,7 @@ export interface CancelableSearch extends Disposable {
    *
    * @param projects 読み込み対象のプロジェクトリスト
    */
-  load(projects: string[]): Promise<void>;
+  load(projects: Iterable<string>): Promise<void>;
 
   /** 中断可能な検索を開始する
    *
@@ -40,33 +40,40 @@ export const makeCancelableSearch = (
 ): CancelableSearch => {
   const worker = new Worker(workerUrl, { type: "module" });
 
-  const search_: CancelableSearch = {
-    async load(projects: string[]): Promise<void> {
-      return await load(projects, worker);
-    },
+  return {
+    load: (projects) => load(projects, worker),
 
-    async *search(query: string, chunk?: number) {
+    async *search(query, chunk) {
       yield* search(query, chunk ?? 5000, worker);
     },
 
-    [Symbol.dispose]: () => worker.terminate(),
+    [Symbol.dispose]: () => {
+      worker.terminate();
+      logger.debug("worker terminated.");
+    },
   };
-
-  return search_;
 };
 
-async function load(projects: string[], worker: Worker): Promise<void> {
+const load = async (
+  projects: Iterable<string>,
+  worker: Worker,
+): Promise<void> => {
+  logger.debug("start loading source");
   const loadId = generateSearchId();
 
   const loadRequest: LoadRequest = {
     type: "load",
     id: loadId,
-    projects,
+    projects: [...projects],
   };
 
-  logger.time(`Sending load request for projects: ${projects.join(", ")}`);
+  logger.time(
+    `Sending load request for projects: ${loadRequest.projects.join(", ")}`,
+  );
   worker.postMessage(loadRequest);
-  logger.timeEnd(`Sending load request for projects: ${projects.join(", ")}`);
+  logger.timeEnd(
+    `Sending load request for projects: ${loadRequest.projects.join(", ")}`,
+  );
 
   // Wait for load completion
   const message = await new Promise<LoadProgress | WorkerError>(
@@ -98,13 +105,14 @@ async function load(projects: string[], worker: Worker): Promise<void> {
   }
 
   logger.debug(`Data loaded: ${message.candidateCount} candidates`);
-}
+};
 
 async function* search(
   query: string,
   chunk: number,
   worker: Worker,
 ): AsyncGenerator<[(Candidate & MatchInfo)[], number], void, unknown> {
+  logger.debug("start searching: ", query);
   if (!query.trim()) return;
 
   const searchId = generateSearchId();

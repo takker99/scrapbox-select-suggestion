@@ -13,7 +13,7 @@
     "search.worker.bundle.js"
   ],
   "tasks": {
-    "bundle-worker": "deno bundle --minify search.worker.ts -o search.worker.bundle.js",
+    "bundle-worker": "deno bundle --minify --platform=browser search.worker.ts -o search.worker.bundle.js",
     "check": {
       "command": "deno fmt --check && deno lint",
       "dependencies": [

@@ -42,18 +42,12 @@ export interface AppProps {
 }
 
 export const App = (props: AppProps) => {
-  const [searchResult, { updateProjects, search }] = useSearch([
-    ...props.projects,
-  ], {
-    workerUrl: props.workerUrl,
-  });
   const { state, setEnable, ...ops } = useLifecycle();
-
-  updateProjects([...props.projects]);
-  search(
+  const searchResult = useSearch(
     state.type === "completion"
       ? state.context === "input" ? state.query.slice(1, -1) : state.query
       : "",
+    props,
   );
 
   // API提供

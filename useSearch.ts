@@ -29,16 +29,15 @@ export interface SearchAction {
    *
    * @param query 検索クエリ
    */
-  search: (query: string) => void;
-
-  /** プロジェクトを更新し、データを再読み込みする
-   *
-   * @param projects 新しいプロジェクトリスト
-   */
-  updateProjects: (projects: string[]) => void;
+  (query: string): void;
 }
 
 export interface UseSearchOptions {
+  /**
+   * 初期プロジェクト
+   */
+  projects: Iterable<string>;
+
   /** WebWorkerのスクリプトURL
    *
    * bundleされたworkerファイルのURLを指定する
@@ -48,47 +47,30 @@ export interface UseSearchOptions {
 
 /** あいまい検索するhooks */
 export const useSearch = (
-  initialProjects: string[],
+  query: string,
   options: UseSearchOptions,
-): [SearchResult | undefined, SearchAction] => {
+): SearchResult | undefined => {
   const search = useMemo(
     () => makeCancelableSearch(options.workerUrl),
-    [
-      options.workerUrl,
-    ],
+    [options.workerUrl],
   );
-  useEffect(() => () => {
-    using _ = search;
-  }, [search]);
+  useEffect(() => {
+    search.load(options.projects);
+
+    return () => {
+      using _ = search;
+    };
+  }, [search, options.projects]);
 
   const reducer = useCallback(
     createReducer(
-      (
-        query,
-        projects,
-        executedByProjectUpdate,
-      ) => {
+      (query) => {
         let aborted = false;
 
         return {
           run: async () => {
-            // プロジェクト更新の場合はデータを再読み込み
-            if (executedByProjectUpdate) {
-              await search.load(projects);
-            }
-
             const iterator = search.search(query, 5000);
 
-            // プロジェクト更新をトリガーにした再検索は、すべて検索し終わってから返す
-            if (executedByProjectUpdate) {
-              const stack: (Candidate & MatchInfo)[] = [];
-              for await (const [candidates] of iterator) {
-                if (aborted) return;
-                stack.push(...candidates);
-              }
-              dispatch({ progress: 1.0, candidates: stack });
-              return;
-            }
             const throttledDispatch = throttle<[Action], void>(
               (value, state) => {
                 if (state === "discarded") return;
@@ -97,6 +79,7 @@ export const useSearch = (
               },
               { interval: 500, maxQueued: 0 },
             );
+
             let stack: (Candidate & MatchInfo)[] = [];
             for await (const [candidates, progress] of iterator) {
               if (aborted) return;
@@ -120,40 +103,30 @@ export const useSearch = (
         };
       },
     ),
-    [options.workerUrl, search],
+    [search],
   );
 
-  const [useSearchState, dispatch] = useReducer(reducer, {
-    projects: initialProjects,
-  });
+  const [useSearchState, dispatch] = useReducer(reducer, { query: "" });
+  useEffect(() => dispatch({ query }), [query]);
 
-  return [
-    useMemo(
-      (): SearchResult | undefined => {
-        if (!isSearching(useSearchState)) return;
+  return useMemo(
+    (): SearchResult | undefined => {
+      if (!isSearching(useSearchState)) return;
 
-        // 並べ替え & 加工して返却する
-        const [projectScore, items] = sortAndScoring(useSearchState.candidates);
-        logger.debug("Detect changes", {
-          progress: useSearchState.progress,
-          items,
-        });
-        return {
-          progress: useSearchState.progress,
-          projectScore,
-          items,
-        };
-      },
-      [useSearchState],
-    ),
-    {
-      search: useCallback((query: string) => dispatch({ query }), []),
-      updateProjects: useCallback(
-        (projects: string[]) => dispatch({ projects }),
-        [],
-      ),
+      // 並べ替え & 加工して返却する
+      const [projectScore, items] = sortAndScoring(useSearchState.candidates);
+      logger.debug("Detect changes", {
+        progress: useSearchState.progress,
+        items,
+      });
+      return {
+        progress: useSearchState.progress,
+        projectScore,
+        items,
+      };
     },
-  ];
+    [useSearchState],
+  );
 };
 
 /** 検索結果を並べ替え、projectごとにスコアリングする
