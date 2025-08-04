@@ -2,7 +2,7 @@ import { useMemo, useSyncExternalStore } from "./deps/preact.tsx";
 import { check, Diff, Link, load, subscribe } from "./deps/storage.ts";
 import { createDebug } from "./deps/debug.ts";
 import { Candidate } from "./source.ts";
-import { toTitleLc } from "./deps/scrapbox.ts";
+import { toTitleLc } from "./deps/scrapbox-title.ts";
 
 const logger = createDebug("scrapbox-select-suggestion:useSource.ts");
 

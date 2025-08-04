@@ -1,4 +1,4 @@
-import { revertTitleLc } from "./deps/scrapbox.ts";
+import { revertTitleLc } from "./deps/scrapbox-title.ts";
 import { bitDP } from "./bitDP.ts";
 
 export interface Candidate {
