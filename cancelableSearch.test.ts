@@ -28,39 +28,14 @@ Deno.test("cancelableSearch with WebWorker", async (t) => {
     },
   ];
 
-  await t.step(
-    "should fallback to original implementation when no workerUrl provided",
-    async () => {
-      const results: [(Candidate & MatchInfo)[], number][] = [];
-
-      for await (const result of cancelableSearch("test", sampleCandidates)) {
-        results.push(result);
-      }
-
-      // Should have at least one result
-      assertEquals(results.length > 0, true);
-
-      // Final result should have progress of 1.0
-      const finalResult = results[results.length - 1];
-      assertEquals(finalResult[1], 1.0);
-
-      // Should find matching candidates
-      const candidates = finalResult[0];
-      assertEquals(candidates.length >= 2, true); // "test page" and "another test"
-
-      // Check that matching candidates have the expected structure
-      for (const candidate of candidates) {
-        assertEquals(typeof candidate.title, "string");
-        assertEquals(typeof candidate.dist, "number");
-        assertEquals(Array.isArray(candidate.matches), true);
-      }
-    },
-  );
-
   await t.step("should handle empty query", async () => {
     const results: [(Candidate & MatchInfo)[], number][] = [];
 
-    for await (const result of cancelableSearch("", sampleCandidates)) {
+    for await (
+      const result of cancelableSearch("", sampleCandidates, {
+        workerUrl: "test-worker.js",
+      })
+    ) {
       results.push(result);
     }
 
@@ -68,10 +43,11 @@ Deno.test("cancelableSearch with WebWorker", async (t) => {
     assertEquals(results.length, 0);
   });
 
-  await t.step("should handle non-existent workerUrl gracefully", async () => {
-    const results: [(Candidate & MatchInfo)[], number][] = [];
+  await t.step("should throw error for non-existent workerUrl", async () => {
+    let threwError = false;
 
     try {
+      const results: [(Candidate & MatchInfo)[], number][] = [];
       for await (
         const result of cancelableSearch("test", sampleCandidates, {
           workerUrl: "non-existent-worker.js",
@@ -79,15 +55,13 @@ Deno.test("cancelableSearch with WebWorker", async (t) => {
       ) {
         results.push(result);
       }
-
-      // Should fallback and still work
-      assertEquals(results.length > 0, true);
-
-      const finalResult = results[results.length - 1];
-      assertEquals(finalResult[1], 1.0);
     } catch (error) {
-      // Should not throw errors, should fallback gracefully
-      throw new Error(`Should fallback gracefully but threw: ${error.message}`);
+      threwError = true;
+      // Should throw an error instead of falling back
+      assertEquals(typeof error.message, "string");
     }
+
+    // Should have thrown an error
+    assertEquals(threwError, true);
   });
 });

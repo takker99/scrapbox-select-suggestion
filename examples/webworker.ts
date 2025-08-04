@@ -32,15 +32,3 @@ export const launchForUserScript = async () => {
   console.log("WebWorker-powered search enabled!");
   return ops;
 };
-
-// Fallback example without WebWorker
-export const launchFallback = async () => {
-  // If no workerUrl is provided, it will use the original requestAnimationFrame approach
-  const ops = await setup({
-    // No workerUrl specified - will use fallback
-    debug: true,
-  });
-
-  console.log("Using fallback requestAnimationFrame search");
-  return ops;
-};

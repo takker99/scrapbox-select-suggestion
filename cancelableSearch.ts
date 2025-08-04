@@ -1,4 +1,4 @@
-import { Candidate, makeFilter, MatchInfo } from "./search.ts";
+import { Candidate, MatchInfo } from "./search.ts";
 import { createDebug } from "./deps/debug.ts";
 import type {
   SearchError,
@@ -19,7 +19,7 @@ export interface CancelableSearchOptions {
    *
    * bundleされたworkerファイルのURLを指定する
    */
-  workerUrl?: string;
+  workerUrl: string;
 }
 
 // Generate unique ID for each search operation
@@ -32,18 +32,12 @@ function generateSearchId(): string {
 export async function* cancelableSearch<Item extends Candidate>(
   query: string,
   source: Item[],
-  options?: CancelableSearchOptions,
+  options: CancelableSearchOptions,
 ): AsyncGenerator<[(Item & MatchInfo)[], number], void, unknown> {
   if (!query.trim()) return;
 
-  const chunk = options?.chunk ?? 1000;
-  const workerUrl = options?.workerUrl;
-
-  // Fallback to original implementation if no worker URL is provided
-  if (!workerUrl) {
-    yield* cancelableSearchFallback(query, source, { chunk });
-    return;
-  }
+  const chunk = options.chunk ?? 1000;
+  const workerUrl = options.workerUrl;
 
   const searchId = generateSearchId();
   const start = new Date();
@@ -111,12 +105,6 @@ export async function* cancelableSearch<Item extends Candidate>(
 
       yield [candidates, progress];
     }
-  } catch (error) {
-    logger.error(
-      "WebWorker search failed, falling back to main thread:",
-      error,
-    );
-    yield* cancelableSearchFallback(query, source, { chunk });
   } finally {
     if (worker) {
       worker.terminate();
@@ -126,36 +114,6 @@ export async function* cancelableSearch<Item extends Candidate>(
     const ms = end.getTime() - start.getTime();
     logger.debug(
       `WebWorker search completed for "${query}" in ${ms}ms`,
-    );
-  }
-}
-
-/** Fallback implementation using the original requestAnimationFrame approach */
-async function* cancelableSearchFallback<Item extends Candidate>(
-  query: string,
-  source: Item[],
-  options?: { chunk?: number },
-): AsyncGenerator<[(Item & MatchInfo)[], number], void, unknown> {
-  const filter = makeFilter<Item>(query);
-  if (!filter) return;
-
-  const chunk = options?.chunk ?? 1000;
-  const total = Math.floor(source.length / chunk) + 1;
-  let i = 0;
-  const start = new Date();
-  try {
-    for (; i < total; i++) {
-      // 検索中断命令を受け付けるためのinterval
-      await new Promise((resolve) => requestAnimationFrame(resolve));
-      yield [filter(source.slice(i * chunk, (i + 1) * chunk)), (i + 1) / total];
-    }
-  } finally {
-    const end = new Date();
-    const ms = end.getTime() - start.getTime();
-    logger.debug(
-      `Fallback search ${
-        (i / total * 100).toPrecision(3)
-      }% of the source for "${query}" in ${ms}ms`,
     );
   }
 }

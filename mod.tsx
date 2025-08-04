@@ -51,9 +51,8 @@ export interface SetupInit {
   /** WebWorkerのスクリプトURL
    *
    * bundleされたworkerファイルのURLを指定する
-   * 指定されない場合は従来のrequestAnimationFrameを使用する
    */
-  workerUrl?: string;
+  workerUrl: string;
 }
 
 /** scrapbox-select-suggestionを起動する
@@ -62,7 +61,7 @@ export interface SetupInit {
  * @return このUserScriptの操作函数で解決されるPromise
  */
 export const setup = (
-  init?: SetupInit,
+  init: SetupInit,
 ): Promise<Operators | Record<keyof Operators, undefined>> => {
   const app = document.createElement("div");
   app.dataset.userscriptName = "scrapbox-select-suggestion";
@@ -76,10 +75,10 @@ export const setup = (
     style = "",
     enableSelfProjectOnStart = true,
     workerUrl,
-  } = init ?? {};
+  } = init;
   const projects = new Set([
     ...(enableSelfProjectOnStart ? [scrapbox.Project.name] : []),
-    ...(init?.projects ?? [scrapbox.Project.name]),
+    ...(init.projects ?? [scrapbox.Project.name]),
   ]);
 
   setDebugMode(debug);

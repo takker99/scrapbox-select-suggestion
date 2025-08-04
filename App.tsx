@@ -39,7 +39,7 @@ export interface AppProps {
   mark: Record<string, string | URL>;
   style: string | URL;
   enableSelfProjectOnStart: boolean;
-  workerUrl?: string;
+  workerUrl: string;
 }
 
 export const App = (props: AppProps) => {
