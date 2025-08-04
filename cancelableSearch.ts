@@ -1,9 +1,12 @@
-import { Candidate, MatchInfo } from "./search.ts";
+import { MatchInfo } from "./search.ts";
+import { Candidate } from "./source.ts";
 import { createDebug } from "./deps/debug.ts";
 import type {
-  SearchError,
+  LoadProgress,
+  LoadRequest,
   SearchProgress,
   SearchRequest,
+  WorkerError,
 } from "./search.worker.ts";
 
 const logger = createDebug("scrapbox-select-suggestion:cancelableSearch.ts");
@@ -13,44 +16,95 @@ let searchIdCounter = 0;
 const generateSearchId = (): string =>
   `search_${++searchIdCounter}_${Date.now()}`;
 
-export interface CancelableSearch<Item extends Candidate> extends Disposable {
+export interface CancelableSearch extends Disposable {
+  /** データを読み込む
+   *
+   * @param projects 読み込み対象のプロジェクトリスト
+   */
+  load(projects: string[]): Promise<void>;
+
   /** 中断可能な検索を開始する
    *
    * @param query 検索クエリ
-   * @param source 検索対象の候補リスト
-   * @param [chunk=1000] 一度に検索する候補の最大数
+   * @param [chunk=5000] 一度に検索する候補の最大数
    */
-  (
+  search(
     query: string,
-    source: Item[],
     chunk?: number,
-  ): AsyncGenerator<[(Item & MatchInfo)[], number], void, unknown>;
+  ): AsyncGenerator<[(Candidate & MatchInfo)[], number], void, unknown>;
 }
 
 /** 中断可能な検索 */
-export const makeCancelableSearch = <Item extends Candidate>(
+export const makeCancelableSearch = (
   workerUrl: string | URL,
-): CancelableSearch<Item> => {
+): CancelableSearch => {
   const worker = new Worker(workerUrl, { type: "module" });
 
-  const search_: CancelableSearch<Item> = async function* (
-    query,
-    source,
-    chunk,
-  ) {
-    return yield* search(query, source, chunk ?? 1000, worker);
+  const search_: CancelableSearch = {
+    async load(projects: string[]): Promise<void> {
+      return await load(projects, worker);
+    },
+
+    async *search(query: string, chunk?: number) {
+      yield* search(query, chunk ?? 5000, worker);
+    },
+
+    [Symbol.dispose]: () => worker.terminate(),
   };
-  search_[Symbol.dispose] = () => worker.terminate();
 
   return search_;
 };
 
-async function* search<Item extends Candidate>(
+async function load(projects: string[], worker: Worker): Promise<void> {
+  const loadId = generateSearchId();
+
+  const loadRequest: LoadRequest = {
+    type: "load",
+    id: loadId,
+    projects,
+  };
+
+  logger.time(`Sending load request for projects: ${projects.join(", ")}`);
+  worker.postMessage(loadRequest);
+  logger.timeEnd(`Sending load request for projects: ${projects.join(", ")}`);
+
+  // Wait for load completion
+  const message = await new Promise<LoadProgress | WorkerError>(
+    (resolve, reject) => {
+      const messageHandler = (
+        event: MessageEvent<LoadProgress | WorkerError>,
+      ) => {
+        const data = event.data;
+        if (data.id === loadId) {
+          worker.removeEventListener("message", messageHandler);
+          worker.removeEventListener("error", errorHandler);
+          resolve(data);
+        }
+      };
+
+      const errorHandler = (event: ErrorEvent) => {
+        worker.removeEventListener("message", messageHandler);
+        worker.removeEventListener("error", errorHandler);
+        reject(new Error(`Worker error: ${event.message}`));
+      };
+
+      worker.addEventListener("message", messageHandler);
+      worker.addEventListener("error", errorHandler);
+    },
+  );
+
+  if (message.type === "error") {
+    throw new Error(message.error);
+  }
+
+  logger.debug(`Data loaded: ${message.candidateCount} candidates`);
+}
+
+async function* search(
   query: string,
-  source: Item[],
   chunk: number,
   worker: Worker,
-): AsyncGenerator<[(Item & MatchInfo)[], number], void, unknown> {
+): AsyncGenerator<[(Candidate & MatchInfo)[], number], void, unknown> {
   if (!query.trim()) return;
 
   const searchId = generateSearchId();
@@ -58,10 +112,10 @@ async function* search<Item extends Candidate>(
   let completed = false;
   let aborted = false;
 
-  const searchRequest: SearchRequest<Item> = {
+  const searchRequest: SearchRequest = {
+    type: "search",
     id: searchId,
     query,
-    source,
     chunk,
   };
 
@@ -73,10 +127,10 @@ async function* search<Item extends Candidate>(
     // Listen for results and yield them
     while (!completed && !aborted) {
       logger.time(`Waiting for results for search ID: ${searchId}`);
-      const message = await new Promise<SearchProgress<Item> | SearchError>(
+      const message = await new Promise<SearchProgress | WorkerError>(
         (resolve, reject) => {
           const messageHandler = (
-            event: MessageEvent<SearchProgress<Item> | SearchError>,
+            event: MessageEvent<SearchProgress | WorkerError>,
           ) => {
             const data = event.data;
             if (data.id === searchId) {
@@ -100,12 +154,12 @@ async function* search<Item extends Candidate>(
 
       if (aborted) break;
 
-      if ("error" in message) {
+      if (message.type === "error") {
         throw new Error(message.error);
       }
 
       const progress = message.progress;
-      const candidates = message.candidates as (Item & MatchInfo)[];
+      const candidates = message.candidates as (Candidate & MatchInfo)[];
       completed = message.completed;
 
       yield [candidates, progress];

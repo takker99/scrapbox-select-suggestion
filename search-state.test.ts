@@ -4,7 +4,6 @@ import {
   IdleState,
   isSearching,
 } from "./search-state.ts";
-import { Candidate } from "./source.ts";
 import { Searcher, SearchingState } from "./search-state.ts";
 import { assertEquals } from "./deps/testing.ts";
 import { assertStrictEquals } from "./deps/testing.ts";
@@ -12,15 +11,15 @@ import { assertStrictEquals } from "./deps/testing.ts";
 Deno.test("search-state tests", async (t) => {
   const searcherResult: {
     query?: string;
-    source?: Candidate[];
-    executedBySourceUpdate?: boolean;
+    projects?: string[];
+    executedByProjectUpdate?: boolean;
     result?: "done" | "aborted";
   } = {};
   const flushList: (() => Promise<void>)[] = [];
-  const mockSearcher: Searcher = (query, source, executedBySourceUpdate) => {
+  const mockSearcher: Searcher = (query, projects, executedByProjectUpdate) => {
     searcherResult.query = query;
-    searcherResult.source = source;
-    searcherResult.executedBySourceUpdate = executedBySourceUpdate;
+    searcherResult.projects = projects;
+    searcherResult.executedByProjectUpdate = executedByProjectUpdate;
 
     const { promise, resolve } = Promise.withResolvers<void>();
     const done = promise.then(() => {
@@ -46,7 +45,7 @@ Deno.test("search-state tests", async (t) => {
   const reducer = createReducer(mockSearcher);
 
   await t.step("should handle query action", async (t) => {
-    const initialState: IdleState = { source: [] };
+    const initialState: IdleState = { projects: ["test-project"] };
     await t.step("idle → searching", async () => {
       const newState = reducer(initialState, {
         query: "test",
@@ -54,12 +53,12 @@ Deno.test("search-state tests", async (t) => {
 
       assertEquals(newState, {
         query: "test",
-        source: [],
+        projects: ["test-project"],
         progress: 0,
         candidates: [],
         job: newState.job,
       });
-      assertStrictEquals(newState.source, initialState.source);
+      assertStrictEquals(newState.projects, initialState.projects);
       assertEquals(isSearching(newState), true);
       await flushList.shift()!();
     });
@@ -70,8 +69,8 @@ Deno.test("search-state tests", async (t) => {
       }) as SearchingState;
       assertEquals(searcherResult, {
         query: "test",
-        source: [],
-        executedBySourceUpdate: false,
+        projects: ["test-project"],
+        executedByProjectUpdate: false,
         result: searcherResult.result,
       });
 
@@ -85,7 +84,7 @@ Deno.test("search-state tests", async (t) => {
 
       await t.step('test → ""', () => {
         const newState = reducer(searchingState, { query: "" }) as IdleState;
-        assertStrictEquals(newState.source, initialState.source);
+        assertStrictEquals(newState.projects, initialState.projects);
       });
 
       await t.step("test → testtest", async () => {
@@ -94,7 +93,7 @@ Deno.test("search-state tests", async (t) => {
         }) as SearchingState;
         assertEquals(newState, {
           query: "testtest",
-          source: [],
+          projects: ["test-project"],
           progress: 0,
           candidates: [],
           job: newState.job,
@@ -102,8 +101,8 @@ Deno.test("search-state tests", async (t) => {
         // previous search should be aborted
         assertEquals(searcherResult, {
           query: "testtest",
-          source: [],
-          executedBySourceUpdate: false,
+          projects: ["test-project"],
+          executedByProjectUpdate: false,
           result: "aborted",
         });
         await flushList.shift()!();
@@ -113,20 +112,14 @@ Deno.test("search-state tests", async (t) => {
   });
 
   await t.step("should handle source action", async (t) => {
-    const initialState: IdleState = { source: [] };
+    const initialState: IdleState = { projects: ["test-project"] };
     await t.step("idle → idle", async (t) => {
       await t.step("no changes", () => {
         assertStrictEquals(reducer(initialState, initialState), initialState);
       });
       await t.step("source changed", () => {
-        const newSource: Candidate[] = [{
-          title: "test",
-          titleLc: "test",
-          updated: 1600000000,
-          linked: 1,
-          metadata: new Map([["project", {}]]),
-        }];
-        const action: Action = { source: newSource };
+        const newProjects: string[] = ["new-project", "another-project"];
+        const action: Action = { projects: newProjects };
 
         const newState = reducer(initialState, action);
 
@@ -141,8 +134,8 @@ Deno.test("search-state tests", async (t) => {
       }) as SearchingState;
       assertEquals(searcherResult, {
         query: "test",
-        source: [],
-        executedBySourceUpdate: false,
+        projects: ["test-project"],
+        executedByProjectUpdate: false,
         result: searcherResult.result,
       });
 
@@ -154,27 +147,21 @@ Deno.test("search-state tests", async (t) => {
         await flushList.shift()!();
       });
       await t.step("source changed", async () => {
-        const newSource: Candidate[] = [{
-          title: "test",
-          titleLc: "test",
-          updated: 1600000000,
-          linked: 1,
-          metadata: new Map([["project", {}]]),
-        }];
+        const newProjects: string[] = ["updated-project"];
         const newState = reducer(searchingState, {
-          source: newSource,
+          projects: newProjects,
         }) as SearchingState;
 
         assertEquals(newState.query, "test");
-        assertStrictEquals(newState.source, newSource);
+        assertStrictEquals(newState.projects, newProjects);
         assertEquals(newState.progress, 0);
         assertEquals(newState.candidates, []);
 
         // previous search should not be aborted
         assertEquals(searcherResult, {
           query: "test",
-          source: newSource,
-          executedBySourceUpdate: true,
+          projects: newProjects,
+          executedByProjectUpdate: true,
           result: "done",
         });
         await flushList.shift()!();
@@ -197,12 +184,12 @@ Deno.test("search-state tests", async (t) => {
       }],
     };
     await t.step("idle", () => {
-      const initialState: IdleState = { source: [] };
+      const initialState: IdleState = { projects: ["test-project"] };
       assertStrictEquals(reducer(initialState, action), initialState);
     });
     await t.step("searching", () => {
       const initialState: SearchingState = {
-        source: [],
+        projects: ["test-project"],
         query: "test",
         job: { done: Promise.resolve(), abort: () => Promise.resolve() },
         progress: 0,

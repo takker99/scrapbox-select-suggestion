@@ -1,114 +1,300 @@
 import { delay } from "./deps/async.ts";
-import { Candidate, makeFilter, MatchInfo } from "./search.ts";
+import { makeFilter, MatchInfo } from "./search.ts";
+import { Candidate } from "./source.ts";
+import { check, Diff, Link, load, subscribe } from "./deps/storage.ts";
+import { toTitleLc } from "./deps/scrapbox-title.ts";
 
-export interface SearchRequest<Item extends Candidate> {
+export interface LoadRequest {
+  type: "load";
+  id: string;
+  projects: string[];
+}
+
+export interface SearchRequest {
+  type: "search";
   id: string;
   query: string;
-  source: Item[];
   chunk: number;
 }
 
-export interface SearchProgress<Item extends Candidate> {
+export interface CancelRequest {
+  type: "cancel";
   id: string;
-  candidates: (Item & MatchInfo)[];
+}
+
+export interface LoadProgress {
+  type: "load-progress";
+  id: string;
+  completed: boolean;
+  candidateCount: number;
+}
+
+export interface SearchProgress {
+  type: "search-progress";
+  id: string;
+  candidates: (Candidate & MatchInfo)[];
   progress: number;
   completed: boolean;
 }
 
-export interface SearchError {
+export interface WorkerError {
+  type: "error";
   id: string;
   error: string;
 }
 
-// Store active search operations to support cancellation
-const activeSearches = new Map<string, boolean>();
+type WorkerRequest = LoadRequest | SearchRequest | CancelRequest;
+type WorkerResponse = LoadProgress | SearchProgress | WorkerError;
+
+// Store active operations to support cancellation
+const activeOperations = new Map<string, boolean>();
+
+// Store loaded candidate data
+let candidates: Candidate[] = [];
+let loadedProjects: string[] = [];
 
 self.addEventListener(
   "message",
-  (
-    event: MessageEvent<
-      SearchRequest<Candidate> | { type: "cancel"; id: string }
-    >,
-  ) => {
+  (event: MessageEvent<WorkerRequest>) => {
     const message = event.data;
 
-    if ("type" in message && message.type === "cancel") {
-      // Mark search as cancelled
-      activeSearches.set(message.id, false);
+    if (message.type === "cancel") {
+      // Mark operation as cancelled
+      activeOperations.set(message.id, false);
       return;
     }
 
-    // Type guard: message is SearchRequest at this point
-    const searchRequest = message as SearchRequest<Candidate>;
-    const { id, query, source, chunk } = searchRequest;
+    if (message.type === "load") {
+      // Mark operation as active
+      activeOperations.set(message.id, true);
+      handleLoadRequest(message);
+      return;
+    }
 
-    // Mark search as active
-    activeSearches.set(id, true);
-
-    try {
-      performSearch(id, query, source, chunk);
-    } catch (error) {
-      const errorMessage: SearchError = {
-        id,
-        error: error instanceof Error ? error.message : String(error),
-      };
-      self.postMessage(errorMessage);
+    if (message.type === "search") {
+      // Mark operation as active
+      activeOperations.set(message.id, true);
+      handleSearchRequest(message);
+      return;
     }
   },
 );
 
-const performSearch = async <Item extends Candidate>(
-  id: string,
-  query: string,
-  source: Item[],
-  chunk: number,
-): Promise<void> => {
-  const filter = makeFilter<Item>(query);
-  if (!filter) {
-    // No filter needed, send empty result
-    const result: SearchProgress<Item> = {
-      id,
-      candidates: [],
-      progress: 1.0,
-      completed: true,
-    };
-    self.postMessage(result);
-    return;
-  }
+const handleLoadRequest = async (request: LoadRequest): Promise<void> => {
+  const { id, projects } = request;
 
-  const total = Math.ceil(source.length / chunk);
-  let allCandidates: (Item & MatchInfo)[] = [];
+  try {
+    // Check if we need to reload data
+    const projectsChanged = !arraysEqual(loadedProjects, projects);
 
-  for (let i = 0; i < total; i++) {
-    // Check if search was cancelled
-    if (!activeSearches.get(id)) {
-      activeSearches.delete(id);
+    if (projectsChanged) {
+      loadedProjects = [...projects];
+
+      // Load initial data
+      const links = await load(projects);
+      let candidateMap = makeCandidate(links);
+      candidates = [...candidateMap.values()];
+
+      // Set up subscription for updates
+      await check(projects, 600);
+      subscribe(projects, ({ diff }) => {
+        candidateMap = applyDiff(candidateMap, diff);
+        candidates = [...candidateMap.values()];
+      });
+    }
+
+    // Check if operation was cancelled
+    if (!activeOperations.get(id)) {
+      activeOperations.delete(id);
       return;
     }
 
-    const startIndex = i * chunk;
-    const endIndex = Math.min((i + 1) * chunk, source.length);
-    const chunkSource = source.slice(startIndex, endIndex);
-
-    const chunkResults = filter(chunkSource);
-    allCandidates = [...allCandidates, ...chunkResults];
-
-    const progress = (i + 1) / total;
-    const completed = i === total - 1;
-
-    const result: SearchProgress<Item> = {
+    const response: LoadProgress = {
+      type: "load-progress",
       id,
-      candidates: allCandidates,
-      progress,
-      completed,
+      completed: true,
+      candidateCount: candidates.length,
     };
-
-    self.postMessage(result);
-
-    // Yield control to prevent blocking the worker thread
-    if (!completed) await delay(0);
+    self.postMessage(response);
+  } catch (error) {
+    const errorResponse: WorkerError = {
+      type: "error",
+      id,
+      error: error instanceof Error ? error.message : String(error),
+    };
+    self.postMessage(errorResponse);
+  } finally {
+    activeOperations.delete(id);
   }
+};
 
-  // Clean up
-  activeSearches.delete(id);
+const handleSearchRequest = async (request: SearchRequest): Promise<void> => {
+  const { id, query, chunk } = request;
+
+  try {
+    const filter = makeFilter<Candidate>(query);
+    if (!filter) {
+      // No filter needed, send empty result
+      const result: SearchProgress = {
+        type: "search-progress",
+        id,
+        candidates: [],
+        progress: 1.0,
+        completed: true,
+      };
+      self.postMessage(result);
+      return;
+    }
+
+    const total = Math.ceil(candidates.length / chunk);
+    let allCandidates: (Candidate & MatchInfo)[] = [];
+
+    for (let i = 0; i < total; i++) {
+      // Check if search was cancelled
+      if (!activeOperations.get(id)) {
+        activeOperations.delete(id);
+        return;
+      }
+
+      const startIndex = i * chunk;
+      const endIndex = Math.min((i + 1) * chunk, candidates.length);
+      const chunkSource = candidates.slice(startIndex, endIndex);
+
+      const chunkResults = filter(chunkSource);
+      allCandidates = [...allCandidates, ...chunkResults];
+
+      const progress = (i + 1) / total;
+      const completed = i === total - 1;
+
+      const result: SearchProgress = {
+        type: "search-progress",
+        id,
+        candidates: allCandidates,
+        progress,
+        completed,
+      };
+
+      self.postMessage(result);
+
+      // Yield control to prevent blocking the worker thread
+      if (!completed) await delay(0);
+    }
+  } catch (error) {
+    const errorResponse: WorkerError = {
+      type: "error",
+      id,
+      error: error instanceof Error ? error.message : String(error),
+    };
+    self.postMessage(errorResponse);
+  } finally {
+    // Clean up
+    activeOperations.delete(id);
+  }
+};
+const makeCandidate = (links: Iterable<Link>): Map<string, Candidate> => {
+  const result = new Map<string, Candidate>();
+  for (const link of links) {
+    addLink(result, link);
+  }
+  return result;
+};
+
+const applyDiff = (candidates: Map<string, Candidate>, diff: Diff) => {
+  const result = new Map(candidates);
+  if (diff.added) {
+    for (const [, link] of diff.added) {
+      addLink(result, link);
+    }
+  }
+  if (diff.updated) {
+    for (const [, [before, after]] of diff.updated) {
+      deleteLink(result, before);
+      addLink(result, after);
+    }
+  }
+  if (diff.deleted) {
+    for (const [, link] of diff.deleted) {
+      deleteLink(result, link);
+    }
+  }
+  return result;
+};
+
+const addLink = (candidates: Map<string, Candidate>, link: Link) => {
+  const titleLc = toTitleLc(link.title);
+  const candidate = candidates.get(titleLc);
+  if ((candidate?.updated ?? 0) > link.updated) return;
+
+  const metadata = candidate?.metadata ??
+    new Map<string, { image?: string }>();
+  metadata.set(link.project, { image: link.image });
+  candidates.set(titleLc, {
+    title: link.title,
+    titleLc,
+    updated: link.updated,
+    linked: candidate?.linked ?? 0,
+    metadata,
+  });
+  for (const link_ of link.links) {
+    const linkLc = toTitleLc(link_);
+    const candidate = candidates.get(linkLc);
+    const metadata = candidate?.metadata ??
+      new Map<string, { image?: string }>();
+    metadata.set(
+      link.project,
+      metadata.get(link.project) ?? { image: link.image },
+    );
+    candidates.set(linkLc, {
+      title: candidate?.title ?? link_,
+      titleLc: linkLc,
+      updated: candidate?.updated ?? 0,
+      linked: (candidate?.linked ?? 0) + 1,
+      metadata,
+    });
+  }
+};
+
+const deleteLink = (candidates: Map<string, Candidate>, link: Link) => {
+  const titleLc = toTitleLc(link.title);
+  const candidate = candidates.get(titleLc);
+  if (!candidate || (candidate.updated ?? 0) > link.updated) return;
+
+  const metadata = candidate.metadata;
+  metadata.delete(link.project);
+  if (metadata.size <= 0) {
+    candidates.delete(titleLc);
+  } else {
+    candidates.set(titleLc, {
+      title: candidate.title,
+      titleLc,
+      updated: link.updated,
+      linked: candidate.linked,
+      metadata,
+    });
+  }
+  for (const link_ of link.links) {
+    const linkLc = toTitleLc(link_);
+    const candidate = candidates.get(linkLc);
+    if (!candidate) continue;
+    const metadata = candidate.metadata;
+    metadata.delete(link.project);
+    if (metadata.size <= 0) {
+      candidates.delete(linkLc);
+    } else {
+      candidates.set(linkLc, {
+        title: candidate.title,
+        titleLc: linkLc,
+        updated: link.updated,
+        linked: candidate.linked - 1,
+        metadata,
+      });
+    }
+  }
+};
+
+const arraysEqual = (a: string[], b: string[]): boolean => {
+  if (a.length !== b.length) return false;
+  const sortedA = [...a].sort();
+  const sortedB = [...b].sort();
+  return sortedA.every((val, index) => val === sortedB[index]);
 };

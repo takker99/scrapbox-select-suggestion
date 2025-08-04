@@ -2,7 +2,6 @@
 /** @jsxImportSource npm:preact@10 */
 import { useCallback, useState } from "./deps/preact.tsx";
 import { Completion, type OperatorBase } from "./Completion.tsx";
-import { useSource } from "./useSource.ts";
 import { UserCSS } from "./UserCSS.tsx";
 import { CSS } from "./CSS.tsx";
 import { useLifecycle } from "./useLifecycle.ts";
@@ -43,13 +42,14 @@ export interface AppProps {
 }
 
 export const App = (props: AppProps) => {
-  const source = useSource(props.projects);
-  const [searchResult, { update, search }] = useSearch(source, {
+  const [searchResult, { updateProjects, search }] = useSearch([
+    ...props.projects,
+  ], {
     workerUrl: props.workerUrl,
   });
   const { state, setEnable, ...ops } = useLifecycle();
 
-  update(source);
+  updateProjects([...props.projects]);
   search(
     state.type === "completion"
       ? state.context === "input" ? state.query.slice(1, -1) : state.query

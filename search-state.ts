@@ -3,8 +3,8 @@ import { Candidate } from "./source.ts";
 
 export type Searcher = (
   state: string,
-  source: Candidate[],
-  executedBySourceUpdate: boolean,
+  projects: string[],
+  executedByProjectUpdate: boolean,
 ) => {
   run: () => Promise<void>;
   abort: () => void;
@@ -14,10 +14,10 @@ interface Job {
   abort: () => Promise<void>;
 }
 export interface IdleState {
-  source: Candidate[];
+  projects: string[];
 }
 export interface SearchingState {
-  source: Candidate[];
+  projects: string[];
   query: string;
   job: Job;
   progress: number;
@@ -26,7 +26,7 @@ export interface SearchingState {
 export const isSearching = (state: State): state is SearchingState =>
   "query" in state;
 export type State = IdleState | SearchingState;
-export type Action = { source: Candidate[] } | { query: string } | {
+export type Action = { projects: string[] } | { query: string } | {
   progress: number;
   candidates?: (Candidate & MatchInfo)[];
 };
@@ -40,14 +40,14 @@ export const createReducer = (
     const prevJob = isSearching(state) ? state.job : undefined;
     if (!action.query) {
       prevJob?.abort?.();
-      return { source: state.source };
+      return { projects: state.projects };
     }
-    const { run, abort } = searcher(action.query, state.source, false);
+    const { run, abort } = searcher(action.query, state.projects, false);
     // 前回の検索を中断してから新しい検索を実行する
     const done = prevJob?.abort?.()?.then?.(run) ?? run();
     return {
       query: action.query,
-      source: state.source,
+      projects: state.projects,
       job: {
         done,
         abort: () => {
@@ -61,18 +61,18 @@ export const createReducer = (
       candidates: !prevQuery || !isSearching(state) ? [] : state.candidates,
     };
   }
-  if ("source" in action) {
-    // 検索中でなければ、ソースを更新するだけ
+  if ("projects" in action) {
+    // 検索中でなければ、プロジェクトを更新するだけ
     if (!isSearching(state)) {
-      return action.source === state.source ? state : action;
+      return action.projects === state.projects ? state : action;
     }
-    const { source: prevSource, job: prevJob, ...rest } = state;
-    if (action.source === prevSource) return state;
-    const { run, abort } = searcher(rest.query, action.source, true);
+    const { projects: prevProjects, job: prevJob, ...rest } = state;
+    if (action.projects === prevProjects) return state;
+    const { run, abort } = searcher(rest.query, action.projects, true);
     // 前回の検索が終わるまで待ってから新しい検索を実行する
     const done = prevJob.done.then(run);
     return {
-      source: action.source,
+      projects: action.projects,
       job: {
         done,
         abort: () =>

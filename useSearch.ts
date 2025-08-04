@@ -31,11 +31,11 @@ export interface SearchAction {
    */
   search: (query: string) => void;
 
-  /** ソースを更新し、再検索する
+  /** プロジェクトを更新し、データを再読み込みする
    *
-   * @param source 新しいソース
+   * @param projects 新しいプロジェクトリスト
    */
-  update: (source: Candidate[]) => void;
+  updateProjects: (projects: string[]) => void;
 }
 
 export interface UseSearchOptions {
@@ -48,11 +48,11 @@ export interface UseSearchOptions {
 
 /** あいまい検索するhooks */
 export const useSearch = (
-  initialSource: Candidate[],
+  initialProjects: string[],
   options: UseSearchOptions,
 ): [SearchResult | undefined, SearchAction] => {
   const search = useMemo(
-    () => makeCancelableSearch<Candidate>(options.workerUrl),
+    () => makeCancelableSearch(options.workerUrl),
     [
       options.workerUrl,
     ],
@@ -65,16 +65,22 @@ export const useSearch = (
     createReducer(
       (
         query,
-        source,
-        executedBySourceUpdate,
+        projects,
+        executedByProjectUpdate,
       ) => {
         let aborted = false;
-        const iterator = search(query, source, 1000000);
 
         return {
           run: async () => {
-            // ソース更新をトリガーにした再検索は、すべて検索し終わってから返す
-            if (executedBySourceUpdate) {
+            // プロジェクト更新の場合はデータを再読み込み
+            if (executedByProjectUpdate) {
+              await search.load(projects);
+            }
+
+            const iterator = search.search(query, 5000);
+
+            // プロジェクト更新をトリガーにした再検索は、すべて検索し終わってから返す
+            if (executedByProjectUpdate) {
               const stack: (Candidate & MatchInfo)[] = [];
               for await (const [candidates] of iterator) {
                 if (aborted) return;
@@ -114,11 +120,11 @@ export const useSearch = (
         };
       },
     ),
-    [options.workerUrl],
+    [options.workerUrl, search],
   );
 
   const [useSearchState, dispatch] = useReducer(reducer, {
-    source: initialSource,
+    projects: initialProjects,
   });
 
   return [
@@ -142,7 +148,10 @@ export const useSearch = (
     ),
     {
       search: useCallback((query: string) => dispatch({ query }), []),
-      update: useCallback((source: Candidate[]) => dispatch({ source }), []),
+      updateProjects: useCallback(
+        (projects: string[]) => dispatch({ projects }),
+        [],
+      ),
     },
   ];
 };
