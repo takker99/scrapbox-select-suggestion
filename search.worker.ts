@@ -33,7 +33,9 @@ self.addEventListener(
       return;
     }
 
-    const { id, query, source, chunk } = message;
+    // Type guard: message is SearchRequest at this point
+    const searchRequest = message as SearchRequest;
+    const { id, query, source, chunk } = searchRequest;
 
     // Mark search as active
     activeSearches.set(id, true);

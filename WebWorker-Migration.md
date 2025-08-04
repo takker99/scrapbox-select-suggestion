@@ -21,7 +21,7 @@ not available or fails.
 
 ### Basic Setup with WebWorker
 
-```typescript
+```ts ignore
 import { setup } from "./mod.tsx";
 
 // Bundle the worker first: deno task bundle-worker
@@ -30,15 +30,11 @@ const ops = await setup({
 });
 ```
 
-### Without WebWorker (Fallback)
+### Without WebWorker (No Longer Supported)
 
 ```typescript
-import { setup } from "./mod.tsx";
-
-// No workerUrl specified - uses original requestAnimationFrame
-const ops = await setup({
-  // other options...
-});
+// This approach is no longer supported in the current version
+// WebWorker is now required for all search operations
 ```
 
 ## Building the Worker
@@ -67,6 +63,8 @@ const ops = await setup({
 The worker uses a message-passing interface:
 
 ```typescript
+import type { Candidate, MatchInfo } from "./search.ts";
+
 // Request format
 interface SearchRequest {
   id: string;
@@ -139,9 +137,11 @@ deno task bundle-worker  # Generate bundled worker
 
 Enable debug logging:
 
-```typescript
+```ts ignore
+import { setup } from "./mod.tsx";
+
 await setup({
   debug: true,
-  workerUrl: "your-worker-url",
+  workerUrl: "https://cdn.example.com/search.worker.bundle.js",
 });
 ```

@@ -58,7 +58,7 @@ Deno.test("cancelableSearch with WebWorker", async (t) => {
     } catch (error) {
       threwError = true;
       // Should throw an error instead of falling back
-      assertEquals(typeof error.message, "string");
+      assertEquals(typeof (error as Error).message, "string");
     }
 
     // Should have thrown an error
