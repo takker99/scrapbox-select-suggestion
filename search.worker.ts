@@ -3,6 +3,8 @@ import { makeFilter, MatchInfo } from "./search.ts";
 import { Candidate } from "./source.ts";
 import { check, Diff, Link, load, subscribe } from "./deps/storage.ts";
 import { toTitleLc } from "./deps/scrapbox-title.ts";
+import { createDebug } from "./deps/debug.ts";
+const logger = createDebug("scrapbox-select-suggestion:search.worker.ts");
 
 export interface LoadRequest {
   type: "load";
@@ -44,14 +46,15 @@ export interface WorkerError {
 }
 
 type WorkerRequest = LoadRequest | SearchRequest | CancelRequest;
-type WorkerResponse = LoadProgress | SearchProgress | WorkerError;
+export type WorkerResponse = LoadProgress | SearchProgress | WorkerError;
 
-// Store active operations to support cancellation
-const activeOperations = new Map<string, boolean>();
+/** Store active operations to support cancellation */
+const sessions = new Set<string>();
 
 // Store loaded candidate data
 let candidates: Candidate[] = [];
 let loadedProjects: string[] = [];
+let unsubscribe = () => {};
 
 self.addEventListener(
   "message",
@@ -60,20 +63,30 @@ self.addEventListener(
 
     if (message.type === "cancel") {
       // Mark operation as cancelled
-      activeOperations.set(message.id, false);
+      sessions.delete(message.id);
       return;
     }
 
+    if (sessions.has(message.id)) {
+      self.postMessage(
+        {
+          type: "error",
+          id: message.id,
+          error: "This id is already in use",
+        } satisfies WorkerResponse,
+      );
+      return;
+    }
+
+    // Mark operation as active
+    sessions.add(message.id);
+
     if (message.type === "load") {
-      // Mark operation as active
-      activeOperations.set(message.id, true);
       handleLoadRequest(message);
       return;
     }
 
     if (message.type === "search") {
-      // Mark operation as active
-      activeOperations.set(message.id, true);
       handleSearchRequest(message);
       return;
     }
@@ -89,6 +102,7 @@ const handleLoadRequest = async (request: LoadRequest): Promise<void> => {
 
     if (projectsChanged) {
       loadedProjects = [...projects];
+      unsubscribe();
 
       // Load initial data
       const links = await load(projects);
@@ -97,17 +111,14 @@ const handleLoadRequest = async (request: LoadRequest): Promise<void> => {
 
       // Set up subscription for updates
       await check(projects, 600);
-      subscribe(projects, ({ diff }) => {
+      unsubscribe = subscribe(projects, ({ diff }) => {
         candidateMap = applyDiff(candidateMap, diff);
         candidates = [...candidateMap.values()];
       });
     }
 
     // Check if operation was cancelled
-    if (!activeOperations.get(id)) {
-      activeOperations.delete(id);
-      return;
-    }
+    if (!sessions.has(id)) return;
 
     const response: LoadProgress = {
       type: "load-progress",
@@ -120,11 +131,11 @@ const handleLoadRequest = async (request: LoadRequest): Promise<void> => {
     const errorResponse: WorkerError = {
       type: "error",
       id,
-      error: error instanceof Error ? error.message : String(error),
+      error: error instanceof Error ? error.message : `${error}`,
     };
     self.postMessage(errorResponse);
   } finally {
-    activeOperations.delete(id);
+    sessions.delete(id);
   }
 };
 
@@ -146,22 +157,12 @@ const handleSearchRequest = async (request: SearchRequest): Promise<void> => {
       return;
     }
 
-    const total = Math.ceil(candidates.length / chunk);
-    let allCandidates: (Candidate & MatchInfo)[] = [];
+    const source = [...candidates];
+    const total = Math.ceil(source.length / chunk);
 
     for (let i = 0; i < total; i++) {
       // Check if search was cancelled
-      if (!activeOperations.get(id)) {
-        activeOperations.delete(id);
-        return;
-      }
-
-      const startIndex = i * chunk;
-      const endIndex = Math.min((i + 1) * chunk, candidates.length);
-      const chunkSource = candidates.slice(startIndex, endIndex);
-
-      const chunkResults = filter(chunkSource);
-      allCandidates = [...allCandidates, ...chunkResults];
+      if (!sessions.has(id)) return;
 
       const progress = (i + 1) / total;
       const completed = i === total - 1;
@@ -169,11 +170,14 @@ const handleSearchRequest = async (request: SearchRequest): Promise<void> => {
       const result: SearchProgress = {
         type: "search-progress",
         id,
-        candidates: allCandidates,
+        candidates: [...filter(
+          source.values().drop(i * chunk).take(chunk),
+        )],
         progress,
         completed,
       };
 
+      logger.debug(`[${id}][${i}/${total}] search result:`, result.candidates);
       self.postMessage(result);
 
       // Yield control to prevent blocking the worker thread
@@ -188,7 +192,7 @@ const handleSearchRequest = async (request: SearchRequest): Promise<void> => {
     self.postMessage(errorResponse);
   } finally {
     // Clean up
-    activeOperations.delete(id);
+    sessions.delete(id);
   }
 };
 const makeCandidate = (links: Iterable<Link>): Map<string, Candidate> => {

@@ -35,7 +35,9 @@ export interface Filter<T extends Candidate> {
    * @param source 検索候補リスト
    * @return 一致した候補
    */
-  (source: readonly T[]): (T & MatchInfo)[];
+  (
+    source: IteratorObject<T, BuiltinIteratorReturn>,
+  ): IteratorObject<T & MatchInfo, BuiltinIteratorReturn>;
 }
 
 /** `query`に曖昧一致する候補を絞り込む函数を作る
@@ -57,19 +59,17 @@ export const makeFilter = <T extends Candidate>(
     .sort((a, b) => b.length - a.length);
   if (queries.length === 0 || queries.every((q) => q === "")) return;
 
-  return (source) => {
-    let result = [...source];
-    for (const query of queries) {
-      result = filter(query, result);
-    }
-    return result as (T & MatchInfo)[];
-  };
+  return (source) =>
+    queries.reduce(
+      (result, query) => filter(query, result),
+      source as IteratorObject<T & MatchInfo, BuiltinIteratorReturn>,
+    );
 };
 
 const filter = <T extends Candidate>(
   query: string,
-  source: (T & Partial<MatchInfo>)[],
-): (T & MatchInfo)[] => {
+  source: IteratorObject<T & Partial<MatchInfo>, BuiltinIteratorReturn>,
+): IteratorObject<T & MatchInfo, BuiltinIteratorReturn> => {
   const m = [...query].length;
   const maxDistance = getMaxDistance[m];
   const filter_ = bitDP(query);

@@ -2,6 +2,7 @@ import { MatchInfo } from "./search.ts";
 import { Candidate } from "./source.ts";
 import { createDebug } from "./deps/debug.ts";
 import type {
+  CancelRequest,
   LoadProgress,
   LoadRequest,
   SearchProgress,
@@ -31,7 +32,11 @@ export interface CancelableSearch extends Disposable {
   search(
     query: string,
     chunk?: number,
-  ): AsyncGenerator<[(Candidate & MatchInfo)[], number], void, unknown>;
+  ): AsyncGenerator<
+    [candidates: (Candidate & MatchInfo)[], progress: number],
+    void,
+    unknown
+  >;
 }
 
 /** 中断可能な検索 */
@@ -111,30 +116,30 @@ async function* search(
   query: string,
   chunk: number,
   worker: Worker,
-): AsyncGenerator<[(Candidate & MatchInfo)[], number], void, unknown> {
+): AsyncGenerator<
+  [candidates: (Candidate & MatchInfo)[], progress: number],
+  void,
+  unknown
+> {
   logger.debug("start searching: ", query);
   if (!query.trim()) return;
 
   const searchId = generateSearchId();
   const start = new Date();
   let completed = false;
-  let aborted = false;
 
-  const searchRequest: SearchRequest = {
-    type: "search",
-    id: searchId,
-    query,
-    chunk,
-  };
-
-  logger.time(`Sending search request for "${query}"`);
-  worker.postMessage(searchRequest);
-  logger.timeEnd(`Sending search request for "${query}"`);
+  worker.postMessage(
+    {
+      type: "search",
+      id: searchId,
+      query,
+      chunk,
+    } satisfies SearchRequest,
+  );
 
   try {
     // Listen for results and yield them
-    while (!completed && !aborted) {
-      logger.time(`Waiting for results for search ID: ${searchId}`);
+    while (!completed) {
       const message = await new Promise<SearchProgress | WorkerError>(
         (resolve, reject) => {
           const messageHandler = (
@@ -158,9 +163,6 @@ async function* search(
           worker.addEventListener("error", errorHandler);
         },
       );
-      logger.timeEnd(`Waiting for results for search ID: ${searchId}`);
-
-      if (aborted) break;
 
       if (message.type === "error") {
         throw new Error(message.error);
@@ -173,7 +175,9 @@ async function* search(
       yield [candidates, progress];
     }
   } finally {
-    aborted = true;
+    worker.postMessage(
+      { type: "cancel", id: searchId } satisfies CancelRequest,
+    );
     const end = new Date();
     const ms = end.getTime() - start.getTime();
     logger.debug(
