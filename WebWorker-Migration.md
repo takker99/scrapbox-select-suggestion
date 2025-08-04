@@ -1,25 +1,28 @@
-# WebWorker Migration Guide
+# SharedWorker Migration Guide
 
-This document describes the migration from `requestAnimationFrame` to WebWorker
-for search functionality.
+This document describes the migration from WebWorker to SharedWorker
+for search functionality using @okikio/sharedworker.
 
 ## Overview
 
-The search functionality has been enhanced to support WebWorker-based processing
-to prevent UI freezing during large dataset searches. The system gracefully
-falls back to the original `requestAnimationFrame` approach when WebWorker is
-not available or fails.
+The search functionality has been enhanced to use SharedWorker-based processing
+to prevent UI freezing during large dataset searches and enable sharing of worker
+instances across multiple tabs. The system uses @okikio/sharedworker which provides
+automatic fallback to WebWorker on platforms where SharedWorker is not supported
+(like Chrome for Android).
 
 ## Key Benefits
 
+- **Shared across tabs**: Single worker instance serves multiple tabs
+- **Memory efficient**: Reduces memory usage when multiple tabs are open
 - **Non-blocking UI**: Search operations run in a separate thread
 - **Better performance**: More efficient processing for large datasets
-- **Graceful fallback**: Automatic fallback to original implementation
+- **Cross-platform compatibility**: Uses @okikio/sharedworker for fallback support
 - **CSP compliant**: Uses bundled worker files instead of Blob URLs
 
 ## Usage
 
-### Basic Setup with WebWorker
+### Basic Setup with SharedWorker
 
 ```ts ignore
 import { setup } from "./mod.tsx";
@@ -30,10 +33,11 @@ const ops = await setup({
 });
 ```
 
-### Without WebWorker (No Longer Supported)
+### Without SharedWorker (No Longer Supported)
 
-This approach is no longer supported in the current version. WebWorker is now
-required for all search operations.
+This approach is no longer supported in the current version. SharedWorker is now
+required for all search operations, with automatic fallback to WebWorker provided
+by @okikio/sharedworker on unsupported platforms.
 
 ## Building the Worker
 
@@ -50,15 +54,15 @@ required for all search operations.
 
 ### Files Modified
 
-- `search.worker.ts` - New WebWorker implementation
-- `cancelableSearch.ts` - WebWorker integration with fallback
-- `useSearch.ts` - Hook accepts workerUrl option
-- `App.tsx` - Passes workerUrl through component tree
-- `mod.tsx` - Exposes workerUrl in SetupInit interface
+- `search.worker.ts` - Modified for SharedWorker compatibility
+- `cancelableSearch.ts` - Updated to use SharedWorker instead of WebWorker
+- `deps/sharedworker.ts` - New dependency for @okikio/sharedworker
+- `examples/webworker.ts` - Updated examples for SharedWorker usage
+- `WebWorker-Migration.md` - Updated documentation
 
 ### Worker Communication
 
-The worker uses a message-passing interface:
+The worker uses a message-passing interface through SharedWorker ports:
 
 ```typescript
 import type { Candidate, MatchInfo } from "./search.ts";
@@ -82,17 +86,18 @@ interface SearchProgress {
 
 ### Cancellation Support
 
-Both WebWorker and fallback implementations support search cancellation:
+Both SharedWorker and WebWorker fallback implementations support search cancellation:
 
-- WebWorker: Sends cancel message to worker
-- Fallback: Sets abort flag to stop iteration
+- SharedWorker: Sends cancel message to worker through port
+- WebWorker fallback: Sends cancel message to worker (handled by @okikio/sharedworker)
 
 ## Performance Considerations
 
 - **Chunk size**: Default 5000 items per chunk (configurable)
 - **Progress reporting**: Real-time progress updates during search
 - **Memory usage**: Worker processes data in chunks to manage memory
-- **Fallback cost**: Negligible overhead when WebWorker fails
+- **Cross-tab sharing**: Single worker instance serves multiple tabs
+- **Automatic fallback**: @okikio/sharedworker handles platform compatibility
 
 ## CSP Compliance
 
@@ -104,31 +109,33 @@ The implementation avoids Blob URLs (which are often blocked by CSP) by:
 
 ## Error Handling
 
-- Worker creation failures trigger automatic fallback
-- Worker errors are logged and fallback is used
-- Invalid worker URLs gracefully fallback
+- Worker creation failures are handled by @okikio/sharedworker fallback
+- Worker errors are logged and handled gracefully
+- Invalid worker URLs gracefully fallback to WebWorker
 - Network errors during worker loading are handled
+- Cross-browser compatibility ensured by @okikio/sharedworker
 
 ## Migration Path
 
 For existing users:
 
 1. **No changes required**: Existing code continues to work unchanged
-2. **Opt-in WebWorker**: Add `workerUrl` parameter to enable WebWorker
-3. **Performance gains**: Immediate UI responsiveness improvement
+2. **Opt-in SharedWorker**: Add `workerUrl` parameter to enable SharedWorker
+3. **Performance gains**: Immediate UI responsiveness improvement + memory savings
+4. **Cross-platform support**: Automatic fallback on unsupported platforms
 
 ## Development
 
 ### Running Tests
 
 ```bash
-deno task check  # Includes new WebWorker tests
+deno task check  # Includes new SharedWorker tests
 ```
 
 ### Building
 
 ```bash
-deno task bundle-worker  # Generate bundled worker
+deno task bundle-worker  # Generate bundled worker compatible with SharedWorker
 ```
 
 ### Debugging

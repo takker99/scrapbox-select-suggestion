@@ -1,7 +1,7 @@
 import { setup, SetupInit } from "../mod.tsx";
 
-// Example of using WebWorker for improved performance
-export const launchWithWorker = async (workerUrl: string, init?: SetupInit) => {
+// Example of using SharedWorker for improved performance
+export const launchWithSharedWorker = async (workerUrl: string, init?: SetupInit) => {
   // Bundle the worker file first using: deno task bundle-worker
   // Then serve the bundled file and provide its URL
 
@@ -29,6 +29,6 @@ export const launchForUserScript = async () => {
     limit: 10, // Show more suggestions for better performance demonstration
   });
 
-  console.log("WebWorker-powered search enabled!");
+  console.log("SharedWorker-powered search enabled!");
   return ops;
 };
