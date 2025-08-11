@@ -33,5 +33,9 @@
     "test": "deno test --allow-read=./ --doc --parallel --shuffle",
     "type-check": "deno check --remote **/*.ts **/*.tsx",
     "update": "deno outdated --update"
+  },
+  "imports": {
+    "@okikio/sharedworker": "npm:@okikio/sharedworker@^1.1.0",
+    "comlink": "npm:comlink@^4.4.2"
   }
 }

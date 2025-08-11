@@ -21,6 +21,10 @@
     "jsr:@takker/md5@0.1": "0.1.0",
     "jsr:@takker/throttle@0.3": "0.3.1",
     "npm:@logtape/logtape@0.8": "0.8.2",
+    "npm:@okikio/sharedworker@1": "1.1.0",
+    "npm:@okikio/sharedworker@^1.1.0": "1.1.0",
+    "npm:comlink@4": "4.4.2",
+    "npm:comlink@^4.4.2": "4.4.2",
     "npm:date-fns@4": "4.1.0",
     "npm:idb@8": "8.0.3",
     "npm:idb@^8.0.1": "8.0.3",
@@ -118,6 +122,12 @@
     "@logtape/logtape@0.8.2": {
       "integrity": "sha512-KikaMHi64p0BHYrYOE2Lom4dOE3R8PGT+21QJ5Ql/SWy0CNOp69dkAlG9RXzENQ6PAMWtiU+4kelJYNvfUvHOQ=="
     },
+    "@okikio/sharedworker@1.1.0": {
+      "integrity": "sha512-Xj9TUWll9mhARsKu5DtlQCjRekfJfQ2E291ow6gmXIz+WuF6uJMH8ZmGhdRTx/ndOippHnm1j/vxXNjmR6JuXw=="
+    },
+    "comlink@4.4.2": {
+      "integrity": "sha512-OxGdvBmJuNKSCMO4NTl1L47VRp6xn2wG4F/2hYzB6tiCb709otOxtEYCSvK80PtjODfXXZu8ds+Nw5kVCjqd2g=="
+    },
     "date-fns@4.1.0": {
       "integrity": "sha512-Ukq0owbQXxa/U3EGtsdVBkR1w7KOQ5gIBqdH2hkvknzZPYvBxb/aa6E8L7tmjFtkwZBu3UXBbjIgPo/Ez4xaNg=="
     },
@@ -136,5 +146,11 @@
     "preact@10.27.0": {
       "integrity": "sha512-/DTYoB6mwwgPytiqQTh/7SFRL98ZdiD8Sk8zIUVOxtwq4oWcwrcd1uno9fE/zZmUaUrFNYzbH14CPebOz9tZQw=="
     }
+  },
+  "workspace": {
+    "dependencies": [
+      "npm:@okikio/sharedworker@^1.1.0",
+      "npm:comlink@^4.4.2"
+    ]
   }
 }
