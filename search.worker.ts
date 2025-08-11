@@ -91,17 +91,29 @@ const searchWorkerAPI: SearchWorkerAPI = {
 };
 
 // Check if we're running as a SharedWorker or regular Worker
-declare const SharedWorkerGlobalScope: any;
+interface SharedWorkerGlobalScopeInterface {
+  addEventListener: (
+    type: string,
+    listener: (event: MessageEvent) => void,
+  ) => void;
+}
+
+declare const SharedWorkerGlobalScope: {
+  new (): SharedWorkerGlobalScopeInterface;
+} | undefined;
 
 if (
   typeof SharedWorkerGlobalScope !== "undefined" &&
   self instanceof SharedWorkerGlobalScope
 ) {
   // SharedWorker mode
-  (self as any).addEventListener("connect", (event: MessageEvent) => {
-    const port = event.ports[0];
-    Comlink.expose(searchWorkerAPI, port);
-  });
+  (self as SharedWorkerGlobalScopeInterface).addEventListener(
+    "connect",
+    (event: MessageEvent) => {
+      const port = event.ports[0];
+      Comlink.expose(searchWorkerAPI, port);
+    },
+  );
 } else {
   // Regular Worker mode
   Comlink.expose(searchWorkerAPI);

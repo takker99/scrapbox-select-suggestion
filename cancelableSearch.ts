@@ -43,9 +43,12 @@ export const makeCancelableSearch = (
     search: (query, chunk) => search(query, chunk ?? 5000, worker),
 
     [Symbol.dispose]: () => {
-      (worker as any)[Comlink.releaseProxy]();
-      if (typeof (sharedWorker as any).close === "function") {
-        (sharedWorker as any).close();
+      worker[Comlink.releaseProxy]();
+      if (
+        typeof (sharedWorker as unknown as { close?: () => void }).close ===
+          "function"
+      ) {
+        (sharedWorker as unknown as { close: () => void }).close();
       } else {
         sharedWorker.port.close();
       }
@@ -93,7 +96,7 @@ const search = (
       }
     },
 
-    async cancel() {
+    cancel() {
       // Comlink handles the cancellation automatically
       const end = new Date();
       const ms = end.getTime() - start.getTime();
