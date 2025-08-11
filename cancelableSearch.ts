@@ -76,11 +76,11 @@ const search = (
     async start(controller) {
       try {
         const results = await worker.search(query, chunk);
-        
+
         for (const result of results) {
           controller.enqueue(result);
         }
-        
+
         controller.close();
       } catch (error) {
         controller.error(error);

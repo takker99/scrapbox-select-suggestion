@@ -16,7 +16,10 @@ let unsubscribe = () => {};
 /** Worker API exposed through Comlink */
 export interface SearchWorkerAPI {
   load(projects: string[]): Promise<number>;
-  search(query: string, chunk: number): Promise<Array<[candidates: (Candidate & MatchInfo)[], progress: number]>>;
+  search(
+    query: string,
+    chunk: number,
+  ): Promise<Array<[candidates: (Candidate & MatchInfo)[], progress: number]>>;
 }
 
 const searchWorkerAPI: SearchWorkerAPI = {
@@ -46,9 +49,12 @@ const searchWorkerAPI: SearchWorkerAPI = {
     return candidates.length;
   },
 
-  async search(query: string, chunk: number): Promise<Array<[candidates: (Candidate & MatchInfo)[], progress: number]>> {
+  async search(
+    query: string,
+    chunk: number,
+  ): Promise<Array<[candidates: (Candidate & MatchInfo)[], progress: number]>> {
     logger.debug("start searching: ", query);
-    
+
     if (!query.trim()) {
       return [];
     }
@@ -61,7 +67,9 @@ const searchWorkerAPI: SearchWorkerAPI = {
 
     const source = [...candidates];
     const total = Math.ceil(source.length / chunk);
-    const results: Array<[candidates: (Candidate & MatchInfo)[], progress: number]> = [];
+    const results: Array<
+      [candidates: (Candidate & MatchInfo)[], progress: number]
+    > = [];
 
     for (let i = 0; i < total; i++) {
       const progress = (i + 1) / total;
