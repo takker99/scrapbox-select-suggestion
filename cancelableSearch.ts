@@ -2,7 +2,8 @@ import { MatchInfo } from "./search.ts";
 import { Candidate } from "./source.ts";
 import { createDebug } from "./deps/debug.ts";
 import { SharedWorker } from "./deps/sharedworker.ts";
-import * as Comlink from "./deps/comlink.ts";
+import { releaseProxy, wrap } from "./deps/comlink.ts";
+import type { Remote } from "./deps/comlink.ts";
 import type { SearchWorkerAPI } from "./search.worker.ts";
 
 const logger = createDebug("scrapbox-select-suggestion:cancelableSearch.ts");
@@ -30,7 +31,7 @@ export const makeCancelableSearch = (
   workerUrl: string | URL,
 ): CancelableSearch => {
   const sharedWorker = new SharedWorker(workerUrl, { type: "module" });
-  const worker = Comlink.wrap<SearchWorkerAPI>(sharedWorker.port);
+  const worker = wrap<SearchWorkerAPI>(sharedWorker.port);
 
   return {
     load: async (projects) => {
@@ -43,7 +44,7 @@ export const makeCancelableSearch = (
     search: (query, chunk) => search(query, chunk ?? 5000, worker),
 
     [Symbol.dispose]: () => {
-      worker[Comlink.releaseProxy]();
+      worker[releaseProxy]();
       if (
         typeof (sharedWorker as unknown as { close?: () => void }).close ===
           "function"
@@ -60,7 +61,7 @@ export const makeCancelableSearch = (
 const search = (
   query: string,
   chunk: number,
-  worker: Comlink.Remote<SearchWorkerAPI>,
+  worker: Remote<SearchWorkerAPI>,
 ): ReadableStream<
   [candidates: (Candidate & MatchInfo)[], progress: number]
 > => {
@@ -78,11 +79,9 @@ const search = (
   return new ReadableStream({
     async start(controller) {
       try {
-        const results = await worker.search(query, chunk);
-
-        for (const result of results) {
-          controller.enqueue(result);
-        }
+        await worker.search(query, chunk, (candidates, progress) => {
+          controller.enqueue([candidates, progress]);
+        });
 
         controller.close();
       } catch (error) {

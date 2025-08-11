@@ -4,7 +4,7 @@ import { Candidate } from "./source.ts";
 import { check, Diff, Link, load, subscribe } from "./deps/storage.ts";
 import { toTitleLc } from "./deps/scrapbox-title.ts";
 import { createDebug } from "./deps/debug.ts";
-import * as Comlink from "./deps/comlink.ts";
+import { expose } from "./deps/comlink.ts";
 
 const logger = createDebug("scrapbox-select-suggestion:search.worker.ts");
 
@@ -19,7 +19,11 @@ export interface SearchWorkerAPI {
   search(
     query: string,
     chunk: number,
-  ): Promise<Array<[candidates: (Candidate & MatchInfo)[], progress: number]>>;
+    onProgress: (
+      candidates: (Candidate & MatchInfo)[],
+      progress: number,
+    ) => void,
+  ): Promise<void>;
 }
 
 const searchWorkerAPI: SearchWorkerAPI = {
@@ -52,24 +56,26 @@ const searchWorkerAPI: SearchWorkerAPI = {
   async search(
     query: string,
     chunk: number,
-  ): Promise<Array<[candidates: (Candidate & MatchInfo)[], progress: number]>> {
+    onProgress: (
+      candidates: (Candidate & MatchInfo)[],
+      progress: number,
+    ) => void,
+  ): Promise<void> {
     logger.debug("start searching: ", query);
 
     if (!query.trim()) {
-      return [];
+      return;
     }
 
     const filter = makeFilter<Candidate>(query);
     if (!filter) {
       // No filter needed, send empty result
-      return [[[], 1.0]];
+      onProgress([], 1.0);
+      return;
     }
 
     const source = [...candidates];
     const total = Math.ceil(source.length / chunk);
-    const results: Array<
-      [candidates: (Candidate & MatchInfo)[], progress: number]
-    > = [];
 
     for (let i = 0; i < total; i++) {
       const progress = (i + 1) / total;
@@ -80,13 +86,11 @@ const searchWorkerAPI: SearchWorkerAPI = {
       )];
 
       logger.debug(`[${i}/${total}] search result:`, searchCandidates);
-      results.push([searchCandidates, progress]);
+      onProgress(searchCandidates, progress);
 
       // Yield control to prevent blocking the worker thread
       if (!completed) await delay(0);
     }
-
-    return results;
   },
 };
 
@@ -111,12 +115,12 @@ if (
     "connect",
     (event: MessageEvent) => {
       const port = event.ports[0];
-      Comlink.expose(searchWorkerAPI, port);
+      expose(searchWorkerAPI, port);
     },
   );
 } else {
   // Regular Worker mode
-  Comlink.expose(searchWorkerAPI);
+  expose(searchWorkerAPI);
 }
 
 const makeCandidate = (links: Iterable<Link>): Map<string, Candidate> => {
