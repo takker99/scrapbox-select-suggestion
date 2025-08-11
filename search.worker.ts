@@ -4,118 +4,25 @@ import { Candidate } from "./source.ts";
 import { check, Diff, Link, load, subscribe } from "./deps/storage.ts";
 import { toTitleLc } from "./deps/scrapbox-title.ts";
 import { createDebug } from "./deps/debug.ts";
+import * as Comlink from "./deps/comlink.ts";
+
 const logger = createDebug("scrapbox-select-suggestion:search.worker.ts");
-
-export interface LoadRequest {
-  type: "load";
-  id: string;
-  projects: string[];
-}
-
-export interface SearchRequest {
-  type: "search";
-  id: string;
-  query: string;
-  chunk: number;
-}
-
-export interface CancelRequest {
-  type: "cancel";
-  id: string;
-}
-
-export interface LoadProgress {
-  type: "load-progress";
-  id: string;
-  completed: boolean;
-  candidateCount: number;
-}
-
-export interface SearchProgress {
-  type: "search-progress";
-  id: string;
-  candidates: (Candidate & MatchInfo)[];
-  progress: number;
-  completed: boolean;
-}
-
-export interface WorkerError {
-  type: "error";
-  id: string;
-  error: string;
-}
-
-type WorkerRequest = LoadRequest | SearchRequest | CancelRequest;
-export type WorkerResponse = LoadProgress | SearchProgress | WorkerError;
-
-/** Store active operations to support cancellation */
-const sessions = new Set<string>();
 
 // Store loaded candidate data
 let candidates: Candidate[] = [];
 let loadedProjects: string[] = [];
 let unsubscribe = () => {};
 
-// Handler function for processing messages
-const handleMessage = (event: MessageEvent<WorkerRequest>, postMessage: (data: WorkerResponse) => void) => {
-  const message = event.data;
-
-  if (message.type === "cancel") {
-    // Mark operation as cancelled
-    sessions.delete(message.id);
-    return;
-  }
-
-  if (sessions.has(message.id)) {
-    postMessage(
-      {
-        type: "error",
-        id: message.id,
-        error: "This id is already in use",
-      } satisfies WorkerResponse,
-    );
-    return;
-  }
-
-  // Mark operation as active
-  sessions.add(message.id);
-
-  if (message.type === "load") {
-    handleLoadRequest(message, postMessage);
-    return;
-  }
-
-  if (message.type === "search") {
-    handleSearchRequest(message, postMessage);
-    return;
-  }
-};
-
-// Check if we're running as a SharedWorker or regular Worker
-declare const SharedWorkerGlobalScope: any;
-
-if (typeof SharedWorkerGlobalScope !== 'undefined' && self instanceof SharedWorkerGlobalScope) {
-  // SharedWorker mode
-  (self as any).addEventListener("connect", (event: MessageEvent) => {
-    const port = event.ports[0];
-    
-    port.addEventListener("message", (event: MessageEvent<WorkerRequest>) => {
-      handleMessage(event, (data) => port.postMessage(data));
-    });
-    
-    port.start();
-  });
-} else {
-  // Regular Worker mode
-  self.addEventListener("message", (event: MessageEvent<WorkerRequest>) => {
-    handleMessage(event, (data) => self.postMessage(data));
-  });
+/** Worker API exposed through Comlink */
+export interface SearchWorkerAPI {
+  load(projects: string[]): Promise<number>;
+  search(query: string, chunk: number): Promise<Array<[candidates: (Candidate & MatchInfo)[], progress: number]>>;
 }
 
-const handleLoadRequest = async (request: LoadRequest, postMessage: (data: WorkerResponse) => void): Promise<void> => {
-  const { id, projects } = request;
+const searchWorkerAPI: SearchWorkerAPI = {
+  async load(projects: string[]): Promise<number> {
+    logger.debug("start loading source");
 
-  try {
     // Check if we need to reload data
     const projectsChanged = !arraysEqual(loadedProjects, projects);
 
@@ -136,84 +43,61 @@ const handleLoadRequest = async (request: LoadRequest, postMessage: (data: Worke
       });
     }
 
-    // Check if operation was cancelled
-    if (!sessions.has(id)) return;
+    return candidates.length;
+  },
 
-    const response: LoadProgress = {
-      type: "load-progress",
-      id,
-      completed: true,
-      candidateCount: candidates.length,
-    };
-    postMessage(response);
-  } catch (error) {
-    const errorResponse: WorkerError = {
-      type: "error",
-      id,
-      error: error instanceof Error ? error.message : `${error}`,
-    };
-    postMessage(errorResponse);
-  } finally {
-    sessions.delete(id);
-  }
-};
+  async search(query: string, chunk: number): Promise<Array<[candidates: (Candidate & MatchInfo)[], progress: number]>> {
+    logger.debug("start searching: ", query);
+    
+    if (!query.trim()) {
+      return [];
+    }
 
-const handleSearchRequest = async (request: SearchRequest, postMessage: (data: WorkerResponse) => void): Promise<void> => {
-  const { id, query, chunk } = request;
-
-  try {
     const filter = makeFilter<Candidate>(query);
     if (!filter) {
       // No filter needed, send empty result
-      const result: SearchProgress = {
-        type: "search-progress",
-        id,
-        candidates: [],
-        progress: 1.0,
-        completed: true,
-      };
-      postMessage(result);
-      return;
+      return [[[], 1.0]];
     }
 
     const source = [...candidates];
     const total = Math.ceil(source.length / chunk);
+    const results: Array<[candidates: (Candidate & MatchInfo)[], progress: number]> = [];
 
     for (let i = 0; i < total; i++) {
-      // Check if search was cancelled
-      if (!sessions.has(id)) return;
-
       const progress = (i + 1) / total;
       const completed = i === total - 1;
 
-      const result: SearchProgress = {
-        type: "search-progress",
-        id,
-        candidates: [...filter(
-          source.values().drop(i * chunk).take(chunk),
-        )],
-        progress,
-        completed,
-      };
+      const searchCandidates = [...filter(
+        source.values().drop(i * chunk).take(chunk),
+      )];
 
-      logger.debug(`[${id}][${i}/${total}] search result:`, result.candidates);
-      postMessage(result);
+      logger.debug(`[${i}/${total}] search result:`, searchCandidates);
+      results.push([searchCandidates, progress]);
 
       // Yield control to prevent blocking the worker thread
       if (!completed) await delay(0);
     }
-  } catch (error) {
-    const errorResponse: WorkerError = {
-      type: "error",
-      id,
-      error: error instanceof Error ? error.message : String(error),
-    };
-    postMessage(errorResponse);
-  } finally {
-    // Clean up
-    sessions.delete(id);
-  }
+
+    return results;
+  },
 };
+
+// Check if we're running as a SharedWorker or regular Worker
+declare const SharedWorkerGlobalScope: any;
+
+if (
+  typeof SharedWorkerGlobalScope !== "undefined" &&
+  self instanceof SharedWorkerGlobalScope
+) {
+  // SharedWorker mode
+  (self as any).addEventListener("connect", (event: MessageEvent) => {
+    const port = event.ports[0];
+    Comlink.expose(searchWorkerAPI, port);
+  });
+} else {
+  // Regular Worker mode
+  Comlink.expose(searchWorkerAPI);
+}
 
 const makeCandidate = (links: Iterable<Link>): Map<string, Candidate> => {
   const result = new Map<string, Candidate>();

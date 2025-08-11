@@ -1,15 +1,15 @@
 # SharedWorker Migration Guide
 
-This document describes the migration from WebWorker to SharedWorker
-for search functionality using @okikio/sharedworker.
+This document describes the migration from WebWorker to SharedWorker for search
+functionality using @okikio/sharedworker.
 
 ## Overview
 
 The search functionality has been enhanced to use SharedWorker-based processing
-to prevent UI freezing during large dataset searches and enable sharing of worker
-instances across multiple tabs. The system uses @okikio/sharedworker which provides
-automatic fallback to WebWorker on platforms where SharedWorker is not supported
-(like Chrome for Android).
+to prevent UI freezing during large dataset searches and enable sharing of
+worker instances across multiple tabs. The system uses @okikio/sharedworker
+which provides automatic fallback to WebWorker on platforms where SharedWorker
+is not supported (like Chrome for Android).
 
 ## Key Benefits
 
@@ -17,7 +17,8 @@ automatic fallback to WebWorker on platforms where SharedWorker is not supported
 - **Memory efficient**: Reduces memory usage when multiple tabs are open
 - **Non-blocking UI**: Search operations run in a separate thread
 - **Better performance**: More efficient processing for large datasets
-- **Cross-platform compatibility**: Uses @okikio/sharedworker for fallback support
+- **Cross-platform compatibility**: Uses @okikio/sharedworker for fallback
+  support
 - **CSP compliant**: Uses bundled worker files instead of Blob URLs
 
 ## Usage
@@ -36,8 +37,8 @@ const ops = await setup({
 ### Without SharedWorker (No Longer Supported)
 
 This approach is no longer supported in the current version. SharedWorker is now
-required for all search operations, with automatic fallback to WebWorker provided
-by @okikio/sharedworker on unsupported platforms.
+required for all search operations, with automatic fallback to WebWorker
+provided by @okikio/sharedworker on unsupported platforms.
 
 ## Building the Worker
 
@@ -86,10 +87,12 @@ interface SearchProgress {
 
 ### Cancellation Support
 
-Both SharedWorker and WebWorker fallback implementations support search cancellation:
+Both SharedWorker and WebWorker fallback implementations support search
+cancellation:
 
 - SharedWorker: Sends cancel message to worker through port
-- WebWorker fallback: Sends cancel message to worker (handled by @okikio/sharedworker)
+- WebWorker fallback: Sends cancel message to worker (handled by
+  @okikio/sharedworker)
 
 ## Performance Considerations
 
@@ -121,7 +124,8 @@ For existing users:
 
 1. **No changes required**: Existing code continues to work unchanged
 2. **Opt-in SharedWorker**: Add `workerUrl` parameter to enable SharedWorker
-3. **Performance gains**: Immediate UI responsiveness improvement + memory savings
+3. **Performance gains**: Immediate UI responsiveness improvement + memory
+   savings
 4. **Cross-platform support**: Automatic fallback on unsupported platforms
 
 ## Development

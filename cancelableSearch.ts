@@ -2,21 +2,10 @@ import { MatchInfo } from "./search.ts";
 import { Candidate } from "./source.ts";
 import { createDebug } from "./deps/debug.ts";
 import { SharedWorker } from "./deps/sharedworker.ts";
-import type {
-  CancelRequest,
-  LoadProgress,
-  LoadRequest,
-  SearchProgress,
-  SearchRequest,
-  WorkerError,
-} from "./search.worker.ts";
+import * as Comlink from "./deps/comlink.ts";
+import type { SearchWorkerAPI } from "./search.worker.ts";
 
 const logger = createDebug("scrapbox-select-suggestion:cancelableSearch.ts");
-
-// Generate unique ID for each search operation
-let searchIdCounter = 0;
-const generateSearchId = (): string =>
-  `search_${++searchIdCounter}_${Date.now()}`;
 
 export interface CancelableSearch extends Disposable {
   /** データを読み込む
@@ -40,70 +29,35 @@ export interface CancelableSearch extends Disposable {
 export const makeCancelableSearch = (
   workerUrl: string | URL,
 ): CancelableSearch => {
-  const worker = new SharedWorker(workerUrl, { type: "module" });
+  const sharedWorker = new SharedWorker(workerUrl, { type: "module" });
+  const worker = Comlink.wrap<SearchWorkerAPI>(sharedWorker.port);
 
   return {
-    load: (projects) => load(projects, worker.port),
+    load: async (projects) => {
+      logger.debug("start loading source");
+      const candidateCount = await worker.load([...projects]);
+      logger.debug(`loaded ${candidateCount} candidates`);
+      return candidateCount;
+    },
 
-    search: (query, chunk) => search(query, chunk ?? 5000, worker.port),
+    search: (query, chunk) => search(query, chunk ?? 5000, worker),
 
     [Symbol.dispose]: () => {
-      if (typeof (worker as any).close === 'function') {
-        (worker as any).close();
+      (worker as any)[Comlink.releaseProxy]();
+      if (typeof (sharedWorker as any).close === "function") {
+        (sharedWorker as any).close();
       } else {
-        worker.port.close();
+        sharedWorker.port.close();
       }
       logger.debug("shared worker closed.");
     },
   };
 };
 
-const load = async (
-  projects: Iterable<string>,
-  port: MessagePort,
-): Promise<number> => {
-  logger.debug("start loading source");
-  const id = generateSearchId();
-
-  // Wait for load completion
-  const promise = new Promise<LoadProgress>(
-    (resolve, reject) => {
-      const controller = new AbortController();
-
-      port.addEventListener("message", (
-        { data }: MessageEvent<LoadProgress | WorkerError>,
-      ) => {
-        if (data.id !== id) return;
-        if (data.type === "error") {
-          controller.abort();
-          reject(new Error(data.error));
-          return;
-        }
-        controller.abort();
-        resolve(data);
-      }, { signal: controller.signal });
-      port.addEventListener("messageerror", (event) => {
-        controller.abort();
-        reject(event);
-      }, { signal: controller.signal });
-    },
-  );
-
-  port.postMessage(
-    {
-      type: "load",
-      id,
-      projects: [...projects],
-    } satisfies LoadRequest,
-  );
-
-  return (await promise).candidateCount;
-};
-
 const search = (
   query: string,
   chunk: number,
-  port: MessagePort,
+  worker: Comlink.Remote<SearchWorkerAPI>,
 ): ReadableStream<
   [candidates: (Candidate & MatchInfo)[], progress: number]
 > => {
@@ -116,60 +70,36 @@ const search = (
     });
   }
 
-  const id = generateSearchId();
-  const abortController = new AbortController();
   const start = new Date();
 
-  const dispose = () => {
-    abortController.abort();
-    const end = new Date();
-    const ms = end.getTime() - start.getTime();
-    logger.debug(
-      `SharedWorker search completed for "${query}" in ${ms}ms`,
-    );
-  };
-
   return new ReadableStream({
-    start(controller) {
-      port.addEventListener("message", (
-        { data }: MessageEvent<SearchProgress | WorkerError>,
-      ) => {
-        if (data.id !== id) return;
-        if (data.type === "error") {
-          controller.error(new Error(data.error));
-          cancel(port, id);
-          dispose();
-          return;
+    async start(controller) {
+      try {
+        const results = await worker.search(query, chunk);
+        
+        for (const result of results) {
+          controller.enqueue(result);
         }
+        
+        controller.close();
+      } catch (error) {
+        controller.error(error);
+      } finally {
+        const end = new Date();
+        const ms = end.getTime() - start.getTime();
+        logger.debug(
+          `Comlink search completed for "${query}" in ${ms}ms`,
+        );
+      }
+    },
 
-        controller.enqueue([data.candidates, data.progress]);
-        if (data.completed) {
-          controller.close();
-          dispose();
-        }
-      }, { signal: abortController.signal });
-      port.addEventListener("messageerror", (event) => {
-        controller.error(event);
-        cancel(port, id);
-        dispose();
-      }, { signal: abortController.signal });
-
-      port.postMessage(
-        {
-          type: "search",
-          id: id,
-          query,
-          chunk,
-        } satisfies SearchRequest,
+    async cancel() {
+      // Comlink handles the cancellation automatically
+      const end = new Date();
+      const ms = end.getTime() - start.getTime();
+      logger.debug(
+        `Comlink search cancelled for "${query}" after ${ms}ms`,
       );
     },
-    cancel() {
-      cancel(port, id);
-      dispose();
-    },
   });
-};
-
-const cancel = (port: MessagePort, id: string) => {
-  port.postMessage({ type: "cancel", id } satisfies CancelRequest);
 };

@@ -1,7 +1,10 @@
 import { setup, SetupInit } from "../mod.tsx";
 
 // Example of using SharedWorker for improved performance
-export const launchWithSharedWorker = async (workerUrl: string, init?: SetupInit) => {
+export const launchWithSharedWorker = async (
+  workerUrl: string,
+  init?: SetupInit,
+) => {
   // Bundle the worker file first using: deno task bundle-worker
   // Then serve the bundled file and provide its URL
 
