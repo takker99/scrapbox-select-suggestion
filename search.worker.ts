@@ -74,7 +74,7 @@ const searchWorkerAPI: SearchWorkerAPI = {
       return;
     }
 
-    const source = candidates;
+    const source = [...candidates];
     const total = Math.ceil(source.length / chunk);
 
     for (let i = 0; i < total; i++) {
