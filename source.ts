@@ -275,6 +275,91 @@ export const makeCandidate = (
  *   "updated.jpg",
  * );
  * ```
+ *
+ * @example 空のDiffを適用 (変更なし)
+ * ```ts
+ * import { assertEquals } from "./deps/testing.ts";
+ * import type { Candidate } from "./source.ts";
+ * import type { Diff, Link } from "./deps/storage.ts";
+ *
+ * const candidates = new Map<string, Candidate>();
+ * const link: Link = {
+ *   id: "base-page-id",
+ *   title: "BasePage",
+ *   project: "project1",
+ *   updated: 1000,
+ *   links: [],
+ *   image: "base.jpg",
+ * };
+ * addLink(candidates, link);
+ *
+ * const diff: Diff = {}; // 空
+ * const result = applyDiff(candidates, diff);
+ *
+ * // 内容は変わらない
+ * assertEquals(result.size, 1);
+ * assertEquals(result.get("basepage")?.updated, 1000);
+ * assertEquals(
+ *   result.get("basepage")?.metadata.get("project1")?.image,
+ *   "base.jpg",
+ * );
+ * ```
+ *
+ * @example 追加 + 更新 + 削除 を同時に適用
+ * ```ts
+ * import { assertEquals } from "./deps/testing.ts";
+ * import type { Candidate } from "./source.ts";
+ * import type { Diff, Link } from "./deps/storage.ts";
+ *
+ * const candidates = new Map<string, Candidate>();
+ * const toUpdate: Link = {
+ *   id: "update-id",
+ *   title: "UpdatePage",
+ *   project: "project1",
+ *   updated: 1000,
+ *   links: [],
+ *   image: "old.jpg",
+ * };
+ * const toDelete: Link = {
+ *   id: "delete-id",
+ *   title: "DeletePage",
+ *   project: "project1",
+ *   updated: 1000,
+ *   links: [],
+ *   image: "del.jpg",
+ * };
+ * addLink(candidates, toUpdate);
+ * addLink(candidates, toDelete);
+ *
+ * const added: Link = {
+ *   id: "add-id",
+ *   title: "AddPage",
+ *   project: "project1",
+ *   updated: 1500,
+ *   links: [],
+ *   image: "add.jpg",
+ * };
+ * const afterUpdate: Link = {
+ *   id: "update-id",
+ *   title: "UpdatePage",
+ *   project: "project1",
+ *   updated: 2000,
+ *   links: [],
+ *   image: "new.jpg",
+ * };
+ *
+ * const diff: Diff = {
+ *   added: new Map([["add", added]]),
+ *   updated: new Map([["upd", [toUpdate, afterUpdate]]]),
+ *   deleted: new Map([["del", toDelete]]),
+ * };
+ *
+ * const result = applyDiff(candidates, diff);
+ * assertEquals(result.size, 2); // AddPage + UpdatePage
+ * assertEquals(result.get("addpage")?.title, "AddPage");
+ * assertEquals(result.get("updatepage")?.updated, 2000);
+ * assertEquals(result.get("deletepage"), undefined); // 削除済み
+ * ```
  */
 export const applyDiff = (
   candidates: Map<string, Candidate>,

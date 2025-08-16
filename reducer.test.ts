@@ -517,4 +517,96 @@ Deno.test("reducer()", async (t) => {
       }
     });
   });
+
+  await t.step("lines undefined -> auto disabled", () => {
+    const next = reducer({ type: "ready" }, {
+      type: "cursor:changed",
+      position: emptyRange.start,
+      range: emptyRange,
+    });
+    assertEquals(next, { type: "disabled" });
+  });
+
+  await t.step("auto disabled -> ready when lines appear", () => {
+    const next = reducer({ type: "disabled" }, {
+      type: "cursor:changed",
+      lines: (lines as Line[]),
+      position: emptyRange.start,
+      range: emptyRange,
+    });
+    assertEquals(next, { type: "ready" });
+  });
+
+  await t.step("manual disabled stays disabled", () => {
+    const s: State = { type: "disabled", isManuallyDisabled: true };
+    assertStrictEquals(reducer(s, { type: "disable" }), s);
+    assertEquals(reducer(s, { type: "enable" }), { type: "ready" });
+  });
+
+  await t.step("cancel on non-completion no-op", () => {
+    const s: State = { type: "ready" };
+    assertStrictEquals(reducer(s, { type: "cancel" }), s);
+  });
+
+  await t.step("completion -> cancel -> cancelled", () => {
+    const completion = reducer({ type: "ready" }, {
+      type: "lines:changed",
+      lines: (lines as Line[]),
+      position: { line: 6, char: 30 },
+      range: emptyRange,
+    });
+    if (completion.type !== "completion") {
+      throw new Error("expected completion");
+    }
+    assertEquals(reducer(completion, { type: "cancel" }), {
+      type: "cancelled",
+      context: "input",
+    });
+  });
+
+  await t.step("cancelled input blocks re-entry inside link", () => {
+    const completion = reducer({ type: "ready" }, {
+      type: "lines:changed",
+      lines: (lines as Line[]),
+      position: { line: 6, char: 30 },
+      range: emptyRange,
+    });
+    if (completion.type !== "completion") {
+      throw new Error("expected completion");
+    }
+    const cancelled = reducer(completion, { type: "cancel" });
+    const again = reducer(cancelled, {
+      type: "cursor:changed",
+      lines: (lines as Line[]),
+      position: { line: 6, char: 31 },
+      range: emptyRange,
+    });
+    assertStrictEquals(again, cancelled);
+  });
+
+  await t.step("selection mode suppressed when cancelled", () => {
+    const completion = reducer({ type: "ready" }, {
+      type: "lines:changed",
+      lines: (lines as Line[]),
+      position: { line: 6, char: 30 },
+      range: emptyRange,
+    });
+    if (completion.type !== "completion") {
+      throw new Error("expected completion");
+    }
+    const cancelled = reducer(completion, { type: "cancel" });
+    const sel = reducer(cancelled, {
+      type: "selection:changed",
+      lines: (lines as Line[]),
+      position: { line: 6, char: 31 },
+      range: { start: { line: 6, char: 30 }, end: { line: 6, char: 35 } },
+    });
+    assertStrictEquals(sel, cancelled);
+  });
+
+  await t.step("lock / unlock cycle", () => {
+    const locked = reducer({ type: "ready" }, { type: "lock" });
+    assertEquals(locked, { type: "ready", lock: true });
+    assertEquals(reducer(locked, { type: "unlock" }), { type: "ready" });
+  });
 });

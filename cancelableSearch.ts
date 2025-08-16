@@ -3,7 +3,6 @@ import type { Candidate } from "./source.ts";
 import { createDebug } from "./deps/debug.ts";
 import { SharedWorker } from "./deps/sharedworker.ts";
 import { releaseProxy, wrap } from "./deps/comlink.ts";
-import type { Remote } from "./deps/comlink.ts";
 import type { SearchWorkerAPI } from "./search.worker.ts";
 
 const logger = createDebug("scrapbox-select-suggestion:cancelableSearch.ts");
@@ -27,11 +26,40 @@ export interface CancelableSearch extends Disposable {
 }
 
 /** 中断可能な検索 */
+export interface CancelableSearchOptions {
+  /**
+   * Comlink Remote を差し替えるための factory。
+   * テストで副作用(実ワーカー起動)を避けるために使用。
+   */
+  workerFactory?: (url: string | URL) => {
+    load(projects: string[]): Promise<number>;
+    search(
+      query: string,
+      chunk: number,
+      onProgress: (
+        candidates: (Candidate & MatchInfo)[],
+        progress: number,
+      ) => void,
+    ): Promise<void>;
+    [releaseProxy](): void;
+  };
+  /**
+   * SharedWorker の生成を差し替え。通常は不要。`workerFactory` だけ指定した場合も
+   * 実ワーカー生成を避けたいならこちらを no-op 実装で与える。
+   */
+  sharedWorkerFactory?: (
+    url: string | URL,
+  ) => { port: MessagePort; close?: () => void };
+}
+
 export const makeCancelableSearch = (
   workerUrl: string | URL,
+  options?: CancelableSearchOptions,
 ): CancelableSearch => {
-  const sharedWorker = new SharedWorker(workerUrl, { type: "module" });
-  const worker = wrap<SearchWorkerAPI>(sharedWorker.port);
+  const sharedWorker = options?.sharedWorkerFactory?.(workerUrl) ??
+    new SharedWorker(workerUrl, { type: "module" });
+  const worker = options?.workerFactory?.(workerUrl) ??
+    wrap<SearchWorkerAPI>(sharedWorker.port);
 
   return {
     load: async (projects) => {
@@ -58,13 +86,25 @@ export const makeCancelableSearch = (
   };
 };
 
+type MinimalWorker = {
+  search(
+    query: string,
+    chunk: number,
+    onProgress: (
+      candidates: (Candidate & MatchInfo)[],
+      progress: number,
+    ) => void,
+  ): Promise<void>;
+};
+
 const search = (
   query: string,
   chunk: number,
-  worker: Remote<SearchWorkerAPI>,
-): ReadableStream<
-  [candidates: (Candidate & MatchInfo)[], progress: number]
-> => {
+  worker: MinimalWorker,
+): ReadableStream<[
+  candidates: (Candidate & MatchInfo)[],
+  progress: number,
+]> => {
   logger.debug("start searching: ", query);
   if (!query.trim()) {
     return new ReadableStream({
