@@ -7,16 +7,21 @@
       "deno.ns"
     ]
   },
-  "lint": {
-    "rules": {
-      "tags": ["recommended", "react", "jsr", "jsx"]
-    }
-  },
   "exclude": [
     "docs/",
     "coverage/",
     "search.worker.bundle.js"
   ],
+  "lint": {
+    "rules": {
+      "tags": [
+        "recommended",
+        "react",
+        "jsr",
+        "jsx"
+      ]
+    }
+  },
   "tasks": {
     "bundle-worker": "deno bundle --minify --platform=browser search.worker.ts -o search.worker.bundle.js",
     "check": {
@@ -38,9 +43,5 @@
     "test": "deno test --allow-read=./ --doc --parallel --shuffle",
     "type-check": "deno check --remote **/*.ts **/*.tsx",
     "update": "deno outdated --update"
-  },
-  "imports": {
-    "@okikio/sharedworker": "npm:@okikio/sharedworker@^1.1.0",
-    "comlink": "npm:comlink@^4.4.2"
   }
 }

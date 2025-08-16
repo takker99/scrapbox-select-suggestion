@@ -22,9 +22,7 @@
     "jsr:@takker/throttle@0.3": "0.3.1",
     "npm:@logtape/logtape@0.8": "0.8.2",
     "npm:@okikio/sharedworker@1": "1.1.0",
-    "npm:@okikio/sharedworker@^1.1.0": "1.1.0",
     "npm:comlink@4": "4.4.2",
-    "npm:comlink@^4.4.2": "4.4.2",
     "npm:date-fns@4": "4.1.0",
     "npm:idb@8": "8.0.3",
     "npm:idb@^8.0.1": "8.0.3",
@@ -146,11 +144,5 @@
     "preact@10.27.0": {
       "integrity": "sha512-/DTYoB6mwwgPytiqQTh/7SFRL98ZdiD8Sk8zIUVOxtwq4oWcwrcd1uno9fE/zZmUaUrFNYzbH14CPebOz9tZQw=="
     }
-  },
-  "workspace": {
-    "dependencies": [
-      "npm:@okikio/sharedworker@^1.1.0",
-      "npm:comlink@^4.4.2"
-    ]
   }
 }
