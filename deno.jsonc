@@ -7,6 +7,11 @@
       "deno.ns"
     ]
   },
+  "lint": {
+    "rules": {
+      "tags": ["recommended", "react", "jsr", "jsx"]
+    }
+  },
   "exclude": [
     "docs/",
     "coverage/",

@@ -1,7 +1,13 @@
 import { delay } from "./deps/async.ts";
-import { makeFilter, MatchInfo } from "./search.ts";
-import { Candidate } from "./source.ts";
-import { check, Diff, Link, load, subscribe } from "./deps/storage.ts";
+import { makeFilter, type MatchInfo } from "./search.ts";
+import type { Candidate } from "./source.ts";
+import {
+  check,
+  type Diff,
+  type Link,
+  load,
+  subscribe,
+} from "./deps/storage.ts";
 import { toTitleLc } from "./deps/scrapbox-title.ts";
 import { createDebug } from "./deps/debug.ts";
 import { expose } from "./deps/comlink.ts";

@@ -1,5 +1,5 @@
-import { MatchInfo } from "./search.ts";
-import { Candidate } from "./source.ts";
+import type { MatchInfo } from "./search.ts";
+import type { Candidate } from "./source.ts";
 import { createDebug } from "./deps/debug.ts";
 import { SharedWorker } from "./deps/sharedworker.ts";
 import { releaseProxy, wrap } from "./deps/comlink.ts";

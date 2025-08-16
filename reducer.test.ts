@@ -1,5 +1,5 @@
-import { Action, reducer, State } from "./reducer.ts";
-import { Line, Position, Range } from "./deps/scrapbox.ts";
+import { type Action, reducer, type State } from "./reducer.ts";
+import type { Line, Position, Range } from "./deps/scrapbox.ts";
 import { assertEquals, assertStrictEquals } from "./deps/testing.ts";
 import lines from "./sample-lines1.json" with { type: "json" };
 

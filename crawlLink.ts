@@ -1,4 +1,4 @@
-import { Line, Node } from "./deps/scrapbox.ts";
+import type { Line, Node } from "./deps/scrapbox.ts";
 
 export interface Link {
   whole: string;

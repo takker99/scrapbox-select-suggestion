@@ -1,5 +1,5 @@
 import { crawlLink } from "./crawlLink.ts";
-import { Line } from "./deps/scrapbox.ts";
+import type { Line } from "./deps/scrapbox.ts";
 import { assertEquals } from "./deps/testing.ts";
 import line from "./sample-line1.json" with { type: "json" };
 import line2 from "./sample-line2.json" with { type: "json" };

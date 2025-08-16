@@ -1,4 +1,4 @@
-import { setup, SetupInit } from "../mod.tsx";
+import { setup, type SetupInit } from "../mod.tsx";
 
 // Example of using SharedWorker for improved performance
 export const launchWithSharedWorker = async (

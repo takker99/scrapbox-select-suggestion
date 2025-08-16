@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef } from "./deps/preact.tsx";
-import { Line, Scrapbox } from "./deps/scrapbox.ts";
+import type { Line, Scrapbox } from "./deps/scrapbox.ts";
 declare const scrapbox: Scrapbox;
 
 /** scrapbox.Page.linesを遅延取得するhooks

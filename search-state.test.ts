@@ -1,10 +1,10 @@
 import {
-  Action,
+  type Action,
   createReducer,
-  IdleState,
+  type IdleState,
   isSearching,
 } from "./search-state.ts";
-import { Searcher, SearchingState } from "./search-state.ts";
+import type { Searcher, SearchingState } from "./search-state.ts";
 import { assertEquals } from "./deps/testing.ts";
 import { assertStrictEquals } from "./deps/testing.ts";
 
