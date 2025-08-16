@@ -4,7 +4,8 @@
       "esnext",
       "dom",
       "dom.iterable",
-      "deno.ns"
+      "deno.ns",
+      "dom.asynciterable"
     ]
   },
   "exclude": [
@@ -12,8 +13,19 @@
     "coverage/",
     "search.worker.bundle.js"
   ],
+  "lint": {
+    "rules": {
+      "tags": [
+        "recommended",
+        "react",
+        "jsr",
+        "jsx"
+      ]
+    }
+  },
+  "workspace": ["worker/"],
   "tasks": {
-    "bundle-worker": "deno bundle --minify --platform=browser search.worker.ts -o search.worker.bundle.js",
+    "bundle-worker": "deno bundle --minify --platform=browser worker/search.worker.ts -o search.worker.bundle.js",
     "check": {
       "command": "deno fmt --check && deno lint",
       "dependencies": [
@@ -30,8 +42,8 @@
         "test"
       ]
     },
-    "test": "deno test --allow-read=./ --doc --parallel --shuffle",
-    "type-check": "deno check --remote **/*.ts **/*.tsx",
+    "test": "deno test --allow-read=./ --doc --parallel --shuffle --trace-leaks",
+    "type-check": "deno check --remote *.ts examples/*.ts deps/*.ts **/*.tsx && cd worker && deno check --remote *.ts",
     "update": "deno outdated --update"
   }
 }

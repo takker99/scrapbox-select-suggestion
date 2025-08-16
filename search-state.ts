@@ -1,5 +1,5 @@
-import { MatchInfo } from "./search.ts";
-import { Candidate } from "./source.ts";
+import type { MatchInfo } from "./search.ts";
+import type { Candidate } from "./source.ts";
 
 export type Searcher = (state: string) => {
   run: () => Promise<void>;

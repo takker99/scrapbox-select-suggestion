@@ -1,7 +1,7 @@
 /** @jsxRuntime automatic */
 /** @jsxImportSource npm:preact@10 */
-import { ConfirmInit } from "./Completion.tsx";
-import { h, useCallback } from "./deps/preact.tsx";
+import type { ConfirmInit } from "./Completion.tsx";
+import { type h, useCallback } from "./deps/preact.tsx";
 import { encodeTitleURI } from "./deps/scrapbox-title.ts";
 
 export interface CandidateProps {
@@ -62,17 +62,21 @@ export interface MarkProps {
 
 export const Mark = (
   { project, title, mark, confirm }: MarkProps,
-) => (mark === "" ? null : (
-  <a
-    className="mark"
-    tabIndex={0}
-    href={`../${project}/${encodeTitleURI(title)}`}
-    onClick={useConfirm(confirm)}
-    title={`/${project}/${encodeTitleURI(title)}`}
-  >
-    {mark instanceof URL ? <img src={mark.href} /> : `[${mark}]`}
-  </a>
-));
+) => {
+  const onClick = useConfirm(confirm);
+
+  return mark === "" ? null : (
+    <a
+      className="mark"
+      tabIndex={0}
+      href={`../${project}/${encodeTitleURI(title)}`}
+      onClick={onClick}
+      title={`/${project}/${encodeTitleURI(title)}`}
+    >
+      {mark instanceof URL ? <img src={mark.href} /> : `[${mark}]`}
+    </a>
+  );
+};
 
 /** 修飾キーが押されていないときのみ確定する event handlerを作るhook */
 const useConfirm = (confirm: () => void) =>

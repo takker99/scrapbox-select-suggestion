@@ -1,5 +1,5 @@
-import { h, useMemo, useState } from "./deps/preact.tsx";
-import { getCharDOM, Position } from "./deps/scrapbox.ts";
+import { type h, useMemo, useState } from "./deps/preact.tsx";
+import { getCharDOM, type Position } from "./deps/scrapbox.ts";
 
 /** 補完リストの表示位置を計算するhook */
 export const usePosition = (

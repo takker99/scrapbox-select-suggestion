@@ -8,13 +8,13 @@ import {
 } from "./deps/preact.tsx";
 import {
   insertText,
-  Position,
-  Scrapbox,
+  type Position,
+  type Scrapbox,
   takeCursor,
   takeSelection,
   takeStores,
 } from "./deps/scrapbox.ts";
-import { reducer, State } from "./reducer.ts";
+import { reducer, type State } from "./reducer.ts";
 import { useCachedLines } from "./useCachedLines.ts";
 declare const scrapbox: Scrapbox;
 
