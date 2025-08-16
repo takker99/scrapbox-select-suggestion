@@ -24,10 +24,6 @@ export interface CancelableSearch extends Disposable {
   ): ReadableStream<[candidates: (Candidate & MatchInfo)[], progress: number]>;
 }
 
-export interface RemoteLike extends Pick<SearchWorkerAPI, "load" | "search"> {
-  [releaseProxy](): void;
-}
-
 /** 中断可能な検索 */
 export const makeCancelableSearch = (
   endpoint: Worker | MessagePort,
