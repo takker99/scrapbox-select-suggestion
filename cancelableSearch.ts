@@ -1,9 +1,9 @@
 import type { MatchInfo } from "./search.ts";
 import type { Candidate } from "./source.ts";
 import { createDebug } from "./deps/debug.ts";
-import { SharedWorker } from "./deps/sharedworker.ts";
-import { releaseProxy, wrap } from "./deps/comlink.ts";
-import type { SearchWorkerAPI } from "./search.worker.ts";
+import { proxy, releaseProxy, wrap } from "./deps/comlink.ts";
+import type { SearchWorkerAPI } from "./worker-endpoint.ts";
+import { SharedWorkerSupported } from "./deps/sharedworker.ts";
 
 const logger = createDebug("scrapbox-select-suggestion:cancelableSearch.ts");
 
@@ -57,9 +57,13 @@ export const makeCancelableSearch = (
   options?: CancelableSearchOptions,
 ): CancelableSearch => {
   const sharedWorker = options?.sharedWorkerFactory?.(workerUrl) ??
-    new SharedWorker(workerUrl, { type: "module" });
+    new (SharedWorkerSupported ? SharedWorker : Worker)(workerUrl, {
+      type: "module",
+    });
   const worker = options?.workerFactory?.(workerUrl) ??
-    wrap<SearchWorkerAPI>(sharedWorker.port);
+    wrap<SearchWorkerAPI>(
+      "port" in sharedWorker ? sharedWorker.port : sharedWorker,
+    );
 
   return {
     load: async (projects) => {
@@ -73,13 +77,10 @@ export const makeCancelableSearch = (
 
     [Symbol.dispose]: () => {
       worker[releaseProxy]();
-      if (
-        typeof (sharedWorker as unknown as { close?: () => void }).close ===
-          "function"
-      ) {
-        (sharedWorker as unknown as { close: () => void }).close();
-      } else {
+      if ("port" in sharedWorker) {
         sharedWorker.port.close();
+      } else {
+        sharedWorker.terminate();
       }
       logger.debug("shared worker closed.");
     },
@@ -115,18 +116,25 @@ const search = (
   }
 
   const start = new Date();
+  let closed = false;
 
   return new ReadableStream({
     async start(controller) {
       try {
-        await worker.search(query, chunk, (candidates, progress) => {
-          controller.enqueue([candidates, progress]);
-        });
+        await worker.search(
+          query,
+          chunk,
+          proxy((candidates, progress) => {
+            if (closed) return;
+            controller.enqueue([candidates, progress]);
+          }),
+        );
 
         controller.close();
       } catch (error) {
         controller.error(error);
       } finally {
+        closed = true;
         const end = new Date();
         const ms = end.getTime() - start.getTime();
         logger.debug(
@@ -137,6 +145,7 @@ const search = (
 
     cancel() {
       // Comlink handles the cancellation automatically
+      closed = true;
       const end = new Date();
       const ms = end.getTime() - start.getTime();
       logger.debug(

@@ -4,7 +4,8 @@
       "esnext",
       "dom",
       "dom.iterable",
-      "deno.ns"
+      "deno.ns",
+      "dom.asynciterable"
     ]
   },
   "exclude": [
@@ -22,8 +23,9 @@
       ]
     }
   },
+  "workspace": ["worker/"],
   "tasks": {
-    "bundle-worker": "deno bundle --minify --platform=browser search.worker.ts -o search.worker.bundle.js",
+    "bundle-worker": "deno bundle --minify --platform=browser worker/search.worker.ts -o search.worker.bundle.js",
     "check": {
       "command": "deno fmt --check && deno lint",
       "dependencies": [
@@ -41,7 +43,7 @@
       ]
     },
     "test": "deno test --allow-read=./ --doc --parallel --shuffle",
-    "type-check": "deno check --remote **/*.ts **/*.tsx",
+    "type-check": "deno check --remote *.ts examples/*.ts deps/*.ts **/*.tsx && cd worker && deno check --remote *.ts",
     "update": "deno outdated --update"
   }
 }

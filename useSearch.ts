@@ -69,13 +69,6 @@ export const useSearch = (
 
         return {
           run: async () => {
-            const iterator = search.search(
-              query,
-              10000,
-            ) as unknown as AsyncIterableIterator<
-              [candidates: (Candidate & MatchInfo)[], progress: number]
-            >;
-
             const throttledDispatch = throttle<[Action], void>(
               (value, state) => {
                 if (state === "discarded") return;
@@ -86,7 +79,9 @@ export const useSearch = (
             );
 
             let stack: (Candidate & MatchInfo)[] = [];
-            for await (const [candidates, progress] of iterator) {
+            for await (
+              const [candidates, progress] of search.search(query, 10000)
+            ) {
               if (aborted) return;
               // 非破壊的にstackに追加することで、`reducer`内での`===`比較が効くようにする
               stack = [...stack, ...candidates];

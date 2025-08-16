@@ -1,7 +1,7 @@
 import { assert, assertEquals, assertRejects } from "./deps/testing.ts";
 import { makeCancelableSearch } from "./cancelableSearch.ts";
 import { releaseProxy } from "./deps/comlink.ts";
-import type { SearchWorkerAPI } from "./search.worker.ts";
+import type { SearchWorkerAPI } from "./worker-endpoint.ts";
 
 // Minimal fake Remote & SharedWorker port for DI tests
 type CandidateLike = {
@@ -22,7 +22,7 @@ Deno.test("cancelableSearch (WebWorker + DI behaviors)", async (t) => {
   // Basic WebWorker API surface checks
   await t.step("webworker: method existence", () => {
     using search = makeCancelableSearch(
-      new URL("./search.worker.ts", import.meta.url),
+      new URL("./worker/search.worker.ts", import.meta.url),
     );
     assertEquals(typeof search.search, "function");
     assertEquals(typeof search.load, "function");
@@ -30,7 +30,7 @@ Deno.test("cancelableSearch (WebWorker + DI behaviors)", async (t) => {
 
   await t.step("webworker: empty query handled", () => {
     using search = makeCancelableSearch(
-      new URL("./search.worker.ts", import.meta.url),
+      new URL("./worker/search.worker.ts", import.meta.url),
     );
     assertEquals(typeof search.search, "function");
   });

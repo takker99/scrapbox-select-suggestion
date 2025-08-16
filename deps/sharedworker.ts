@@ -1,1 +1,1 @@
-export { SharedWorkerPolyfill as SharedWorker } from "npm:@okikio/sharedworker@1";
+export * from "npm:@okikio/sharedworker@1";

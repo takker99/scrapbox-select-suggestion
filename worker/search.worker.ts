@@ -1,10 +1,11 @@
-import { arraysEqual } from "./arraysEqual.ts";
-import { delay } from "./deps/async.ts";
-import { expose } from "./deps/comlink.ts";
-import { createDebug } from "./deps/debug.ts";
-import { check, load, subscribe } from "./deps/storage.ts";
-import { makeFilter, type MatchInfo } from "./search.ts";
-import { applyDiff, type Candidate, makeCandidate } from "./source.ts";
+import { arraysEqual } from "../arraysEqual.ts";
+import { delay } from "../deps/async.ts";
+import { expose } from "../deps/comlink.ts";
+import { createDebug } from "../deps/debug.ts";
+import { check, load, subscribe } from "../deps/storage.ts";
+import { makeFilter, type MatchInfo } from "../search.ts";
+import { applyDiff, type Candidate, makeCandidate } from "../source.ts";
+import type { SearchWorkerAPI } from "../worker-endpoint.ts";
 
 const logger = createDebug("scrapbox-select-suggestion:search.worker.ts");
 
@@ -12,19 +13,6 @@ const logger = createDebug("scrapbox-select-suggestion:search.worker.ts");
 let candidates: Candidate[] = [];
 let loadedProjects: string[] = [];
 let unsubscribe = () => {};
-
-/** Worker API exposed through Comlink */
-export interface SearchWorkerAPI {
-  load(projects: string[]): Promise<number>;
-  search(
-    query: string,
-    chunk: number,
-    onProgress: (
-      candidates: (Candidate & MatchInfo)[],
-      progress: number,
-    ) => void,
-  ): Promise<void>;
-}
 
 const searchWorkerAPI: SearchWorkerAPI = {
   async load(projects: string[]): Promise<number> {
@@ -94,29 +82,16 @@ const searchWorkerAPI: SearchWorkerAPI = {
   },
 };
 
-// Check if we're running as a SharedWorker or regular Worker
-interface SharedWorkerGlobalScopeInterface {
-  addEventListener: (
-    type: string,
-    listener: (event: MessageEvent) => void,
-  ) => void;
-}
+const isSharedWorkerGlobalScope = (
+  scope: unknown,
+): scope is SharedWorkerGlobalScope =>
+  typeof scope === "object" && !!scope && "SharedWorkerGlobalScope" in scope;
 
-declare const SharedWorkerGlobalScope: {
-  new (): SharedWorkerGlobalScopeInterface;
-} | undefined;
-
-if (
-  typeof SharedWorkerGlobalScope !== "undefined" &&
-  self instanceof SharedWorkerGlobalScope
-) {
+if (isSharedWorkerGlobalScope(self)) {
   // SharedWorker mode
-  (self as SharedWorkerGlobalScopeInterface).addEventListener(
+  (self as SharedWorkerGlobalScope).addEventListener(
     "connect",
-    (event: MessageEvent) => {
-      const port = event.ports[0];
-      expose(searchWorkerAPI, port);
-    },
+    (event) => expose(searchWorkerAPI, event.ports[0]),
   );
 } else {
   // Regular Worker mode
