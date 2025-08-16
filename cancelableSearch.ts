@@ -3,7 +3,6 @@ import type { Candidate } from "./source.ts";
 import { createDebug } from "./deps/debug.ts";
 import { proxy, releaseProxy, wrap } from "./deps/comlink.ts";
 import type { SearchWorkerAPI } from "./worker-endpoint.ts";
-import { SharedWorkerSupported } from "./deps/sharedworker.ts";
 
 const logger = createDebug("scrapbox-select-suggestion:cancelableSearch.ts");
 
@@ -30,33 +29,10 @@ export interface RemoteLike extends Pick<SearchWorkerAPI, "load" | "search"> {
 }
 
 /** 中断可能な検索 */
-export interface CancelableSearchOptions {
-  /**
-   * Comlink Remote を差し替えるための factory。
-   * テストで副作用(実ワーカー起動)を避けるために使用。
-   */
-  workerFactory?: (url: string | URL) => RemoteLike;
-  /**
-   * SharedWorker の生成を差し替え。通常は不要。`workerFactory` だけ指定した場合も
-   * 実ワーカー生成を避けたいならこちらを no-op 実装で与える。
-   */
-  sharedWorkerFactory?: (
-    url: string | URL,
-  ) => { port: MessagePort; close?: () => void };
-}
-
 export const makeCancelableSearch = (
-  workerUrl: string | URL,
-  options?: CancelableSearchOptions,
+  endpoint: Worker | MessagePort,
 ): CancelableSearch => {
-  const sharedWorker = options?.sharedWorkerFactory?.(workerUrl) ??
-    new (SharedWorkerSupported ? SharedWorker : Worker)(workerUrl, {
-      type: "module",
-    });
-  const worker = options?.workerFactory?.(workerUrl) ??
-    wrap<SearchWorkerAPI>(
-      "port" in sharedWorker ? sharedWorker.port : sharedWorker,
-    );
+  const worker = wrap<SearchWorkerAPI>(endpoint);
 
   return {
     load: async (projects) => {
@@ -70,11 +46,12 @@ export const makeCancelableSearch = (
 
     [Symbol.dispose]: () => {
       worker[releaseProxy]();
-      if ("port" in sharedWorker) {
-        sharedWorker.port.close();
+      if (endpoint instanceof MessagePort) {
+        endpoint.close();
       } else {
-        sharedWorker.terminate();
+        endpoint.terminate();
       }
+      console.debug("shared worker closed.");
       logger.debug("shared worker closed.");
     },
   };

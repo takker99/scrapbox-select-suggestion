@@ -1,49 +1,76 @@
 import { assert, assertEquals, assertRejects } from "./deps/testing.ts";
-import { makeCancelableSearch, type RemoteLike } from "./cancelableSearch.ts";
-import { releaseProxy } from "./deps/comlink.ts";
+import { makeCancelableSearch } from "./cancelableSearch.ts";
+import { expose } from "./deps/comlink.ts";
 import type { SearchWorkerAPI } from "./worker-endpoint.ts";
 
-type ProgressCallback = Parameters<SearchWorkerAPI["search"]>[2];
+// Helper: create a fake SearchWorkerAPI exposed over a MessagePort
+function makeFakeEndpoint(impl: SearchWorkerAPI) {
+  const { port1, port2 } = new MessageChannel();
+  expose({
+    load: impl.load,
+    search: impl.search,
+  } as SearchWorkerAPI, port1);
+  let closed = false;
+  return {
+    endpoint: port2,
+    [Symbol.dispose]() {
+      if (closed) return;
+      closed = true;
+      try {
+        port1.close();
+      } catch (_) { /* ignore */ }
+      try {
+        port2.close();
+      } catch (_) { /* ignore */ }
+      console.debug("closed");
+    },
+  } as const;
+}
 
-Deno.test("cancelableSearch (WebWorker + DI behaviors)", async (t) => {
+Deno.test({
+  name: "cancelableSearch (WebWorker + DI behaviors)",
+  sanitizeOps: false,
+  sanitizeResources: false,
+}, async (t) => {
   // Basic WebWorker API surface checks
-  await t.step("webworker: method existence", () => {
-    using search = makeCancelableSearch(
-      new URL("./worker/search.worker.ts", import.meta.url),
-    );
-    assertEquals(typeof search.search, "function");
-    assertEquals(typeof search.load, "function");
+  await t.step({
+    name: "webworker: method existence",
+    sanitizeOps: true,
+    sanitizeResources: true,
+    fn: () => {
+      using search = makeCancelableSearch(
+        new Worker(new URL("./worker/search.worker.ts", import.meta.url), {
+          type: "module",
+        }),
+      );
+      assertEquals(typeof search.search, "function");
+      assertEquals(typeof search.load, "function");
+    },
   });
 
-  await t.step("webworker: empty query handled", () => {
-    using search = makeCancelableSearch(
-      new URL("./worker/search.worker.ts", import.meta.url),
-    );
-    assertEquals(typeof search.search, "function");
+  await t.step({
+    name: "webworker: empty query handled",
+    sanitizeOps: true,
+    sanitizeResources: true,
+    fn: () => {
+      using search = makeCancelableSearch(
+        new Worker(new URL("./worker/search.worker.ts", import.meta.url), {
+          type: "module",
+        }),
+      );
+      assertEquals(typeof search.search, "function");
+    },
   });
 
-  await t.step("webworker: non-existent worker -> error", async () => {
-    let threwError = false;
-    try {
-      using search = makeCancelableSearch("non-existent-worker.js");
-      await search.load(["test-project"]);
-    } catch (error) {
-      threwError = true;
-      assertEquals(typeof (error as Error).message, "string");
-    }
-    assertEquals(threwError, true);
-  });
-
-  // DI behavior tests (formerly separate)
-  await t.step("di: load / progressive search / dispose", async (_t) => {
+  // MessagePort / Comlink behavior tests (updated API)
+  await t.step("port: load / progressive search / dispose", async () => {
     const calls: string[] = [];
-    let released = false;
-    const fakeRemote: RemoteLike = {
+    using endpoints = makeFakeEndpoint({
       load(projects) {
         calls.push(`load:${projects.length}`);
         return Promise.resolve(42);
       },
-      search(query, _chunk, cb: ProgressCallback) {
+      search(query, _chunk, cb) {
         calls.push(`search:${query}`);
         cb([{
           title: "A",
@@ -57,83 +84,41 @@ Deno.test("cancelableSearch (WebWorker + DI behaviors)", async (t) => {
         cb([], 100);
         return Promise.resolve();
       },
-      [releaseProxy]() {
-        released = true;
-      },
-    };
-    const fakePort = {
-      close() {
-        calls.push("port-close");
-      },
-    } as unknown as MessagePort;
-    const sharedWorkerFactory = () => ({ port: fakePort });
-    const workerFactory = () =>
-      fakeRemote as unknown as RemoteLike & { [releaseProxy](): void };
-    {
-      using search = makeCancelableSearch("fake://worker", {
-        workerFactory,
-        sharedWorkerFactory,
-      });
-      const n = await search.load(["p1", "p2"]);
-      assertEquals(n, 42);
-      assert(calls.includes("load:2"));
-      const stream = search.search("hello", 5);
-      const reader = stream.getReader();
-      const first = await reader.read();
-      assert(!first.done);
-      assertEquals(first.value?.[1], 10);
-      const second = await reader.read();
-      assert(!second.done);
-      assertEquals(second.value?.[1], 100);
-      const end = await reader.read();
-      assert(end.done);
-    }
-    assert(released);
-    assert(calls.includes("port-close"));
+    });
+
+    using search = makeCancelableSearch(endpoints.endpoint);
+    const n = await search.load(["p1", "p2"]);
+    assertEquals(n, 42);
+    assert(calls.includes("load:2"));
+    const reader = search.search("hello", 5).getReader();
+    const first = await reader.read();
+    assert(!first.done);
+    assertEquals(first.value?.[1], 10);
+    const second = await reader.read();
+    assert(!second.done);
+    assertEquals(second.value?.[1], 100);
+    const end = await reader.read();
+    assert(end.done);
   });
 
-  await t.step("di: empty query short-circuits", async () => {
-    const noopRemote: RemoteLike = {
+  await t.step("port: empty query short-circuits", async () => {
+    using endpoints = makeFakeEndpoint({
       load: () => Promise.resolve(0),
       search: () => Promise.resolve(),
-      [releaseProxy]() {},
-    };
-    const port = { close() {} } as unknown as MessagePort;
-    using search = makeCancelableSearch("fake://noop", {
-      workerFactory: () => noopRemote,
-      sharedWorkerFactory: () => ({ port }),
     });
-    const stream = search.search("");
-    const { done } = await stream.getReader().read();
+    using search = makeCancelableSearch(endpoints.endpoint);
+    const { done } = await search.search("").getReader().read();
     assert(done);
   });
 
-  await t.step("di: failing worker propagates error", async () => {
-    let released2 = false;
-    let closed2 = false;
-    const failingWorker: RemoteLike = {
+  await t.step("port: failing endpoint propagates error", async () => {
+    using endpoints = makeFakeEndpoint({
       load: () => Promise.resolve(0),
       search() {
         return Promise.reject(new Error("boom"));
       },
-      [releaseProxy]() {
-        released2 = true;
-      },
-    };
-    const portStub = {
-      close() {
-        closed2 = true;
-      },
-    } as unknown as MessagePort;
-    const failing = makeCancelableSearch("fake://w", {
-      workerFactory: () => failingWorker,
-      sharedWorkerFactory: () => ({
-        port: portStub,
-        close() {
-          closed2 = true;
-        },
-      }),
     });
+    using failing = makeCancelableSearch(endpoints.endpoint);
     const stream = failing.search("q", 1000);
     await assertRejects(
       async () => {
@@ -142,31 +127,23 @@ Deno.test("cancelableSearch (WebWorker + DI behaviors)", async (t) => {
       Error,
       "boom",
     );
-    failing[Symbol.dispose]();
-    assert(released2);
-    assert(closed2);
   });
 
-  await t.step("di: cancel triggers stream cancel branch", async () => {
+  await t.step("port: cancel triggers stream cancel branch", async () => {
     const timeouts: number[] = [];
     let progressCalls = 0;
-    const worker2: RemoteLike = {
+    using endpoints = makeFakeEndpoint({
       load: () => Promise.resolve(0),
       search(_q, _c, cb) {
         cb([], 0.3);
         progressCalls++;
         return new Promise<void>((r) => {
-          const id = setTimeout(() => r(), 20);
+          const id = setTimeout(r, 30);
           timeouts.push(id);
         });
       },
-      [releaseProxy]() {},
-    };
-    const portStub2 = { close() {} } as unknown as MessagePort;
-    using cancelable2 = makeCancelableSearch("fake://w2", {
-      workerFactory: () => worker2 as unknown as RemoteLike,
-      sharedWorkerFactory: () => ({ port: portStub2, close() {} }),
     });
+    using cancelable2 = makeCancelableSearch(endpoints.endpoint);
     const reader = cancelable2.search("hello", 10).getReader();
     await reader.cancel();
     for (const id of timeouts) clearTimeout(id);

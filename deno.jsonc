@@ -42,7 +42,7 @@
         "test"
       ]
     },
-    "test": "deno test --allow-read=./ --doc --parallel --shuffle",
+    "test": "deno test --allow-read=./ --doc --parallel --shuffle --trace-leaks",
     "type-check": "deno check --remote *.ts examples/*.ts deps/*.ts **/*.tsx && cd worker && deno check --remote *.ts",
     "update": "deno outdated --update"
   }

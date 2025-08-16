@@ -6,6 +6,7 @@ import { makeCancelableSearch } from "./cancelableSearch.ts";
 import { throttle } from "./deps/throttle.ts";
 import { createDebug } from "./deps/debug.ts";
 import { type Action, createReducer, isSearching } from "./search-state.ts";
+import { SharedWorkerSupported } from "./deps/sharedworker.ts";
 
 const logger = createDebug("scrapbox-select-suggestion:useSearch.ts");
 
@@ -51,7 +52,12 @@ export const useSearch = (
   options: UseSearchOptions,
 ): SearchResult | undefined => {
   const search = useMemo(
-    () => makeCancelableSearch(options.workerUrl),
+    () =>
+      makeCancelableSearch(
+        SharedWorkerSupported
+          ? new SharedWorker(options.workerUrl, { type: "module" }).port
+          : new Worker(options.workerUrl, { type: "module" }),
+      ),
     [options.workerUrl],
   );
   useEffect(() => {
