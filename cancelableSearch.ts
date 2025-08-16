@@ -47,7 +47,6 @@ export const makeCancelableSearch = (
       } else {
         endpoint.terminate();
       }
-      console.debug("shared worker closed.");
       logger.debug("shared worker closed.");
     },
   };

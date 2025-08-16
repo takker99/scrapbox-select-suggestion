@@ -22,7 +22,6 @@ function makeFakeEndpoint(impl: SearchWorkerAPI) {
       try {
         port2.close();
       } catch (_) { /* ignore */ }
-      console.debug("closed");
     },
   } as const;
 }
