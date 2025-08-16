@@ -10,6 +10,6 @@ export interface SearchWorkerAPI {
     onProgress: (
       candidates: (Candidate & MatchInfo)[],
       progress: number,
-    ) => void,
+    ) => boolean,
   ): Promise<void>;
 }

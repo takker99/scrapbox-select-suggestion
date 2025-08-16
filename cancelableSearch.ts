@@ -25,24 +25,17 @@ export interface CancelableSearch extends Disposable {
   ): ReadableStream<[candidates: (Candidate & MatchInfo)[], progress: number]>;
 }
 
+export interface RemoteLike extends Pick<SearchWorkerAPI, "load" | "search"> {
+  [releaseProxy](): void;
+}
+
 /** 中断可能な検索 */
 export interface CancelableSearchOptions {
   /**
    * Comlink Remote を差し替えるための factory。
    * テストで副作用(実ワーカー起動)を避けるために使用。
    */
-  workerFactory?: (url: string | URL) => {
-    load(projects: string[]): Promise<number>;
-    search(
-      query: string,
-      chunk: number,
-      onProgress: (
-        candidates: (Candidate & MatchInfo)[],
-        progress: number,
-      ) => void,
-    ): Promise<void>;
-    [releaseProxy](): void;
-  };
+  workerFactory?: (url: string | URL) => RemoteLike;
   /**
    * SharedWorker の生成を差し替え。通常は不要。`workerFactory` だけ指定した場合も
    * 実ワーカー生成を避けたいならこちらを no-op 実装で与える。
@@ -73,7 +66,7 @@ export const makeCancelableSearch = (
       return candidateCount;
     },
 
-    search: (query, chunk) => search(query, chunk ?? 5000, worker),
+    search: (query, chunk) => search(query, chunk ?? 5000, worker.search),
 
     [Symbol.dispose]: () => {
       worker[releaseProxy]();
@@ -87,21 +80,10 @@ export const makeCancelableSearch = (
   };
 };
 
-type MinimalWorker = {
-  search(
-    query: string,
-    chunk: number,
-    onProgress: (
-      candidates: (Candidate & MatchInfo)[],
-      progress: number,
-    ) => void,
-  ): Promise<void>;
-};
-
 const search = (
   query: string,
   chunk: number,
-  worker: MinimalWorker,
+  searchFn: SearchWorkerAPI["search"],
 ): ReadableStream<[
   candidates: (Candidate & MatchInfo)[],
   progress: number,
@@ -121,12 +103,12 @@ const search = (
   return new ReadableStream({
     async start(controller) {
       try {
-        await worker.search(
+        await searchFn(
           query,
           chunk,
           proxy((candidates, progress) => {
-            if (closed) return;
-            controller.enqueue([candidates, progress]);
+            if (!closed) controller.enqueue([candidates, progress]);
+            return closed;
           }),
         );
 

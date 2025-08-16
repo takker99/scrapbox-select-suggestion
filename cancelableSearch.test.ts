@@ -1,22 +1,9 @@
 import { assert, assertEquals, assertRejects } from "./deps/testing.ts";
-import { makeCancelableSearch } from "./cancelableSearch.ts";
+import { makeCancelableSearch, type RemoteLike } from "./cancelableSearch.ts";
 import { releaseProxy } from "./deps/comlink.ts";
 import type { SearchWorkerAPI } from "./worker-endpoint.ts";
 
-// Minimal fake Remote & SharedWorker port for DI tests
-type CandidateLike = {
-  title: string;
-  titleLc: string;
-  updated: number;
-  linked: number;
-  metadata: Map<string, { image?: string }>;
-  dist: number;
-  matches: [number, number][];
-};
-type ProgressCallback = (cands: CandidateLike[], progress: number) => void;
-interface FakeRemote extends Pick<SearchWorkerAPI, "load" | "search"> {
-  [releaseProxy](): void;
-}
+type ProgressCallback = Parameters<SearchWorkerAPI["search"]>[2];
 
 Deno.test("cancelableSearch (WebWorker + DI behaviors)", async (t) => {
   // Basic WebWorker API surface checks
@@ -51,7 +38,7 @@ Deno.test("cancelableSearch (WebWorker + DI behaviors)", async (t) => {
   await t.step("di: load / progressive search / dispose", async (_t) => {
     const calls: string[] = [];
     let released = false;
-    const fakeRemote: FakeRemote = {
+    const fakeRemote: RemoteLike = {
       load(projects) {
         calls.push(`load:${projects.length}`);
         return Promise.resolve(42);
@@ -81,7 +68,7 @@ Deno.test("cancelableSearch (WebWorker + DI behaviors)", async (t) => {
     } as unknown as MessagePort;
     const sharedWorkerFactory = () => ({ port: fakePort });
     const workerFactory = () =>
-      fakeRemote as unknown as FakeRemote & { [releaseProxy](): void };
+      fakeRemote as unknown as RemoteLike & { [releaseProxy](): void };
     {
       using search = makeCancelableSearch("fake://worker", {
         workerFactory,
@@ -106,7 +93,7 @@ Deno.test("cancelableSearch (WebWorker + DI behaviors)", async (t) => {
   });
 
   await t.step("di: empty query short-circuits", async () => {
-    const noopRemote: FakeRemote = {
+    const noopRemote: RemoteLike = {
       load: () => Promise.resolve(0),
       search: () => Promise.resolve(),
       [releaseProxy]() {},
@@ -124,7 +111,7 @@ Deno.test("cancelableSearch (WebWorker + DI behaviors)", async (t) => {
   await t.step("di: failing worker propagates error", async () => {
     let released2 = false;
     let closed2 = false;
-    const failingWorker: FakeRemote = {
+    const failingWorker: RemoteLike = {
       load: () => Promise.resolve(0),
       search() {
         return Promise.reject(new Error("boom"));
@@ -163,7 +150,7 @@ Deno.test("cancelableSearch (WebWorker + DI behaviors)", async (t) => {
   await t.step("di: cancel triggers stream cancel branch", async () => {
     const timeouts: number[] = [];
     let progressCalls = 0;
-    const worker2: FakeRemote = {
+    const worker2: RemoteLike = {
       load: () => Promise.resolve(0),
       search(_q, _c, cb) {
         cb([], 0.3);
@@ -177,7 +164,7 @@ Deno.test("cancelableSearch (WebWorker + DI behaviors)", async (t) => {
     };
     const portStub2 = { close() {} } as unknown as MessagePort;
     using cancelable2 = makeCancelableSearch("fake://w2", {
-      workerFactory: () => worker2 as unknown as FakeRemote,
+      workerFactory: () => worker2 as unknown as RemoteLike,
       sharedWorkerFactory: () => ({ port: portStub2, close() {} }),
     });
     const reader = cancelable2.search("hello", 10).getReader();

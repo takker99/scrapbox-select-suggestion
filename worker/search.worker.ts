@@ -3,7 +3,7 @@ import { delay } from "../deps/async.ts";
 import { expose } from "../deps/comlink.ts";
 import { createDebug } from "../deps/debug.ts";
 import { check, load, subscribe } from "../deps/storage.ts";
-import { makeFilter, type MatchInfo } from "../search.ts";
+import { makeFilter } from "../search.ts";
 import { applyDiff, type Candidate, makeCandidate } from "../source.ts";
 import type { SearchWorkerAPI } from "../worker-endpoint.ts";
 
@@ -15,7 +15,7 @@ let loadedProjects: string[] = [];
 let unsubscribe = () => {};
 
 const searchWorkerAPI: SearchWorkerAPI = {
-  async load(projects: string[]): Promise<number> {
+  async load(projects) {
     logger.debug("start loading source");
 
     // Check if we need to reload data
@@ -41,19 +41,10 @@ const searchWorkerAPI: SearchWorkerAPI = {
     return candidates.length;
   },
 
-  async search(
-    query: string,
-    chunk: number,
-    onProgress: (
-      candidates: (Candidate & MatchInfo)[],
-      progress: number,
-    ) => void,
-  ): Promise<void> {
+  async search(query, chunk, onProgress) {
     logger.debug("start searching: ", query);
 
-    if (!query.trim()) {
-      return;
-    }
+    if (!query.trim()) return;
 
     const filter = makeFilter<Candidate>(query);
     if (!filter) {
@@ -67,17 +58,17 @@ const searchWorkerAPI: SearchWorkerAPI = {
 
     for (let i = 0; i < total; i++) {
       const progress = (i + 1) / total;
-      const completed = i === total - 1;
 
       const searchCandidates = [...filter(
         source.values().drop(i * chunk).take(chunk),
       )];
 
       logger.debug(`[${i}/${total}] search result:`, searchCandidates);
-      onProgress(searchCandidates, progress);
+      const aborted = onProgress(searchCandidates, progress);
+      if (aborted) return;
 
       // Yield control to prevent blocking the worker thread
-      if (!completed) await delay(0);
+      await delay(0);
     }
   },
 };
