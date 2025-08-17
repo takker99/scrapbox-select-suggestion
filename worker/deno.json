@@ -2,8 +2,7 @@
   "compilerOptions": {
     "lib": [
       "esnext",
-      "webworker",
-      "deno.ns"
+      "webworker"
     ]
   }
 }
