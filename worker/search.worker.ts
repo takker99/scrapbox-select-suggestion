@@ -64,7 +64,10 @@ const searchWorkerAPI: SearchWorkerAPI = {
       )];
 
       logger.debug(`[${i}/${total}] search result:`, searchCandidates);
-      const aborted = onProgress(searchCandidates, progress);
+      const aborted =
+        await (onProgress(searchCandidates, progress) as unknown as Promise<
+          boolean
+        >);
       if (aborted) return;
 
       // Yield control to prevent blocking the worker thread
