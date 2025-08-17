@@ -3,27 +3,25 @@ import { makeCancelableSearch } from "./cancelableSearch.ts";
 import { expose } from "./deps/comlink.ts";
 import type { SearchWorkerAPI } from "./worker-endpoint.ts";
 
-// Helper: create a fake SearchWorkerAPI exposed over a MessagePort
-function makeFakeEndpoint(impl: SearchWorkerAPI) {
+/** create a fake SearchWorkerAPI exposed over a MessagePort */
+function makeFakeEndpoint(impl: SearchWorkerAPI):
+  & { endpoint: MessagePort }
+  // If you don't explicitly declare Disposable, Deno LSP will throw "Node ComputedPropertyName was unexpected"
+  & Disposable {
   const { port1, port2 } = new MessageChannel();
-  expose({
-    load: impl.load,
-    search: impl.search,
-  } as SearchWorkerAPI, port1);
+  expose(impl, port1);
+
   let closed = false;
+
   return {
     endpoint: port2,
     [Symbol.dispose]() {
       if (closed) return;
       closed = true;
-      try {
-        port1.close();
-      } catch (_) { /* ignore */ }
-      try {
-        port2.close();
-      } catch (_) { /* ignore */ }
+      port1.close();
+      port2.close();
     },
-  } as const;
+  };
 }
 
 Deno.test({
