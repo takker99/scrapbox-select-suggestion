@@ -118,3 +118,32 @@ Deno.test("Relative Path", async (t) => {
     });
   }
 });
+
+Deno.test("edge cases", async (t) => {
+  await t.step("URL instance passes through", () => {
+    const original = new URL("https://example.com/x");
+    const detected = detectURL(original, "https://ignored.invalid/");
+    assert(detected instanceof URL);
+    assertEquals(detected, original);
+  });
+
+  await t.step("relative without base stays string", () => {
+    const rel = "./a.css";
+    const detected = detectURL(rel);
+    assertEquals(detected, rel);
+  });
+
+  await t.step("non relative with base stays string", () => {
+    const text = "image.png"; // not starting with ./ ../ /
+    const base2 = "https://example.com/path/";
+    const detected = detectURL(text, base2);
+    assertEquals(detected, text);
+  });
+
+  await t.step("invalid base fallback returns original", () => {
+    const rel = "./a.css";
+    const badBase = ":::::/invalid"; // new URL => TypeError
+    const detected = detectURL(rel, badBase);
+    assertEquals(detected, rel);
+  });
+});

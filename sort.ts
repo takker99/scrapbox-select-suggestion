@@ -1,5 +1,5 @@
-import { MatchInfo } from "./search.ts";
-import { Candidate } from "./source.ts";
+import type { MatchInfo } from "./search.ts";
+import type { Candidate } from "./source.ts";
 
 /** 候補を昇順に比較する函数を作る
  *

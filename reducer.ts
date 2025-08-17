@@ -1,5 +1,5 @@
-import { crawlLink, Link } from "./crawlLink.ts";
-import { Line, Position, Range } from "./deps/scrapbox.ts";
+import { crawlLink, type Link } from "./crawlLink.ts";
+import type { Line, Position, Range } from "./deps/scrapbox.ts";
 
 // ?: undefinedは、propertyの有無にかかわらずアクセスできるようにするために指定してある
 export type State =

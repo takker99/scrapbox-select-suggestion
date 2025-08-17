@@ -1,11 +1,12 @@
 import { useCallback, useEffect, useMemo, useReducer } from "./deps/preact.tsx";
 import { compareAse } from "./sort.ts";
-import { Candidate } from "./source.ts";
-import { MatchInfo } from "./search.ts";
+import type { Candidate } from "./source.ts";
+import type { MatchInfo } from "./search.ts";
 import { makeCancelableSearch } from "./cancelableSearch.ts";
 import { throttle } from "./deps/throttle.ts";
 import { createDebug } from "./deps/debug.ts";
-import { Action, createReducer, isSearching } from "./search-state.ts";
+import { type Action, createReducer, isSearching } from "./search-state.ts";
+import { SharedWorkerSupported } from "./deps/sharedworker.ts";
 
 const logger = createDebug("scrapbox-select-suggestion:useSearch.ts");
 
@@ -51,7 +52,12 @@ export const useSearch = (
   options: UseSearchOptions,
 ): SearchResult | undefined => {
   const search = useMemo(
-    () => makeCancelableSearch(options.workerUrl),
+    () =>
+      makeCancelableSearch(
+        SharedWorkerSupported
+          ? new SharedWorker(options.workerUrl, { type: "module" }).port
+          : new Worker(options.workerUrl, { type: "module" }),
+      ),
     [options.workerUrl],
   );
   useEffect(() => {
@@ -69,13 +75,6 @@ export const useSearch = (
 
         return {
           run: async () => {
-            const iterator = search.search(
-              query,
-              10000,
-            ) as unknown as AsyncIterableIterator<
-              [candidates: (Candidate & MatchInfo)[], progress: number]
-            >;
-
             const throttledDispatch = throttle<[Action], void>(
               (value, state) => {
                 if (state === "discarded") return;
@@ -86,7 +85,9 @@ export const useSearch = (
             );
 
             let stack: (Candidate & MatchInfo)[] = [];
-            for await (const [candidates, progress] of iterator) {
+            for await (
+              const [candidates, progress] of search.search(query, 10000)
+            ) {
               if (aborted) return;
               // 非破壊的にstackに追加することで、`reducer`内での`===`比較が効くようにする
               stack = [...stack, ...candidates];

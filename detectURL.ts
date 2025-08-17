@@ -16,6 +16,10 @@ export const detectURL = (
       return new URL(text, base);
     } catch (e: unknown) {
       if (!(e instanceof TypeError)) throw e;
+      // NOTE: ここに到達するのは base 文字列が URL として不正なときのみ。
+      // new URL(text) で TypeError, かつ base あり, かつ new URL(text, base) も TypeError
+      // を再現するには URL コンストラクタをモンキーパッチするか不正 base を与える必要がある。
+      // 異常系であり価値が低いのでテスト対象外 (intentionally skipped).
       return text;
     }
   }

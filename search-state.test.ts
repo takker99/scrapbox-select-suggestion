@@ -1,12 +1,11 @@
 import {
-  Action,
+  type Action,
   createReducer,
-  IdleState,
+  type IdleState,
   isSearching,
 } from "./search-state.ts";
-import { Searcher, SearchingState } from "./search-state.ts";
-import { assertEquals } from "./deps/testing.ts";
-import { assertStrictEquals } from "./deps/testing.ts";
+import type { Searcher, SearchingState } from "./search-state.ts";
+import { assert, assertEquals, assertStrictEquals } from "./deps/testing.ts";
 
 Deno.test("search-state tests", async (t) => {
   const searcherResult: {
@@ -129,6 +128,80 @@ Deno.test("search-state tests", async (t) => {
       assertEquals(newState.query, "test");
       assertStrictEquals(newState.candidates, action.candidates);
       assertEquals(isSearching(newState), true);
+    });
+  });
+
+  await t.step("edge cases", async (t) => {
+    const events: string[] = [];
+    const mkSearcher: Searcher = (query) => {
+      events.push(`make:${query}`);
+      return {
+        run: () =>
+          Promise.resolve().then(() => {
+            events.push(`run:${query}`);
+          }),
+        abort: () => {
+          events.push(`abort-call:${query}`);
+        },
+      };
+    };
+    const r2 = createReducer(mkSearcher);
+    let st: IdleState | SearchingState = { query: "" };
+
+    await t.step("same query => no new job", () => {
+      st = r2(st, { query: "" });
+      assertStrictEquals(st, st); // no event
+      assertEquals(events.length, 0);
+    });
+
+    await t.step("new query spawns job", () => {
+      st = r2(st, { query: "abc" }) as SearchingState;
+      assertEquals(isSearching(st), true);
+      assertEquals(st.query, "abc");
+    });
+
+    await t.step("progress no-op same value", () => {
+      const s1 = r2(st, { progress: 0 });
+      assertStrictEquals(s1, st);
+    });
+
+    await t.step("progress update", () => {
+      st = r2(st, { progress: 10 }) as SearchingState;
+      assertEquals(st.progress, 10);
+    });
+
+    await t.step("candidates + progress update triggers new state", () => {
+      const candidates: SearchingState["candidates"] = [];
+      st = r2(st, { progress: 20, candidates }) as SearchingState;
+      assertEquals(st.progress, 20);
+      assertStrictEquals(st.candidates, candidates);
+    });
+
+    await t.step("same candidates + same progress -> no change", () => {
+      if ("candidates" in st) {
+        const s4 = r2(st, { progress: 20, candidates: st.candidates });
+        assertStrictEquals(s4, st);
+      }
+    });
+
+    await t.step("new query aborts previous", () => {
+      if ("job" in st) {
+        const prevJob = st.job;
+        st = r2(st, { query: "xyz" }) as SearchingState;
+        assert(prevJob !== (st as SearchingState).job);
+      } else {
+        st = r2(st, { query: "xyz" }) as SearchingState;
+      }
+    });
+
+    await t.step("clear query aborts", () => {
+      st = r2(st, { query: "" });
+      assertEquals(st, { query: "" });
+    });
+
+    await t.step("progress ignored when idle", () => {
+      const idle = r2(st, { progress: 50 });
+      assertStrictEquals(idle, st);
     });
   });
 });

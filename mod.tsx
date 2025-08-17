@@ -1,9 +1,9 @@
 /** @jsxRuntime automatic */
 /** @jsxImportSource npm:preact@10 */
 import { render } from "./deps/preact.tsx";
-import { SelectInit } from "./useSelect.ts";
-import { App, Operators } from "./App.tsx";
-import { Scrapbox } from "./deps/scrapbox.ts";
+import type { SelectInit } from "./useSelect.ts";
+import { App, type Operators } from "./App.tsx";
+import type { Scrapbox } from "./deps/scrapbox.ts";
 export type { Operators, SelectInit };
 import { setDebugMode } from "./deps/debug.ts";
 declare const scrapbox: Scrapbox;

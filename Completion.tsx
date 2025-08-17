@@ -2,7 +2,7 @@
 /** @jsxImportSource npm:preact@10 */
 import {
   type FunctionComponent,
-  h,
+  type h,
   type RefCallback,
   useCallback,
   useEffect,

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "./deps/preact.tsx";
-import { Scrapbox } from "./deps/scrapbox.ts";
+import type { Scrapbox } from "./deps/scrapbox.ts";
 declare const scrapbox: Scrapbox;
 
 const key = "enableProjectsOnSuggestion";
