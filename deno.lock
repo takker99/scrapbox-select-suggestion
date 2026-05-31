@@ -6,20 +6,20 @@
     "jsr:@cosense/std@~0.29.3": "0.29.16",
     "jsr:@cosense/types@0.10": "0.10.10",
     "jsr:@cosense/types@~0.10.4": "0.10.10",
-    "jsr:@std/assert@1": "1.0.14",
-    "jsr:@std/assert@^1.0.13": "1.0.14",
-    "jsr:@std/async@1": "1.0.14",
+    "jsr:@std/assert@1": "1.0.19",
+    "jsr:@std/assert@^1.0.19": "1.0.19",
+    "jsr:@std/async@1": "1.3.0",
     "jsr:@std/encoding@1": "1.0.10",
-    "jsr:@std/fs@^1.0.19": "1.0.19",
-    "jsr:@std/internal@^1.0.10": "1.0.10",
-    "jsr:@std/path@^1.1.1": "1.1.2",
-    "jsr:@std/testing@1": "1.0.15",
+    "jsr:@std/fs@^1.0.23": "1.0.23",
+    "jsr:@std/internal@^1.0.12": "1.0.13",
+    "jsr:@std/internal@^1.0.13": "1.0.13",
+    "jsr:@std/path@^1.1.4": "1.1.4",
+    "jsr:@std/testing@1": "1.0.18",
     "jsr:@takker/cosense-storage@0.3": "0.3.4",
     "jsr:@takker/debug-js@0.1": "0.1.2",
     "jsr:@takker/md5@0.1": "0.1.0",
     "jsr:@takker/throttle@0.3": "0.3.1",
     "npm:@logtape/logtape@0.8": "0.8.2",
-    "npm:@okikio/sharedworker@1": "1.1.0",
     "npm:comlink@4": "4.4.2",
     "npm:date-fns@4": "4.1.0",
     "npm:idb@8": "8.0.3",
@@ -27,7 +27,7 @@
     "npm:option-t@51": "51.1.1",
     "npm:option-t@^49.1.0": "49.3.0",
     "npm:option-t@^50.0.2": "50.0.2",
-    "npm:preact@10": "10.27.0"
+    "npm:preact@10": "10.28.4"
   },
   "jsr": {
     "@core/unknownutil@4.3.0": {
@@ -57,39 +57,39 @@
     "@cosense/types@0.10.10": {
       "integrity": "16575916902f22a7d401edbd2305324cfcb378aa2bc39a4fef7ba81a1c84a0a1"
     },
-    "@std/assert@1.0.14": {
-      "integrity": "68d0d4a43b365abc927f45a9b85c639ea18a9fab96ad92281e493e4ed84abaa4",
+    "@std/assert@1.0.19": {
+      "integrity": "eaada96ee120cb980bc47e040f82814d786fe8162ecc53c91d8df60b8755991e",
       "dependencies": [
-        "jsr:@std/internal"
+        "jsr:@std/internal@^1.0.12"
       ]
     },
-    "@std/async@1.0.14": {
-      "integrity": "62e954a418652c704d37563a3e54a37d4cf0268a9dcaeac1660cc652880b5326"
+    "@std/async@1.3.0": {
+      "integrity": "80485538a4f7baaa46bfe2246168069e02ed142b9f9079cd164f43bb060ad9e9"
     },
     "@std/encoding@1.0.10": {
       "integrity": "8783c6384a2d13abd5e9e87a7ae0520a30e9f56aeeaa3bdf910a3eaaf5c811a1"
     },
-    "@std/fs@1.0.19": {
-      "integrity": "051968c2b1eae4d2ea9f79a08a3845740ef6af10356aff43d3e2ef11ed09fb06",
+    "@std/fs@1.0.23": {
+      "integrity": "3ecbae4ce4fee03b180fa710caff36bb5adb66631c46a6460aaad49515565a37",
       "dependencies": [
         "jsr:@std/path"
       ]
     },
-    "@std/internal@1.0.10": {
-      "integrity": "e3be62ce42cab0e177c27698e5d9800122f67b766a0bea6ca4867886cbde8cf7"
+    "@std/internal@1.0.13": {
+      "integrity": "2f9546691d4ac2d32859c82dff284aaeac980ddeca38430d07941e7e288725c0"
     },
-    "@std/path@1.1.2": {
-      "integrity": "c0b13b97dfe06546d5e16bf3966b1cadf92e1cc83e56ba5476ad8b498d9e3038",
+    "@std/path@1.1.4": {
+      "integrity": "1d2d43f39efb1b42f0b1882a25486647cb851481862dc7313390b2bb044314b5",
       "dependencies": [
-        "jsr:@std/internal"
+        "jsr:@std/internal@^1.0.12"
       ]
     },
-    "@std/testing@1.0.15": {
-      "integrity": "a490169f5ccb0f3ae9c94fbc69d2cd43603f2cffb41713a85f99bbb0e3087cbc",
+    "@std/testing@1.0.18": {
+      "integrity": "d3152f57b11666bf6358d0e127c7e3488e91178b0c2d8fbf0793e1c53cd13cb1",
       "dependencies": [
-        "jsr:@std/assert@^1.0.13",
+        "jsr:@std/assert@^1.0.19",
         "jsr:@std/fs",
-        "jsr:@std/internal",
+        "jsr:@std/internal@^1.0.13",
         "jsr:@std/path"
       ]
     },
@@ -118,9 +118,6 @@
     "@logtape/logtape@0.8.2": {
       "integrity": "sha512-KikaMHi64p0BHYrYOE2Lom4dOE3R8PGT+21QJ5Ql/SWy0CNOp69dkAlG9RXzENQ6PAMWtiU+4kelJYNvfUvHOQ=="
     },
-    "@okikio/sharedworker@1.1.0": {
-      "integrity": "sha512-Xj9TUWll9mhARsKu5DtlQCjRekfJfQ2E291ow6gmXIz+WuF6uJMH8ZmGhdRTx/ndOippHnm1j/vxXNjmR6JuXw=="
-    },
     "comlink@4.4.2": {
       "integrity": "sha512-OxGdvBmJuNKSCMO4NTl1L47VRp6xn2wG4F/2hYzB6tiCb709otOxtEYCSvK80PtjODfXXZu8ds+Nw5kVCjqd2g=="
     },
@@ -139,8 +136,8 @@
     "option-t@51.1.1": {
       "integrity": "sha512-Ww13j9NVqnGpxsaSr1y0o35Xq1WcopAeJkAbk9DWlKRBgFKYLuJwEU1GzWUtkhBhRQY0st5kfdtT02JO6YqEEw=="
     },
-    "preact@10.27.0": {
-      "integrity": "sha512-/DTYoB6mwwgPytiqQTh/7SFRL98ZdiD8Sk8zIUVOxtwq4oWcwrcd1uno9fE/zZmUaUrFNYzbH14CPebOz9tZQw=="
+    "preact@10.28.4": {
+      "integrity": "sha512-uKFfOHWuSNpRFVTnljsCluEFq57OKT+0QdOiQo8XWnQ/pSvg7OpX5eNOejELXJMWy+BwM2nobz0FkvzmnpCNsQ=="
     }
   }
 }

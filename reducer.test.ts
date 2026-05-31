@@ -44,7 +44,7 @@ const inputEvent = (
   range: Range,
 ): Action => ({
   type: "lines:changed",
-  lines: (lines as Line[]),
+  lines: lines as Line[],
   position,
   range,
 });
@@ -53,7 +53,7 @@ const selectEvent = (
   range: Range,
 ): Action => ({
   type: "selection:changed",
-  lines: (lines as Line[]),
+  lines: lines as Line[],
   position,
   range,
 });
@@ -62,7 +62,7 @@ const cursorEvent = (
   range: Range,
 ): Action => ({
   type: "cursor:changed",
-  lines: (lines as Line[]),
+  lines: lines as Line[],
   position,
   range,
 });
@@ -261,7 +261,7 @@ Deno.test("reducer()", async (t) => {
           assertEquals(
             reducer(disabledAuto, {
               type,
-              lines: (lines as Line[]),
+              lines: lines as Line[],
               position: { line: 6, char: 30 },
               range: emptyRange,
             }),
@@ -310,7 +310,7 @@ Deno.test("reducer()", async (t) => {
             assertEquals(
               reducer(state, {
                 type,
-                lines: (lines as Line[]),
+                lines: lines as Line[],
                 position,
                 range: { start, end },
               }),
@@ -319,7 +319,7 @@ Deno.test("reducer()", async (t) => {
             assertEquals(
               reducer(state, {
                 type,
-                lines: (lines as Line[]),
+                lines: lines as Line[],
                 position,
                 range: { start: end, end: start },
               }),
@@ -353,7 +353,7 @@ Deno.test("reducer()", async (t) => {
             assertEquals(
               reducer(state, {
                 type,
-                lines: (lines as Line[]),
+                lines: lines as Line[],
                 position,
                 range: { start, end },
               }),
@@ -362,7 +362,7 @@ Deno.test("reducer()", async (t) => {
             assertEquals(
               reducer(state, {
                 type,
-                lines: (lines as Line[]),
+                lines: lines as Line[],
                 position,
                 range: { start: end, end: start },
               }),
@@ -398,7 +398,7 @@ Deno.test("reducer()", async (t) => {
               assertEquals(
                 reducer(state, {
                   type,
-                  lines: (lines as Line[]),
+                  lines: lines as Line[],
                   position,
                   range,
                 }),
@@ -473,7 +473,7 @@ Deno.test("reducer()", async (t) => {
         assertEquals(
           reducer(selectCancel, {
             type,
-            lines: (lines as Line[]),
+            lines: lines as Line[],
             position,
             range: {
               start: { line: 6, char: 4 },
@@ -485,7 +485,7 @@ Deno.test("reducer()", async (t) => {
         assertEquals(
           reducer(selectCancel, {
             type,
-            lines: (lines as Line[]),
+            lines: lines as Line[],
             position,
             range: {
               start: { line: 6, char: 4 },
@@ -508,7 +508,7 @@ Deno.test("reducer()", async (t) => {
         assertEquals(
           reducer(selectCancel, {
             type,
-            lines: (lines as Line[]),
+            lines: lines as Line[],
             position: { line: 6, char: 14 },
             range: emptyRange,
           }),
@@ -530,7 +530,7 @@ Deno.test("reducer()", async (t) => {
   await t.step("auto disabled -> ready when lines appear", () => {
     const next = reducer({ type: "disabled" }, {
       type: "cursor:changed",
-      lines: (lines as Line[]),
+      lines: lines as Line[],
       position: emptyRange.start,
       range: emptyRange,
     });
@@ -551,7 +551,7 @@ Deno.test("reducer()", async (t) => {
   await t.step("completion -> cancel -> cancelled", () => {
     const completion = reducer({ type: "ready" }, {
       type: "lines:changed",
-      lines: (lines as Line[]),
+      lines: lines as Line[],
       position: { line: 6, char: 30 },
       range: emptyRange,
     });
@@ -567,7 +567,7 @@ Deno.test("reducer()", async (t) => {
   await t.step("cancelled input blocks re-entry inside link", () => {
     const completion = reducer({ type: "ready" }, {
       type: "lines:changed",
-      lines: (lines as Line[]),
+      lines: lines as Line[],
       position: { line: 6, char: 30 },
       range: emptyRange,
     });
@@ -577,7 +577,7 @@ Deno.test("reducer()", async (t) => {
     const cancelled = reducer(completion, { type: "cancel" });
     const again = reducer(cancelled, {
       type: "cursor:changed",
-      lines: (lines as Line[]),
+      lines: lines as Line[],
       position: { line: 6, char: 31 },
       range: emptyRange,
     });
@@ -587,7 +587,7 @@ Deno.test("reducer()", async (t) => {
   await t.step("selection mode suppressed when cancelled", () => {
     const completion = reducer({ type: "ready" }, {
       type: "lines:changed",
-      lines: (lines as Line[]),
+      lines: lines as Line[],
       position: { line: 6, char: 30 },
       range: emptyRange,
     });
@@ -597,7 +597,7 @@ Deno.test("reducer()", async (t) => {
     const cancelled = reducer(completion, { type: "cancel" });
     const sel = reducer(cancelled, {
       type: "selection:changed",
-      lines: (lines as Line[]),
+      lines: lines as Line[],
       position: { line: 6, char: 31 },
       range: { start: { line: 6, char: 30 }, end: { line: 6, char: 35 } },
     });
