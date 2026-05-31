@@ -76,18 +76,7 @@ const searchWorkerAPI: SearchWorkerAPI = {
   },
 };
 
-const isSharedWorkerGlobalScope = (
-  scope: unknown,
-): scope is SharedWorkerGlobalScope =>
-  typeof scope === "object" && !!scope && "SharedWorkerGlobalScope" in scope;
-
-if (isSharedWorkerGlobalScope(self)) {
-  // SharedWorker mode
-  (self as SharedWorkerGlobalScope).addEventListener(
-    "connect",
-    (event) => expose(searchWorkerAPI, event.ports[0]),
-  );
-} else {
-  // Regular Worker mode
-  expose(searchWorkerAPI);
-}
+(self as unknown as SharedWorkerGlobalScope).addEventListener(
+  "connect",
+  (event) => expose(searchWorkerAPI, event.ports[0]),
+);
