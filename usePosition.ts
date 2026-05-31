@@ -1,17 +1,17 @@
-import { type h, useMemo, useState } from "./deps/preact.tsx";
+import { type CSSProperties, useMemo, useState } from "./deps/preact.tsx";
 import { getCharDOM, type Position } from "./deps/scrapbox.ts";
 
 /** 補完リストの表示位置を計算するhook */
 export const usePosition = (
   pos: Position,
-): Pick<h.JSX.CSSProperties, "top" | "left" | "right"> & {
+): Pick<CSSProperties, "top" | "left" | "right"> & {
   updateStandardElement: (element: Element | null) => void;
 } => {
   const [standardElement, updateStandardElement] = useState<Element | null>(
     null,
   );
 
-  const style = useMemo<Pick<h.JSX.CSSProperties, "top" | "left">>(() => {
+  const style = useMemo<Pick<CSSProperties, "top" | "left">>(() => {
     /** 基準座標 */
     const parentRect = standardElement?.getBoundingClientRect?.();
     /** 合わせたいDOMの座標 */

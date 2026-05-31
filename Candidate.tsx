@@ -1,7 +1,7 @@
 /** @jsxRuntime automatic */
 /** @jsxImportSource npm:preact@10 */
 import type { ConfirmInit } from "./Completion.tsx";
-import { type h, useCallback } from "./deps/preact.tsx";
+import { type TargetedMouseEvent, useCallback } from "./deps/preact.tsx";
 import { encodeTitleURI } from "./deps/scrapbox-title.ts";
 
 export interface CandidateProps {
@@ -81,7 +81,7 @@ export const Mark = (
 /** 修飾キーが押されていないときのみ確定する event handlerを作るhook */
 const useConfirm = (confirm: () => void) =>
   useCallback(
-    (e: h.JSX.TargetedMouseEvent<HTMLAnchorElement>) => {
+    (e: TargetedMouseEvent<HTMLAnchorElement>) => {
       if (e.metaKey || e.ctrlKey || e.altKey || e.shiftKey) return;
       e.preventDefault();
       e.stopPropagation();

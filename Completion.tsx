@@ -1,8 +1,9 @@
 /** @jsxRuntime automatic */
 /** @jsxImportSource npm:preact@10 */
 import {
+  type CSSProperties,
   type FunctionComponent,
-  type h,
+  type MouseEventHandler,
   type RefCallback,
   useCallback,
   useEffect,
@@ -137,7 +138,7 @@ export const Completion: FunctionComponent<CompletionProps> = (
 
 interface ItemListProps extends
   Pick<
-    CompletionProps & SearchResult & h.JSX.CSSProperties,
+    CompletionProps & SearchResult & CSSProperties,
     | "start"
     | "confirmAfter"
     | "cancel"
@@ -274,7 +275,7 @@ const ItemList = (
   ]);
 
   /** 補完windowのスタイル */
-  const style = useMemo<h.JSX.CSSProperties>(
+  const style = useMemo<CSSProperties>(
     () =>
       // undefinedとnullをまとめて判定したいので、厳密比較!==は使わない
       candidatesProps.length > 0 && top != null &&
@@ -334,7 +335,7 @@ interface SourceFilterProps extends
   Pick<
     & CompletionProps
     & SearchResult
-    & h.JSX.CSSProperties
+    & CSSProperties
     & UseProjectFilterResult,
     | "mark"
     | "top"
@@ -390,7 +391,7 @@ const SourceFilter = (
    *
    * 非表示の検索候補があれば表示し続ける
    */
-  const style = useMemo<h.JSX.CSSProperties>(
+  const style = useMemo<CSSProperties>(
     () =>
       // undefinedとnullをまとめて判定したいので、厳密比較!==は使わない
       itemCount > 0 && top != null &&
@@ -417,7 +418,7 @@ const Mark = (
     enable: boolean;
     name: string;
     score: number;
-    onClick: h.JSX.MouseEventHandler<HTMLDivElement>;
+    onClick: MouseEventHandler<HTMLDivElement>;
     mark: URL | string;
   },
 ) => (
