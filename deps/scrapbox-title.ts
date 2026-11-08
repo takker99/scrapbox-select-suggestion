@@ -1,1 +1,1 @@
-export * from "jsr:@cosense/std@0.28/title";
+export * from "jsr:@cosense/std@^0.32.2/title";

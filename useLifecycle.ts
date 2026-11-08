@@ -7,18 +7,37 @@ import {
   useState,
 } from "./deps/preact.tsx";
 import {
-  insertText,
+  addCursorChangeListener,
+  addSelectionChangeListener,
+  goChar,
+  goLine,
   type Position,
+  type Range,
+  removeCursorChangeListener,
+  removeSelectionChangeListener,
   type Scrapbox,
-  takeCursor,
-  takeSelection,
-  takeStores,
+  textInput,
 } from "./deps/scrapbox.ts";
 import { reducer, type State } from "./reducer.ts";
 import { useCachedLines } from "./useCachedLines.ts";
 declare const scrapbox: Scrapbox;
 
 const logger = createDebug("scrapbox-select-suggestion:useLifecycle.ts");
+
+const getNormalizedSelectionRange = (): Range => {
+  const selection = scrapbox.Page.selection;
+  if (!selection) {
+    return {
+      start: { line: 0, char: 0 },
+      end: { line: 0, char: 0 },
+    };
+  }
+  const { start, end } = selection;
+  return start.line > end.line ||
+      (start.line === end.line && start.char > end.char)
+    ? { start: end, end: start }
+    : { start, end };
+};
 
 export interface UseLifecycleResult {
   /** 現在の状態 */
@@ -52,17 +71,16 @@ export const useLifecycle = (): UseLifecycleResult => {
    * cursor:changedのみ100ms待機させる
    */
   const debouncedDispatch = useMemo(() => {
-    let timer: number | undefined;
+    let timer: ReturnType<typeof setTimeout> | undefined;
     return (type: "lines:changed" | "selection:changed" | "cursor:changed") => {
       if (timer !== undefined) clearTimeout(timer);
       timer = setTimeout(
         () => {
-          const { cursor, selection } = takeStores();
           dispatch({
             type,
             lines: getLines(),
-            range: selection.getRange({ normalizeOrder: true }),
-            position: cursor.getPosition(),
+            range: getNormalizedSelectionRange(),
+            position: scrapbox.Page.cursor ?? { line: 0, char: 0 },
           });
         },
         type === "cursor:changed" ? 100 : undefined,
@@ -80,13 +98,12 @@ export const useLifecycle = (): UseLifecycleResult => {
     const handleSelectionChanged = () => {
       debouncedDispatch("selection:changed");
     };
-    const selection = takeSelection();
     // 選択範囲変更監視
-    selection.addChangeListener(handleSelectionChanged);
+    addSelectionChangeListener(handleSelectionChanged);
     return () => {
       scrapbox.removeListener("lines:changed", handleLineChanged);
       scrapbox.removeListener("layout:changed", handleLineChanged);
-      selection.removeChangeListener(handleSelectionChanged);
+      removeSelectionChangeListener(handleSelectionChanged);
     };
   }, []);
 
@@ -97,9 +114,8 @@ export const useLifecycle = (): UseLifecycleResult => {
     const callback = () => {
       debouncedDispatch("cursor:changed");
     };
-    const cursor = takeCursor();
-    cursor.addChangeListener(callback);
-    return () => cursor.removeChangeListener(callback);
+    addCursorChangeListener(callback);
+    return () => removeCursorChangeListener(callback);
   }, [state.context]);
 
   const [prevState, setPrevState] = useState<State>(state);
@@ -135,19 +151,20 @@ export const useLifecycle = (): UseLifecycleResult => {
         // 補完が無効のときは何もしない
         if (!lines) return;
         dispatch({ type: "lock" });
-        const { cursor, selection } = takeStores();
-        const line = cursor.getPosition().line;
+        const cursorPosition = scrapbox.Page.cursor ?? { line: 0, char: 0 };
+        const line = cursorPosition.line;
         const prev = lines[line].text;
-        const [text, position] = updator(prev, cursor.getPosition());
+        const [text, position] = updator(prev, cursorPosition);
 
         // 上書き
-        selection.setRange({
-          start: { line, char: 0 },
-          end: { line, char: [...prev].length },
-        });
-        await insertText(text);
-        cursor.setPosition(position);
-        cursor.focus();
+        scrapbox.Page.updateLine(text, line);
+        await scrapbox.Page.waitForSave();
+        if (position.char >= [...text].length) {
+          await goLine(position.line);
+        } else {
+          await goChar(position.line, position.char);
+        }
+        textInput()?.focus();
         dispatch({ type: "unlock" });
         dispatch({ type: "cancel" });
       },
