@@ -67,9 +67,9 @@ Deno.test({
         calls.push(`load:${projects.length}`);
         return Promise.resolve(42);
       },
-      search(query, _chunk, cb) {
+      async search(query, _chunk, cb) {
         calls.push(`search:${query}`);
-        cb([{
+        await (cb([{
           title: "A",
           titleLc: "a",
           updated: 0,
@@ -77,9 +77,8 @@ Deno.test({
           metadata: new Map(),
           dist: 0,
           matches: [],
-        }], 10);
-        cb([], 100);
-        return Promise.resolve();
+        }], 10) as unknown as Promise<boolean>);
+        await (cb([], 100) as unknown as Promise<boolean>);
       },
     });
 
@@ -127,7 +126,7 @@ Deno.test({
   });
 
   await t.step("port: cancel triggers stream cancel branch", async () => {
-    const timeouts: number[] = [];
+    const timeouts: ReturnType<typeof setTimeout>[] = [];
     let progressCalls = 0;
     using endpoints = makeFakeEndpoint({
       load: () => Promise.resolve(0),

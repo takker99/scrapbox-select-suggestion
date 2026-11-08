@@ -5,7 +5,8 @@
       "dom",
       "dom.iterable",
       "deno.ns",
-      "dom.asynciterable"
+      "dom.asynciterable",
+      "node"
     ]
   },
   "exclude": [
@@ -24,6 +25,7 @@
     }
   },
   "workspace": ["worker/"],
+  "minimumDependencyAge": 0,
   "tasks": {
     "bundle-worker": "deno bundle --minify --platform=browser worker/search.worker.ts -o search.worker.bundle.js",
     "check": {
