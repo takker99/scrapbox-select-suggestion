@@ -127,7 +127,7 @@ Deno.test({
   });
 
   await t.step("port: cancel triggers stream cancel branch", async () => {
-    const timeouts: number[] = [];
+    const timeouts: ReturnType<typeof setTimeout>[] = [];
     let progressCalls = 0;
     using endpoints = makeFakeEndpoint({
       load: () => Promise.resolve(0),
